@@ -2444,7 +2444,7 @@
     }
     // The avatar page's content building in (title, glow + character, swoosh, sparkles, row, ring).
     // t shifts the whole sequence earlier — coming back from Interests it starts at once.
-    function avatarBuild(t) {
+    function avatarBuild(t, titleAt) {
       const D = (ms) => Math.max(0, ms - t);
       const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
       const FADE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
@@ -2453,7 +2453,7 @@
         el.animate([{ opacity: 0, translate: `0 ${dy}px`, filter: 'blur(6px)' }, { opacity: 1, translate: '0 0', filter: 'blur(0px)' }],
           { duration: dur, delay, easing: IOS, fill: 'backwards' });
       };
-      fadeUp(aq('.av__title-in'), D(240), 18);           // the title rises in as one unit
+      fadeUp(aq('.av__title-in'), titleAt ?? D(240), 18);   // the title rises in as one unit
       // big avatar: the glow swells and turns into place, the circle pops in on it
       aq('.av__glow').animate([{ opacity: 0, scale: '0.6', rotate: '-60deg' }, { opacity: 1, scale: '1', rotate: '-15deg' }], { duration: 1000, delay: D(300), easing: IOS, fill: 'backwards' });
       // the character rises into its circle from below — the same move as changing avatar
@@ -2796,7 +2796,7 @@
       const fadeUp = (el, delay, dy = 16) => el.animate([{ opacity: 0, translate: `0 ${dy}px`, filter: 'blur(6px)' }, { opacity: 1, translate: '0 0', filter: 'blur(0px)' }],
         { duration: 680, delay, easing: IOS, fill: 'backwards' });
       // lines (not the container — it carries the drop-shadow filter the blur would replace)
-      fadeUp(iq('.int__title-in'), 200);                  // the title rises in as one unit
+      fadeUp(iq('.int__title-in'), 260);                  // one unit, once the avatar title has cleared
       fadeUp(iq('.int__sub'), 280, 10);
       chipEls.forEach((chip) => {
         const d = 300 + (+chip.dataset.r) * 55 + (+chip.dataset.c) * 35;
@@ -2820,7 +2820,9 @@
       haptic.light();
       const OUT = 'cubic-bezier(0.4, 0, 0.6, 1)';
       const fadeOut = (el, d = 0, dy = 10) => el.animate([{ opacity: 1, translate: '0 0' }, { opacity: 0, translate: `0 ${dy}px` }], { duration: 220, delay: d, easing: OUT, fill: 'forwards' });
-      fadeOut(iq('.int__title'), 0, -10); fadeOut(iq('.int__sub'), 20, -8);
+      // the interests title clears first (quick, lifting away) so the two titles never overlap
+      iq('.int__title').animate([{ opacity: 1, translate: '0 0' }, { opacity: 0, translate: '0 -10px' }], { duration: 160, easing: OUT, fill: 'forwards' });
+      fadeOut(iq('.int__sub'), 0, -8);
       chipEls.forEach((chip) => fadeOut(chip, (4 - +chip.dataset.r) * 25, 14));
       fadeOut(iq('.int__skip'), 0, 8);
       // shared button, the forward hand-off in reverse: it eases from Disabled back to the dark 56px
@@ -2840,7 +2842,7 @@
       }).catch(() => {});
       // avatar page back in (the shared header never moved)
       avExit.splice(0).forEach((a) => a.cancel());
-      avatarBuild(160);
+      avatarBuild(160, 240);                               // its title rises in once the interests title is gone
     }
     function hideInterests() {
       intScreen.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
