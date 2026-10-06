@@ -2544,10 +2544,9 @@
       layer.style.background = `linear-gradient(180deg, ${AVATARS[i].big[0]} 0%, ${AVATARS[i].big[1]} 100%)`;
       g.appendChild(layer);
       const tidy = () => { while (g.children.length > 1) g.firstElementChild.remove(); };
-      // the new colour fills the circle up from the bottom with the rising avatar — a cross-fade
-      // would pass through a muddy mix of the two colours
-      if (animate) layer.animate([{ clipPath: 'circle(0% at 50% 104%)' }, { clipPath: 'circle(150% at 50% 104%)' }],
-        { duration: 620, delay: 110, easing: 'cubic-bezier(0.32, 0.72, 0, 1)', fill: 'backwards' }).finished.then(tidy, () => {});
+      // the new colour fades in over the old one (opacity only), in time with the rising avatar
+      if (animate) layer.animate([{ opacity: 0 }, { opacity: 1 }],
+        { duration: 560, delay: 80, easing: 'cubic-bezier(0.45, 0, 0.25, 1)', fill: 'backwards' }).finished.then(tidy, () => {});
       else tidy();
     }
     function swapBig(i) {
