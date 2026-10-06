@@ -1018,9 +1018,12 @@
           label.appendChild(sw);
           document.body.appendChild(label);
         }
-        const active = document.activeElement;           // never let the switch steal focus
+        // Never while a text field is focused: clicking the switch can pull focus off the field on
+        // iOS, which blurs it and drops / re-raises the keyboard (the page jumps). The keyboard's own
+        // key clicks cover typing anyway.
+        const a = document.activeElement;
+        if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable)) return;
         label.click();
-        if (active && document.activeElement !== active) active.focus({ preventScroll: true });
       }
       function play(iosTicks, gap, androidPattern) {
         if (isIOS) {
@@ -1126,6 +1129,7 @@
       setTimeout(enterIntroUI, 9000);   // hard cap: a video that stalls part-way never hides the login
     }
 
+    const IS_TOUCH_UI = document.documentElement.classList.contains('is-touch');
     // Email field: Resting → Active → Typing → Filled / Error, button Disabled ↔ Primary.
     const form = document.getElementById('emailForm');
     const field = document.getElementById('emailField');
@@ -1194,9 +1198,15 @@
     }
     function cancelEmailFade() { if (emailFade) { const a = emailFade; emailFade = null; a.cancel(); } }
 
+    // Tap anywhere on the field box focuses the input. Desktop: on pointerdown (keeps focus put).
+    // Phones: let the tap through and focus on click — iOS only raises the keyboard for focus()
+    // made inside a real activation (touchend / click), never from pointerdown.
     field.addEventListener('pointerdown', (e) => {
-      if (!clear.contains(e.target)) haptic.light();      // tap into the email field
+      if (IS_TOUCH_UI) return;
       if (e.target !== input && !clear.contains(e.target)) { e.preventDefault(); input.focus(); }
+    });
+    field.addEventListener('click', (e) => {
+      if (IS_TOUCH_UI && e.target !== input && !clear.contains(e.target)) input.focus();
     });
     clear.addEventListener('pointerdown', (e) => e.preventDefault()); // keep focus in the input
     clear.addEventListener('click', () => {
@@ -1749,8 +1759,16 @@
       const target = a === input ? field : a === otpInput ? otpInput.closest('.otp__code') : null;
       let lift = 0;
       if (target && vv.height < document.documentElement.clientHeight - 80) {    // keyboard is up
-        const base = target.getBoundingClientRect().bottom - screenEl.getBoundingClientRect().top + screenEl.offsetTop;
-        lift = Math.max(0, Math.round(base + 12 - (vv.offsetTop + vv.height)));
+        // Everything in layout-viewport px: rects are, and so is the visible band
+        // [vv.offsetTop, vv.offsetTop + vv.height]. Undo the lift already applied (read live off
+        // the frame's transform, so it's right mid-transition) to get where the target sits un-lifted.
+        const applied = new DOMMatrixReadOnly(getComputedStyle(screenEl).transform).m42;
+        const r = target.getBoundingClientRect();
+        const top = r.top - applied, bottom = r.bottom - applied;
+        const visTop = vv.offsetTop, visBottom = vv.offsetTop + vv.height;
+        if (bottom > visBottom - 12) lift = bottom - (visBottom - 12);          // covered → move up
+        else if (top < visTop + 8) lift = top - (visTop + 8);                  // above view → move down
+        lift = Math.round(lift);
       }
       if (lift === kbLift) return;
       kbLift = lift;
@@ -1760,7 +1778,16 @@
     }
     function kbSoon() {          // re-measure as the keyboard and the layout settle
       kbTimers.forEach(clearTimeout);
-      kbTimers = [0, 120, 480, 900].map((ms) => setTimeout(avoidKeyboard, ms));
+      kbTimers = [0, 120, 480, 900, 1400].map((ms) => setTimeout(avoidKeyboard, ms));
+    }
+    if (IS_TOUCH) {
+      // iOS scrolls the page itself to reveal a focused field — measured while the card is still at
+      // rest, before the edit state lifts it — and that stacked on our own lift and threw the field
+      // off the top. The page never scrolls by design (overflow hidden), so undo any such scroll and
+      // let avoidKeyboard() be the only thing that moves the frame.
+      const unscroll = () => { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); };
+      window.addEventListener('scroll', unscroll, { passive: true });
+      document.addEventListener('focusin', () => { unscroll(); requestAnimationFrame(unscroll); });
     }
     if (IS_TOUCH && window.visualViewport) {
       visualViewport.addEventListener('resize', kbSoon);
