@@ -1411,6 +1411,14 @@
     // in place, keeping the field focused so it can be fixed straight away.
     // Pressing the button must not blur the field first, or the page would drop mid-tap.
     cta.addEventListener('pointerdown', (e) => { if (document.activeElement === input) e.preventDefault(); });
+    // Phones: tapping empty space doesn't unfocus a field on iOS (a desktop click outside does), so
+    // do it here — the field blurs, the keyboard drops and the card settles back to rest, as on desktop.
+    if (IS_TOUCH_UI) document.addEventListener('pointerdown', (e) => {
+      if (document.activeElement !== input) return;
+      if (field.contains(e.target) || cta.contains(e.target) || e.target.closest('.toast')) return;
+      input.blur();
+      if (!ui.classList.contains('is-leaving')) { setEditing(false); render(); }   // as the blur handler does
+    });
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       if (cta.disabled) return;
