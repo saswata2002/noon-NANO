@@ -1,3 +1,6 @@
 .vercel
 .env*
 .DS_Store
+qa.html
+qa-bench.html
+qa-check.html

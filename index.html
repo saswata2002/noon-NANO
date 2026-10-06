@@ -3,6 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-visual">
+  <!-- Add to Home Screen opens full-screen (no Safari bars, so the 375:812 frame fills a 13 mini edge to edge) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="noon NANO">
+  <meta name="theme-color" content="#0b0b0d">
   <script>
     // Phones / tablets use their own keyboards: the drawn keyboard + number pad are desktop-only
     if (matchMedia('(hover: none) and (pointer: coarse)').matches) document.documentElement.classList.add('is-touch');
@@ -43,6 +49,10 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* No double-tap-to-zoom anywhere: iOS Safari takes it from the tapped element itself (an ancestor's
+       touch-action isn't enough there) — two quick taps on a key ("1 1" in the code) zoomed the page and
+       swallowed the taps. Drag surfaces keep their own touch-action: none. */
+    *, *::before, *::after { touch-action: manipulation; }
 
     html, body {
       height: var(--app-h, 100%);
@@ -110,16 +120,22 @@
     .ui.is-editing .overlay { opacity: 1; }
 
     /* Welcome to · group — rest 1:4514 (375 × 150 at y 71) → edit: noon nano only, nano 130 wide.
-       The group's 5-layer purple drop shadow is an SVG filter (#logoShadow): CSS drop-shadow()s
-       would chain, each one shadowing the shadows before it. */
+       Its 5-layer purple drop shadow (#2d026e: 0/6 b13 53 %, 0/23 b23 46 %, 0/51 b31 27 %, 0/91 b37 8 %,
+       0/143 b40 1 %) is pre-rendered from that exact filter into two images — one under "Welcome to",
+       one under the mark — so each moves, scales and fades with its own layer. As a live SVG filter it
+       was re-rasterised on every frame the mark scaled: a 70–90 ms hitch each time the field was
+       tapped or dismissed (measured in iOS Safari). */
     .logo {
       position: absolute;
       top: 71px;
       left: 0;
       width: 375px;
       height: 150px;
-      filter: url(#logoShadow);
     }
+    .logo__shadow { position: absolute; display: block; pointer-events: none; }
+    .logo__shadow--welcome { left: -19.66px; top: -5.12px; width: 174px; height: 123px; }
+    .logo__shadow--mark { left: 51px; top: 33px; width: 266px; height: 264px; transform-origin: 133px 78.5px; }   /* nano centre */
+    .logo__welcome-t { position: relative; }
     .overlay, .logo { pointer-events: none; }
     .logo__welcome {                 /* 16:2898 */
       position: absolute;
@@ -1109,27 +1125,11 @@
     <div class="ui is-pre-intro" id="ui">
       <div class="overlay" aria-hidden="true"></div>
 
-      <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-        <!-- 1:4514 drop shadows: (0,6) b13 53% · (0,23) b23 46% · (0,51) b31 27% · (0,91) b37 8% · (0,143) b40 1%, #2d026e; σ = blur / 2 -->
-        <filter id="logoShadow" filterUnits="userSpaceOnUse" x="-60" y="-60" width="495" height="440" color-interpolation-filters="sRGB">
-          <feFlood flood-color="#2d026e" result="c"/>
-          <feGaussianBlur in="SourceAlpha" stdDeviation="6.5"/><feOffset dy="6" result="b1"/>
-          <feGaussianBlur in="SourceAlpha" stdDeviation="11.5"/><feOffset dy="23" result="b2"/>
-          <feGaussianBlur in="SourceAlpha" stdDeviation="15.5"/><feOffset dy="51" result="b3"/>
-          <feGaussianBlur in="SourceAlpha" stdDeviation="18.5"/><feOffset dy="91" result="b4"/>
-          <feGaussianBlur in="SourceAlpha" stdDeviation="20"/><feOffset dy="143" result="b5"/>
-          <feComposite in="c" in2="b1" operator="in"/><feComponentTransfer result="s1"><feFuncA type="linear" slope=".53"/></feComponentTransfer>
-          <feComposite in="c" in2="b2" operator="in"/><feComponentTransfer result="s2"><feFuncA type="linear" slope=".46"/></feComponentTransfer>
-          <feComposite in="c" in2="b3" operator="in"/><feComponentTransfer result="s3"><feFuncA type="linear" slope=".27"/></feComponentTransfer>
-          <feComposite in="c" in2="b4" operator="in"/><feComponentTransfer result="s4"><feFuncA type="linear" slope=".08"/></feComponentTransfer>
-          <feComposite in="c" in2="b5" operator="in"/><feComponentTransfer result="s5"><feFuncA type="linear" slope=".01"/></feComponentTransfer>
-          <feMerge><feMergeNode in="s5"/><feMergeNode in="s4"/><feMergeNode in="s3"/><feMergeNode in="s2"/><feMergeNode in="s1"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </svg>
 
       <div class="logo" aria-hidden="true">
-        <p class="logo__welcome">Welcome to</p>
+        <p class="logo__welcome"><img class="logo__shadow logo__shadow--welcome" src="assets/logo/shadow-welcome.webp" width="174" height="123" alt=""><span class="logo__welcome-t">Welcome to</span></p>
         <div class="logo__mark">
+          <img class="logo__shadow logo__shadow--mark" src="assets/logo/shadow-mark.webp" width="266" height="264" alt="">
           <img class="logo__noon" src="assets/logo/noon.svg" width="89.692" height="24.252" alt="">
           <img class="logo__nano" src="assets/logo/nano.svg" width="207.802" height="76.163" alt="">
         </div>
@@ -1574,6 +1574,11 @@
       nano.animate([{ scale: '0.86', rotate: '-4deg', easing: POP }, { scale: '1', rotate: '0deg' }],
         { duration: 1100, delay: 2 * PP.STAGGER, fill: 'backwards' });
       unblur(nano, 2 * PP.STAGGER);
+      // the mark's baked shadow pops in with the nano (it carries noon's too)
+      const markShadow = document.querySelector('.logo__shadow--mark');
+      markShadow.animate([{ scale: '0.86', rotate: '-4deg', easing: POP }, { scale: '1', rotate: '0deg' }],
+        { duration: 1100, delay: 2 * PP.STAGGER, fill: 'backwards' });
+      markShadow.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 520, delay: PP.STAGGER, easing: FADE, fill: 'backwards' });
     }
     if (!src) setTimeout(enterIntroUI, 0);
     else {
@@ -2676,7 +2681,7 @@
     function runRow() {
       cancelAnimationFrame(rowRaf);
       let last = performance.now();
-      const K = 322, C = 2 * Math.sqrt(K) * 0.81;     // motion spec spring: ζ ≈ 0.81, period ≈ 0.35 s
+      const K = 200, C = 2 * Math.sqrt(K) * 0.88;     // softer than the global spec (user: slower, smoother avatar change): ζ 0.88, period ≈ 0.44 s
       const step = (now) => {
         const dt = Math.min((now - last) / 1000, 1 / 30); last = now;
         rowVel += (-K * (rowPos - rowTarget) - C * rowVel) * dt;
@@ -2748,7 +2753,7 @@
       const tidy = () => { while (g.children.length > 1) g.firstElementChild.remove(); };
       // the new colour fades in over the old one (opacity only), in time with the rising avatar
       if (animate) layer.animate([{ opacity: 0 }, { opacity: 1 }],
-        { duration: 560, delay: 80, easing: 'cubic-bezier(0.45, 0, 0.25, 1)', fill: 'backwards' }).finished.then(tidy, () => {});
+        { duration: 720, delay: 140, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'backwards', pp: false }).finished.then(tidy, () => {});
       else tidy();
     }
     function swapBig(i) {
@@ -2758,14 +2763,16 @@
       out.getAnimations().forEach((a) => a.cancel());
       out.style.translate = '0 340px';
       out.style.zIndex = '1';
-      out.animate([{ translate: `0 ${yOut}px` }, { translate: '0 340px' }], { duration: 300, easing: 'cubic-bezier(0.5, 0, 0.75, 0.15)' });
+      // avatar change (user: slower, smoother, more natural) — its own timing, not the global Move:
+      // the old one sinks away with a gentle acceleration, the new one rises in on a soft spring
+      out.animate([{ translate: `0 ${yOut}px` }, { translate: '0 340px' }], { duration: 480, easing: 'cubic-bezier(0.45, 0, 0.75, 0.3)', pp: false });
       inc.getAnimations().forEach((a) => a.cancel());
       inc.src = `assets/avatar/big-${AVATARS[i].id}.webp`;
       inc.style.zIndex = '2';
       inc.style.translate = '0 0';
-      inc.animate([{ translate: '0 300px', easing: spring(0.7, 0.52, 860) }, { translate: '0 0' }], { duration: 860, delay: 120, fill: 'backwards' });
+      inc.animate([{ translate: '0 300px' }, { translate: '0 0' }], { duration: 1000, delay: 200, easing: spring(0.86, 0.7, 1000), fill: 'backwards', pp: false });
       setGlow(i, true);
-      aq('.av__ring').animate([{ scale: '1' }, { scale: '1.08', offset: 0.35 }, { scale: '1' }], { duration: 420, delay: 60, easing: 'cubic-bezier(0.3, 0.7, 0.4, 1)' });
+      aq('.av__ring').animate([{ scale: '1' }, { scale: '1.06', offset: 0.4 }, { scale: '1' }], { duration: 640, delay: 100, easing: 'cubic-bezier(0.37, 0, 0.3, 1)', pp: false });
       // the sparkles turn half a revolution with the change — big one clockwise, small one the other
       // way. The angle accumulates and stays (the chrome lighting isn't symmetric, so snapping back
       // to 0° after the turn showed as a glitch); a spin interrupted mid-way carries on from where it is.
@@ -2779,7 +2786,7 @@
       starTargets.set(el, target);
       el.getAnimations().filter((a) => a.id === 'star-spin').forEach((a) => a.cancel());
       el.style.setProperty('--spin', `${target}deg`);
-      const a = el.animate([{ '--spin': now, easing: spring(0.78, 0.7, 900) }, { '--spin': `${target}deg` }], { duration: 900, delay: 60, fill: 'backwards' });
+      const a = el.animate([{ '--spin': now }, { '--spin': `${target}deg` }], { duration: 1100, delay: 100, easing: spring(0.86, 0.95, 1100), fill: 'backwards', pp: false });
       a.id = 'star-spin';
     }
     function resetStars() {
