@@ -2682,7 +2682,7 @@
     function runRow() {
       cancelAnimationFrame(rowRaf);
       let last = performance.now();
-      const K = 200, C = 2 * Math.sqrt(K) * 0.88;     // softer than the global spec (user: slower, smoother avatar change): ζ 0.88, period ≈ 0.44 s
+      const K = 260, C = 2 * Math.sqrt(K) * 0.86;     // between the global spec and the slow pass (user: a bit faster): ζ 0.86, period ≈ 0.39 s
       const step = (now) => {
         const dt = Math.min((now - last) / 1000, 1 / 30); last = now;
         rowVel += (-K * (rowPos - rowTarget) - C * rowVel) * dt;
@@ -2754,7 +2754,7 @@
       const tidy = () => { while (g.children.length > 1) g.firstElementChild.remove(); };
       // the new colour fades in over the old one (opacity only), in time with the rising avatar
       if (animate) layer.animate([{ opacity: 0 }, { opacity: 1 }],
-        { duration: 720, delay: 140, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'backwards', pp: false }).finished.then(tidy, () => {});
+        { duration: 560, delay: 100, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'backwards', pp: false }).finished.then(tidy, () => {});
       else tidy();
     }
     function swapBig(i) {
@@ -2766,14 +2766,14 @@
       out.style.zIndex = '1';
       // avatar change (user: slower, smoother, more natural) — its own timing, not the global Move:
       // the old one sinks away with a gentle acceleration, the new one rises in on a soft spring
-      out.animate([{ translate: `0 ${yOut}px` }, { translate: '0 340px' }], { duration: 480, easing: 'cubic-bezier(0.45, 0, 0.75, 0.3)', pp: false });
+      out.animate([{ translate: `0 ${yOut}px` }, { translate: '0 340px' }], { duration: 380, easing: 'cubic-bezier(0.45, 0, 0.75, 0.3)', pp: false });
       inc.getAnimations().forEach((a) => a.cancel());
       inc.src = `assets/avatar/big-${AVATARS[i].id}.webp`;
       inc.style.zIndex = '2';
       inc.style.translate = '0 0';
-      inc.animate([{ translate: '0 300px' }, { translate: '0 0' }], { duration: 1000, delay: 200, easing: spring(0.86, 0.7, 1000), fill: 'backwards', pp: false });
+      inc.animate([{ translate: '0 300px' }, { translate: '0 0' }], { duration: 760, delay: 130, easing: spring(0.84, 0.56, 760), fill: 'backwards', pp: false });
       setGlow(i, true);
-      aq('.av__ring').animate([{ scale: '1' }, { scale: '1.06', offset: 0.4 }, { scale: '1' }], { duration: 640, delay: 100, easing: 'cubic-bezier(0.37, 0, 0.3, 1)', pp: false });
+      aq('.av__ring').animate([{ scale: '1' }, { scale: '1.06', offset: 0.4 }, { scale: '1' }], { duration: 520, delay: 70, easing: 'cubic-bezier(0.37, 0, 0.3, 1)', pp: false });
       // the sparkles turn half a revolution with the change — big one clockwise, small one the other
       // way. The angle accumulates and stays (the chrome lighting isn't symmetric, so snapping back
       // to 0° after the turn showed as a glitch); a spin interrupted mid-way carries on from where it is.
@@ -2787,7 +2787,7 @@
       starTargets.set(el, target);
       el.getAnimations().filter((a) => a.id === 'star-spin').forEach((a) => a.cancel());
       el.style.setProperty('--spin', `${target}deg`);
-      const a = el.animate([{ '--spin': now }, { '--spin': `${target}deg` }], { duration: 1100, delay: 100, easing: spring(0.86, 0.95, 1100), fill: 'backwards', pp: false });
+      const a = el.animate([{ '--spin': now }, { '--spin': `${target}deg` }], { duration: 900, delay: 70, easing: spring(0.84, 0.78, 900), fill: 'backwards', pp: false });
       a.id = 'star-spin';
     }
     function resetStars() {
