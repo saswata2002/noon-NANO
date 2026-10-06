@@ -19,6 +19,13 @@
 
     /* Figma 1:4572 (background, exported @3x) + 4:752 (UI overlay) — both 375 × 812 */
     :root {
+      /* Motion spec — ProtoPie "Test01" (cloud.protopie.io/p/041e0f998b5182ed0ca8ce6d/r/8e30fe8e),
+         read from its recorded tracks: every Move is 0.54 s on one spring (90 % by 165 ms, 1.3 %
+         overshoot at ~300 ms), every Opacity 0.2 s on a fast ease-out. */
+      --pp-move-ms: 540ms;
+      --pp-move: linear(0.0000 0.00%, 0.0771 1.64%, 0.1684 4.55%, 0.2831 7.64%, 0.3949 10.55%, 0.5091 13.64%, 0.6130 16.73%, 0.6986 19.64%, 0.7758 22.73%, 0.8731 27.82%, 0.9136 30.73%, 0.9418 33.27%, 0.9673 36.36%, 0.9855 39.45%, 0.9979 42.55%, 1.0055 45.45%, 1.0101 48.36%, 1.0126 51.45%, 1.0133 54.55%, 1.0129 57.64%, 1.0119 60.55%, 1.0105 63.64%, 1.0089 66.73%, 1.0074 69.64%, 1.0059 72.73%, 1.0046 75.82%, 1.0035 78.73%, 1.0026 81.82%, 1.0019 84.73%, 1.0013 87.82%, 1.0008 90.91%, 1.0005 94.00%, 1.0002 96.91%, 1.0000 100.00%);
+      --pp-fade-ms: 200ms;
+      --pp-fade: linear(0.0000 0.00%, 0.1160 4.00%, 0.2350 8.50%, 0.3310 12.50%, 0.5070 21.00%, 0.6020 26.50%, 0.6630 30.50%, 0.7170 34.50%, 0.7530 37.50%, 0.7970 41.50%, 0.8440 46.50%, 0.8720 50.00%, 0.9000 54.00%, 0.9260 58.50%, 0.9490 63.50%, 0.9620 67.00%, 0.9730 70.50%, 0.9830 75.00%, 0.9900 79.00%, 0.9950 83.00%, 0.9980 88.00%, 0.9990 91.50%, 1.0000 95.50%, 1.0000 100.00%);
       --frame-w: 375;
       --frame-h: 812;
       --frame-bg: #5e2daa; /* sampled from the export's edges, shows while media loads */
@@ -88,8 +95,8 @@
     /* ---------- Resting (16:2601) ⇄ Edit email (16:3276) ----------
        Everything that moves rides the keyboard's curve so the page lifts as one piece. */
     .ui {
-      --kb-ease: cubic-bezier(0.32, 0.72, 0, 1);   /* iOS keyboard-like */
-      --kb-dur: 450ms;
+      --kb-ease: var(--pp-move);      /* motion spec: Move */
+      --kb-dur: var(--pp-move-ms);
     }
 
     /* 16:3553 overlay: lilac wash that fades in behind the lifted UI */
@@ -98,7 +105,7 @@
       inset: 0;
       background: linear-gradient(180deg, rgba(226,215,244,0) 4.067%, #e2d7f4 74.486%);
       opacity: 0;
-      transition: opacity 350ms ease;
+      transition: opacity var(--pp-fade-ms) var(--pp-fade);
     }
     .ui.is-editing .overlay { opacity: 1; }
 
@@ -126,12 +133,12 @@
       text-transform: uppercase;
       white-space: nowrap;
       color: #fff;
-      transition: opacity 180ms ease 120ms, transform var(--kb-dur) var(--kb-ease);
+      transition: opacity var(--pp-fade-ms) var(--pp-fade) 100ms, transform var(--kb-dur) var(--kb-ease);
     }
     .ui.is-editing .logo__welcome {
       opacity: 0;
       transform: translateY(-16px);
-      transition: opacity 180ms ease, transform var(--kb-dur) var(--kb-ease);
+      transition: opacity var(--pp-fade-ms) var(--pp-fade), transform var(--kb-dur) var(--kb-ease);
     }
     /* 1:4515 Decoration · group: noon (89.69 × 24.25) over nano (207.80 × 76.16) */
     .logo__mark {
@@ -161,7 +168,7 @@
     .ui.is-pre-intro .logo__nano { opacity: 0; pointer-events: none; }
 
     /* Send OTP rides up to sit under the card (bar top 389.23); JS sets --bar-dy from layout */
-    .action-bar { transition: transform var(--kb-dur) var(--kb-ease), opacity 200ms ease; }
+    .action-bar { transition: transform var(--kb-dur) var(--kb-ease), opacity var(--pp-fade-ms) var(--pp-fade); }
     .ui.is-editing .action-bar { transform: translateY(var(--bar-dy, -318px)); }
 
     /* 16:3587 Keyboard — 375 × 342 at y 470 */
@@ -271,7 +278,7 @@
       border: 1px solid #f2f3f7;
       border-radius: 12px;
       cursor: text;
-      transition: border-color 160ms ease, background-color 160ms ease;
+      transition: border-color var(--pp-fade-ms) var(--pp-fade), background-color var(--pp-fade-ms) var(--pp-fade);
     }
     /* Error (State=Error): red stroke */
     .field.is-error { border-color: var(--text-error); }
@@ -301,8 +308,7 @@
       white-space: nowrap;
       pointer-events: none;
       transform-origin: 0 50%;
-      --lbl-ease: cubic-bezier(0.32, 0.72, 0, 1);
-      transition: transform 280ms var(--lbl-ease), opacity 180ms ease;
+      transition: transform var(--pp-move-ms) var(--pp-move), opacity var(--pp-fade-ms) var(--pp-fade);
     }
     .field__label i { font-style: normal; color: var(--text-error); }
     .field__label--rest {            /* State=Resting: B14/Regular #666d85, centred in the 56 */
@@ -346,9 +352,9 @@
       letter-spacing: -0.15px;
       color: var(--text-primary);
       caret-color: var(--caret);
-      transition: opacity 180ms ease;
+      transition: opacity var(--pp-fade-ms) var(--pp-fade);
     }
-    .field__input::placeholder { color: var(--text-muted); opacity: 1; transition: color 180ms ease; }
+    .field__input::placeholder { color: var(--text-muted); opacity: 1; transition: color var(--pp-fade-ms) var(--pp-fade); }
     .field:not(.is-floated) .field__input::placeholder { color: transparent; }
     /* checking the email: the OTP boxes' skeleton wave — a grey fill with a light gap sweeping
        left → right — behind the typed value */
@@ -440,13 +446,12 @@
       color: #fff;
       cursor: pointer;
       /* Disabled ⇄ Primary cross-fades instead of snapping (fill, label, stroke, shadows) */
-      --btn-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
       transition:
-        transform 120ms ease,
-        height 320ms var(--btn-ease),
-        padding 320ms var(--btn-ease),
-        background-color 320ms var(--btn-ease),
-        color 320ms var(--btn-ease);
+        transform var(--pp-move-ms) var(--pp-move),
+        height var(--pp-move-ms) var(--pp-move),
+        padding var(--pp-move-ms) var(--pp-move),
+        background-color var(--pp-fade-ms) var(--pp-fade),
+        color var(--pp-fade-ms) var(--pp-fade);
     }
     .nano-btn::before {              /* stroke: 2px inside, #efefef → #d2d2d2 (t = 0.927y + 0.073) */
       content: '';
@@ -459,7 +464,7 @@
       -webkit-mask-composite: xor;
               mask-composite: exclude;
       pointer-events: none;
-      transition: opacity 320ms var(--btn-ease);
+      transition: opacity var(--pp-fade-ms) var(--pp-fade);
     }
     .nano-btn::after {               /* inner shadows, drawn over the stroke as in Figma */
       content: '';
@@ -470,7 +475,7 @@
         inset 0 -9px 9px #000,
         inset 0 4px 8px rgba(210,210,210,.4);
       pointer-events: none;
-      transition: opacity 320ms var(--btn-ease);
+      transition: opacity var(--pp-fade-ms) var(--pp-fade);
     }
     .nano-btn__label {
       position: relative;
@@ -555,14 +560,14 @@
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
-      transition: opacity 420ms cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 420ms;
+      transition: opacity var(--pp-fade-ms) var(--pp-fade), visibility 0s linear var(--pp-fade-ms);
     }
     .ui > .otp { pointer-events: none; }
     .ui > .otp.is-shown {
       opacity: 1;
       visibility: visible;
       pointer-events: auto;
-      transition: opacity 320ms cubic-bezier(0.4, 0, 0.2, 1), visibility 0s;
+      transition: opacity var(--pp-fade-ms) var(--pp-fade), visibility 0s;
     }
 
     /* 29:4831 Header — 375 × 300, clips its contents */
@@ -694,13 +699,13 @@
       opacity: 1;
       transform: none;
       transition:
-        opacity 420ms cubic-bezier(0.22, 1, 0.36, 1) var(--d, 0ms),
-        transform 560ms cubic-bezier(0.22, 1, 0.36, 1) var(--d, 0ms);
+        opacity var(--pp-fade-ms) var(--pp-fade) var(--d, 0ms),
+        transform var(--pp-move-ms) var(--pp-move) var(--d, 0ms);
     }
     /* Leaving the email screen: the drawn keyboard drops away under the incoming sheet */
     .ui.is-leaving .keyboard {
       transform: translateY(100%);
-      transition: transform 360ms cubic-bezier(0.4, 0, 1, 1);
+      transition: transform var(--pp-move-ms) var(--pp-move);
     }
     @media (prefers-reduced-motion: reduce) {
       .otp, .otp.is-shown [data-rise] { transition-duration: 1ms !important; transition-delay: 0ms !important; }
@@ -711,9 +716,9 @@
        email UI rise underneath on the same keyboard curve, all starting on the same frame. */
     .otp.is-shown.is-exiting {
       opacity: 0;
-      transition: opacity 380ms cubic-bezier(0.4, 0, 0.2, 1);
+      transition: opacity var(--pp-fade-ms) var(--pp-fade);
     }
-    .otp.is-exiting .numpad { transform: translateY(100%); transition: transform 380ms cubic-bezier(0.4, 0, 0.2, 1); }
+    .otp.is-exiting .numpad { transform: translateY(100%); transition: transform var(--pp-move-ms) var(--pp-move); }
 
     /* Pre-promote everything that moves, so no frame is spent re-rasterising filters/shadows */
     .otp, .keyboard, .card, .logo, .nano-btn, .main, .action-bar, .otp__art, .numpad { will-change: transform, opacity; }
@@ -733,12 +738,12 @@
     }
     .otp.is-loading .otp__digit { background-color: #fff; }   /* the gap reads white, as in Toss */
     /* green arrives box by box */
-    .otp__digit.is-verified { transition-delay: calc(var(--i) * 45ms); transition-duration: 280ms; }
+    .otp__digit.is-verified { transition-delay: calc(var(--i) * 40ms); }   /* motion spec: 40 ms stagger */
     /* everything but the boxes fades away while the tick plays */
     .otp.is-shown.is-done [data-rise]:not(.otp__digit),
     .otp.is-done .otp__header {
       opacity: 0;
-      transition: opacity 380ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+      transition: opacity var(--pp-fade-ms) var(--pp-fade) 0ms;
       pointer-events: none;
     }
     .otp.is-done .otp__digits { pointer-events: none; }
@@ -827,7 +832,7 @@
     /* 49:11217 hint (Figma's text has two trailing spaces but centres the glyphs) */
     .skin__hint, .skin__keepgoing { position: absolute; left: 0; width: 375px; margin: 0; text-align: center; pointer-events: none;
       font-weight: 500; font-size: 16px; line-height: 22px; letter-spacing: -0.15px; color: #fff; text-shadow: 0 3px 4px rgba(0,0,0,.85); }
-    .skin__hint { top: 579px; opacity: 0; transition: opacity 360ms ease; }
+    .skin__hint { top: 579px; opacity: 0; transition: opacity var(--pp-fade-ms) var(--pp-fade); }
     .skin__steps, .skin__title, .skin__sub, .skin__plain { z-index: 2; }   /* above the two BG layers (z 0/1) */
     .skin__hint, .skin__keepgoing { z-index: 6; }
     .skin__sheet { z-index: 7; }   /* cards behind the wallet: z 3–5 (always over the header text, z 2) */
@@ -954,15 +959,15 @@
     /* chips: 165 × 75, r 20, 2 columns (16 / 194) × 5 rows (246.7 + 87.8n); icon clipped by the chip */
     .ich { position: absolute; width: 165px; height: 75px; padding: 0; border: 0; border-radius: 20px; overflow: hidden;
       background: #f9f9fb; cursor: pointer; -webkit-tap-highlight-color: transparent; font: inherit; text-align: left;
-      transition: scale 260ms cubic-bezier(0.3, 0.7, 0.4, 1); }
+      transition: scale var(--pp-move-ms) var(--pp-move); }
     .ich:active { scale: .965; transition-duration: 90ms; }
     /* selected: white + the iridescent image (214 × 120 at −49, −29) + a 1px #d6e9ff inside stroke */
     .ich__sel { position: absolute; inset: 0; border-radius: inherit; background: #fff; opacity: 0;
-      transition: opacity 320ms cubic-bezier(0.25, 0.1, 0.25, 1); }
+      transition: opacity var(--pp-fade-ms) var(--pp-fade); }
     .ich__sel img { position: absolute; left: -49px; top: -29px; width: 214px; height: 120px; display: block; }
     .ich__sel::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px #d6e9ff; }
     .ich__lbl { position: absolute; left: 16px; top: 16px; font-weight: 700; font-size: 18px; line-height: 24px; letter-spacing: -0.15px;
-      color: #343d54; white-space: nowrap; transition: opacity 280ms cubic-bezier(0.25, 0.1, 0.25, 1); }
+      color: #343d54; white-space: nowrap; transition: opacity var(--pp-fade-ms) var(--pp-fade); }
     .ich__lbl--on { color: transparent; background: linear-gradient(180deg, #a73bf3, #6cc3fc); -webkit-background-clip: text; background-clip: text; opacity: 0; }
     .ich__ico { position: absolute; left: 103px; top: 27px; width: 60px; height: 60px; display: block; pointer-events: none; }
     .ich__ico--toy { left: 106px; top: 23px; width: 62.2px; height: 62.2px; }
@@ -1004,7 +1009,7 @@
        OTP uses the drawn number pad too, so it pops up on its own exactly as on desktop (iOS can't
        raise its own keyboard without a tap). */
     .otp__input { display: none; }
-    .otp__digit { position: relative; overflow: hidden; transition: border-color 220ms ease, background-color 220ms ease; }
+    .otp__digit { position: relative; overflow: hidden; transition: border-color var(--pp-fade-ms) var(--pp-fade), background-color var(--pp-fade-ms) var(--pp-fade); }
     /* Active ring (#0f61ff, 1px, r12) — one element that slides between boxes (pitch 52px) */
     .otp__digits { position: relative; }
     .otp__ring {
@@ -1019,8 +1024,8 @@
       opacity: 0;
       transform: translateX(var(--ring-x, 0px));
       transition:
-        transform 300ms cubic-bezier(0.32, 0.72, 0, 1),
-        opacity 180ms ease;
+        transform var(--pp-move-ms) var(--pp-move),
+        opacity var(--pp-fade-ms) var(--pp-fade);
       will-change: transform;
     }
     .otp__ring.is-on { opacity: 1; }
@@ -1389,6 +1394,54 @@
 
   <script src="vendor/lottie.min.js"></script>
   <script>
+    // ---------- Motion spec (ProtoPie "Test01") ----------
+    // From the recording at cloud.protopie.io/p/041e0f998b5182ed0ca8ce6d/r/8e30fe8e (its own track
+    // data, sampled every ~8 ms): every Move runs 0.54 s on one spring — 50 % at 75 ms, 90 % by
+    // 165 ms, a 1.3 % overshoot at ~300 ms, settled at 0.54 s — and every Opacity 0.2 s on a fast
+    // ease-out; list items step 40 ms apart and follow-ups trail by 0.1 s.
+    // Applied to every interaction animation in one place: each element.animate() that moves
+    // something (translate / transform / scale / rotate / size / clip / stroke…) is timed as a Move,
+    // each that only fades (opacity / filter / colour) as an Opacity. Delays — the choreography —
+    // are kept. Loops (shimmers, twinkles), instant (≤1 ms) steps and anything passing pp: false
+    // keep their own timing.
+    const PP = {
+      MOVE_MS: 540, MOVE: 'linear(0.0000 0.00%, 0.0771 1.64%, 0.1684 4.55%, 0.2831 7.64%, 0.3949 10.55%, 0.5091 13.64%, 0.6130 16.73%, 0.6986 19.64%, 0.7758 22.73%, 0.8731 27.82%, 0.9136 30.73%, 0.9418 33.27%, 0.9673 36.36%, 0.9855 39.45%, 0.9979 42.55%, 1.0055 45.45%, 1.0101 48.36%, 1.0126 51.45%, 1.0133 54.55%, 1.0129 57.64%, 1.0119 60.55%, 1.0105 63.64%, 1.0089 66.73%, 1.0074 69.64%, 1.0059 72.73%, 1.0046 75.82%, 1.0035 78.73%, 1.0026 81.82%, 1.0019 84.73%, 1.0013 87.82%, 1.0008 90.91%, 1.0005 94.00%, 1.0002 96.91%, 1.0000 100.00%)',
+      FADE_MS: 200, FADE: 'linear(0.0000 0.00%, 0.1160 4.00%, 0.2350 8.50%, 0.3310 12.50%, 0.5070 21.00%, 0.6020 26.50%, 0.6630 30.50%, 0.7170 34.50%, 0.7530 37.50%, 0.7970 41.50%, 0.8440 46.50%, 0.8720 50.00%, 0.9000 54.00%, 0.9260 58.50%, 0.9490 63.50%, 0.9620 67.00%, 0.9730 70.50%, 0.9830 75.00%, 0.9900 79.00%, 0.9950 83.00%, 0.9980 88.00%, 0.9990 91.50%, 1.0000 95.50%, 1.0000 100.00%)',
+      STAGGER: 40, FOLLOW: 100,
+    };
+    // the Move curve as a function (for the rAF-driven sheet), from the same samples
+    const PP_MOVE_PTS = PP.MOVE.slice(7, -1).split(', ').map((p) => { const [v, t] = p.split(' '); return [parseFloat(t) / 100, +v]; });
+    function ppMove(x) {
+      if (x <= 0) return 0; if (x >= 1) return 1;
+      for (let i = 1; i < PP_MOVE_PTS.length; i++) {
+        const [t1, v1] = PP_MOVE_PTS[i];
+        if (x <= t1) { const [t0, v0] = PP_MOVE_PTS[i - 1]; return v0 + (v1 - v0) * ((x - t0) / (t1 - t0)); }
+      }
+      return 1;
+    }
+    (() => {
+      const MOVE_PROPS = new Set(['translate', 'transform', 'scale', 'rotate', 'top', 'left', 'right', 'bottom', 'width', 'height',
+        'clipPath', 'borderRadius', 'strokeDashoffset', 'letterSpacing', '--spin']);
+      const FADE_PROPS = new Set(['opacity', 'filter', 'color', 'backgroundColor']);
+      const native = Element.prototype.animate;
+      Element.prototype.animate = function (keyframes, options) {
+        let kf = keyframes, opts = options;
+        if (opts && typeof opts === 'object' && opts.pp !== false && Array.isArray(kf) && kf.length >= 2
+            && (opts.iterations == null || opts.iterations === 1) && (opts.duration || 0) > 1) {
+          const props = new Set();
+          kf.forEach((k) => Object.keys(k).forEach((p) => { if (p !== 'offset' && p !== 'easing' && p !== 'composite') props.add(p); }));
+          const all = [...props];
+          const move = all.some((p) => MOVE_PROPS.has(p));
+          const fade = !move && all.length > 0 && all.every((p) => FADE_PROPS.has(p));
+          if (move || fade) {
+            kf = kf.map(({ easing, ...rest }) => rest);
+            opts = { ...opts, duration: move ? PP.MOVE_MS : PP.FADE_MS, easing: move ? PP.MOVE : PP.FADE };
+          }
+        }
+        return native.call(this, kf, opts);
+      };
+    })();
+
     // ---------- Haptics ----------
     // iOS Safari has no Vibration API, but since iOS 17.4 toggling an <input type=checkbox switch>
     // plays the system haptic — so a hidden switch is clicked through its label. Android / Chrome
@@ -1499,9 +1552,9 @@
       card.animate([{ translate: '0 56px', easing: RISE }, { translate: '0 0' }], { duration: 1200, fill: 'backwards' });
       card.animate([{ scale: '0.96', easing: POP }, { scale: '1' }], { duration: 1100, fill: 'backwards' });
       card.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 380, easing: FADE, fill: 'backwards' });
-      dock.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 480, delay: 110, easing: FADE, fill: 'backwards' });
-      btn.animate([{ translate: '0 44px', easing: RISE }, { translate: '0 0' }], { duration: 1200, delay: 110, fill: 'backwards' });
-      btn.animate([{ scale: '0.95', easing: POP }, { scale: '1' }], { duration: 1100, delay: 110, fill: 'backwards' });
+      dock.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 480, delay: PP.FOLLOW, easing: FADE, fill: 'backwards' });
+      btn.animate([{ translate: '0 44px', easing: RISE }, { translate: '0 0' }], { duration: 1200, delay: PP.FOLLOW, fill: 'backwards' });
+      btn.animate([{ scale: '0.95', easing: POP }, { scale: '1' }], { duration: 1100, delay: PP.FOLLOW, fill: 'backwards' });
 
       // Logo reveal, top → bottom with the card (individual props + filter; the edit state uses transform):
       //   "Welcome to" tracks in (5 px extra spacing closing up, re-centred as it narrows) out of a blur;
@@ -1516,11 +1569,11 @@
       welcome.animate([{ letterSpacing: '9.6322px', translate: '-22.5px 8px' }, { letterSpacing: '4.6322px', translate: '0 0' }],
         { duration: 900, easing: OUT_EXPO, fill: 'backwards' });
       unblur(welcome, 0);
-      noon.animate([{ translate: '0 14px', easing: RISE }, { translate: '0 0' }], { duration: 1200, delay: 60, fill: 'backwards' });
-      unblur(noon, 60);
+      noon.animate([{ translate: '0 14px', easing: RISE }, { translate: '0 0' }], { duration: 1200, delay: PP.STAGGER, fill: 'backwards' });
+      unblur(noon, PP.STAGGER);
       nano.animate([{ scale: '0.86', rotate: '-4deg', easing: POP }, { scale: '1', rotate: '0deg' }],
-        { duration: 1100, delay: 120, fill: 'backwards' });
-      unblur(nano, 120);
+        { duration: 1100, delay: 2 * PP.STAGGER, fill: 'backwards' });
+      unblur(nano, 2 * PP.STAGGER);
     }
     if (!src) setTimeout(enterIntroUI, 0);
     else {
@@ -2087,14 +2140,14 @@
     function setSheet(Y, k = 1) { stopSheet(); sheet.Y = Y; sheet.k = k; drawSheet(); }
     // spring the sheet from wherever it is to (Y, k); ζ / response as in spring(). toK can be a
     // function of the current Y, so the pocket's shape can follow the sheet's height.
-    function animSheet(toY, toK, zeta, response, ms) {
+    function animSheet(toY, toK, zeta, response, ms) {   // motion spec: a Move (ζ / response / ms no longer used)
       stopSheet();
       const fromY = sheet.Y, fromK = sheet.k, t0 = performance.now();
-      const w = (2 * Math.PI) / response, wd = w * Math.sqrt(1 - zeta * zeta);
+      ms = PP.MOVE_MS;
       return new Promise((done) => {
         const step = (now) => {
           const t = (now - t0) / 1000, end = t * 1000 >= ms;
-          const x = end ? 1 : 1 - Math.exp(-zeta * w * t) * (Math.cos(wd * t) + ((zeta * w) / wd) * Math.sin(wd * t));
+          const x = end ? 1 : ppMove((t * 1000) / ms);
           sheet.Y = fromY + (toY - fromY) * x;
           sheet.k = Math.max(0, typeof toK === 'function' ? toK(sheet.Y) : fromK + (toK - fromK) * x);
           drawSheet();
@@ -2160,7 +2213,7 @@
       lift(sq('.skin__title'), 300, 18, '0.95', 'drop-shadow(0 1px 7px rgba(0,0,0,.15))');
       lift(sq('.skin__sub'), 380, 12, '1');
       // cards spring up back → front and fan out to their tilt (transform composes over the pose)
-      [[roles.back, 420, -10], [roles.mid, 500, -6], [roles.front, 580, 0]].forEach(([el, delay, rot]) => {
+      [[roles.back, 420, -10], [roles.mid, 420 + PP.STAGGER, -6], [roles.front, 420 + 2 * PP.STAGGER, 0]].forEach(([el, delay, rot]) => {
         el.animate([{ transform: `translateY(90px) scale(0.86) rotate(${rot}deg)`, easing: CARD }, { transform: 'none' }],
           { duration: 1200, delay, fill: 'backwards' });
         fade(el, delay, 320);
@@ -2318,34 +2371,33 @@
       const from = { translate: cs.translate, rotate: cs.rotate, scale: cs.scale, opacity: '1' };
       const y0 = transY(cs.translate);
       const peakY = Math.min(y0 - 24, -200);                         // bottom edge just clear of the stack's top corners
-      const speed = Math.max(Math.abs(Math.min(v, 0)), 0.9);          // px / ms, at least a brisk toss
-      const riseMs = Math.round(Math.min(Math.max((y0 - peakY) / speed * 1.2, 120), 220));
+      // motion spec: the rise is a Move (0.54 s spring, ~95 % there by 200 ms) — the tuck starts from
+      // wherever it is at that point rather than waiting out the spring's settle
+      const RISE_AT = 200;
       const peak = { translate: `0px ${peakY}px`, rotate: '-3deg', scale: '0.95', opacity: '1' };
       fly.getAnimations().forEach((a) => a.cancel());
       setPose(fly, SPARE);
-      const rise = fly.animate([from, peak], { duration: riseMs, easing: 'cubic-bezier(0.25, 0.8, 0.4, 1)', fill: 'forwards' });
-      rise.finished.then(() => {
+      const rise = fly.animate([from, peak], { duration: 540, fill: 'forwards' });
+      skinTimers.push(setTimeout(() => {
         if (run !== flyRun) return;
+        const c = getComputedStyle(fly);
+        const here = { translate: c.translate, rotate: c.rotate, scale: c.scale, opacity: '1' };
         fly.style.zIndex = 3;                   // behind the whole stack, still in front of the header text
         const under = poseCss({ ...POSE.mid, s: 0.9, o: 1 });          // fully covered by the middle card
-        fly.animate([
-          { ...peak, easing: 'cubic-bezier(0.45, 0, 0.25, 1)' },
-          { ...under, offset: 0.86 },
-          { ...poseCss(SPARE), opacity: '0' },
-        ], { duration: 560 }).finished
+        fly.animate([here, { ...under, offset: 0.86 }, { ...poseCss(SPARE), opacity: '0' }], { duration: 540 }).finished
           .then(() => { if (run === flyRun) fly.style.zIndex = Z.spare; }).catch(() => {});
         rise.cancel();
-        skinTimers.push(setTimeout(() => haptic.light(), 360));        // it settles into the deck
-      }).catch(() => {});
-      // the old wallet is behind the front card by ~riseMs + 420 ms: deal the next skin out then
+        skinTimers.push(setTimeout(() => haptic.light(), 160));        // it settles into the deck
+      }, RISE_AT));
+      // the old wallet is under the middle card ~200 ms into the tuck: deal the next skin out then
       skinTimers.push(setTimeout(() => {
         (nbImg.decode ? nbImg.decode() : Promise.resolve()).then(surface, surface);
         skinTimers.push(setTimeout(surface, 300));                     // never wait longer than this
-      }, riseMs + 280));
+      }, RISE_AT + 200));
       crossfadeBg(skinIdx);
       preloadSkins(skinIdx + 1);
       // the next swipe can start once this wallet is tucked under the back card (it's recycled as the spare)
-      skinTimers.push(setTimeout(() => { skinBusy = false; }, riseMs + 480));
+      skinTimers.push(setTimeout(() => { skinBusy = false; }, RISE_AT + 380));
     }
 
     // ---- drag down: confirm (49:11447 → 49:11576) → Keep this skin (49:11331) ----
@@ -2515,7 +2567,7 @@
         // start tucked behind the centre avatar (in the item's own scaled space), then fan out
         const sc = parseFloat((el.style.transform.match(/scale\(([\d.]+)\)/) || [0, 1])[1]);
         const dx = (slotX(0) - slotX(sv)) / sc;
-        const delay = ROW_POP + 90 + (Math.min(Math.abs(Math.round(sv)), 3) - 1) * 70;
+        const delay = ROW_POP + PP.FOLLOW + (Math.min(Math.abs(Math.round(sv)), 3) - 1) * PP.STAGGER;
         inner.animate([{ translate: `${dx.toFixed(2)}px 0`, scale: '0.7', easing: FAN }, { translate: '0 0', scale: '1' }], { duration: 900, delay, fill: 'backwards' });
         inner.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, delay, easing: FADE, fill: 'backwards' });
       });
@@ -2624,7 +2676,7 @@
     function runRow() {
       cancelAnimationFrame(rowRaf);
       let last = performance.now();
-      const K = 230, C = 2 * Math.sqrt(K) * 0.8;
+      const K = 322, C = 2 * Math.sqrt(K) * 0.81;     // motion spec spring: ζ ≈ 0.81, period ≈ 0.35 s
       const step = (now) => {
         const dt = Math.min((now - last) / 1000, 1 / 30); last = now;
         rowVel += (-K * (rowPos - rowTarget) - C * rowVel) * dt;
@@ -2830,7 +2882,7 @@
       fadeUp(iq('.int__title-in'), 260);                  // one unit, once the avatar title has cleared
       fadeUp(iq('.int__sub'), 280, 10);
       chipEls.forEach((chip) => {
-        const d = 300 + (+chip.dataset.r) * 55 + (+chip.dataset.c) * 35;
+        const d = 300 + ((+chip.dataset.r) * 2 + (+chip.dataset.c)) * PP.STAGGER;   // motion spec: 40 ms per card
         chip.animate([{ opacity: 0, translate: '0 16px', scale: '0.95', easing: spring(0.8, 0.5, 800) }, { opacity: 1, translate: '0 0', scale: '1' }], { duration: 800, delay: d, fill: 'backwards' });
         chip.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, delay: d, easing: FADE, fill: 'backwards' });
       });
