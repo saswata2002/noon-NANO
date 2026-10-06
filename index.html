@@ -1359,6 +1359,7 @@
           <p class="int__line int__line--2 is-fill">interests?</p>
         </div></div>
         <p class="int__sub">Pick at least 3 interests</p>
+        <div class="int__dock"></div>   <!-- under the chips: a card rising in must not be clipped by it -->
         <div class="int__chips">
           <button class="ich" type="button" data-k="art" data-r="0" data-c="0" aria-pressed="false" style="left:16px;top:246.7px"><span class="ich__sel"><img src="assets/interests/selected-bg.webp" alt=""></span><span class="ich__lbl">Art</span><span class="ich__lbl ich__lbl--on" aria-hidden="true">Art</span><img class="ich__ico" src="assets/interests/art.webp" alt=""></button>
           <button class="ich" type="button" data-k="gadgets" data-r="0" data-c="1" aria-pressed="false" style="left:194px;top:246.7px"><span class="ich__sel"><img src="assets/interests/selected-bg.webp" alt=""></span><span class="ich__lbl">Gadgets</span><span class="ich__lbl ich__lbl--on" aria-hidden="true">Gadgets</span><img class="ich__ico" src="assets/interests/gadgets.webp" alt=""></button>
@@ -1371,7 +1372,6 @@
           <button class="ich" type="button" data-k="anime" data-r="4" data-c="0" aria-pressed="false" style="left:16px;top:597.9px"><span class="ich__sel"><img src="assets/interests/selected-bg.webp" alt=""></span><span class="ich__lbl">Anime</span><span class="ich__lbl ich__lbl--on" aria-hidden="true">Anime</span><img class="ich__ico" src="assets/interests/anime.webp" alt=""></button>
           <button class="ich" type="button" data-k="toy" data-r="4" data-c="1" aria-pressed="false" style="left:194px;top:597.9px"><span class="ich__sel"><img src="assets/interests/selected-bg.webp" alt=""></span><span class="ich__lbl">Toy</span><span class="ich__lbl ich__lbl--on" aria-hidden="true">Toy</span><img class="ich__ico ich__ico--toy" src="assets/interests/toy.webp" alt=""></button>
         </div>
-        <div class="int__dock"></div>
         <div class="int__bar">
           <button class="nano-btn int__cta" type="button" disabled><span class="nano-btn__label">Continue</span></button>
         </div>
@@ -2790,7 +2790,7 @@
       fadeUp(iq('.int__sub'), 280, 10);
       chipEls.forEach((chip) => {
         const d = 300 + (+chip.dataset.r) * 55 + (+chip.dataset.c) * 35;
-        chip.animate([{ opacity: 0, translate: '0 22px', scale: '0.94', easing: spring(0.8, 0.5, 800) }, { opacity: 1, translate: '0 0', scale: '1' }], { duration: 800, delay: d, fill: 'backwards' });
+        chip.animate([{ opacity: 0, translate: '0 16px', scale: '0.95', easing: spring(0.8, 0.5, 800) }, { opacity: 1, translate: '0 0', scale: '1' }], { duration: 800, delay: d, fill: 'backwards' });
         chip.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, delay: d, easing: FADE, fill: 'backwards' });
       });
       // shared button: dark Continue (avatar page, top 721.2) → this page's button, settling into Disabled
