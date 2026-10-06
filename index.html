@@ -152,7 +152,10 @@
        then rise in (JS, WAAPI on the individual translate/scale props so the edit-state transform
        is untouched). Hidden and untappable until then. */
     .ui.is-pre-intro .card,
-    .ui.is-pre-intro .dock { opacity: 0; pointer-events: none; }
+    .ui.is-pre-intro .dock,
+    .ui.is-pre-intro .logo__welcome,
+    .ui.is-pre-intro .logo__noon,
+    .ui.is-pre-intro .logo__nano { opacity: 0; pointer-events: none; }
 
     /* Send OTP rides up to sit under the card (bar top 389.23); JS sets --bar-dy from layout */
     .action-bar { transition: transform var(--kb-dur) var(--kb-ease), opacity 200ms ease; }
@@ -1084,6 +1087,25 @@
       dock.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 480, delay: 110, easing: FADE, fill: 'backwards' });
       btn.animate([{ translate: '0 44px', easing: RISE }, { translate: '0 0' }], { duration: 1200, delay: 110, fill: 'backwards' });
       btn.animate([{ scale: '0.95', easing: POP }, { scale: '1' }], { duration: 1100, delay: 110, fill: 'backwards' });
+
+      // Logo reveal, top → bottom with the card (individual props + filter; the edit state uses transform):
+      //   "Welcome to" tracks in (5 px extra spacing closing up, re-centred as it narrows) out of a blur;
+      //   noon rises out of a blur; nano pops from 86 % with a 4° tilt on the same subtle spring.
+      const welcome = document.querySelector('.logo__welcome');
+      const noon = document.querySelector('.logo__noon');
+      const nano = document.querySelector('.logo__nano');
+      const OUT_EXPO = 'cubic-bezier(0.16, 1, 0.3, 1)';
+      const unblur = (el, delay) => el.animate([{ opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)' }],
+        { duration: 520, delay, easing: FADE, fill: 'backwards' });
+      // 9 gaps widen by 5px → the word is 45px wider; shift it back by half so it closes in on centre
+      welcome.animate([{ letterSpacing: '10px', translate: '-22.5px 8px' }, { letterSpacing: '5px', translate: '0 0' }],
+        { duration: 900, easing: OUT_EXPO, fill: 'backwards' });
+      unblur(welcome, 0);
+      noon.animate([{ translate: '0 14px', easing: RISE }, { translate: '0 0' }], { duration: 1200, delay: 60, fill: 'backwards' });
+      unblur(noon, 60);
+      nano.animate([{ scale: '0.86', rotate: '-4deg', easing: POP }, { scale: '1', rotate: '0deg' }],
+        { duration: 1100, delay: 120, fill: 'backwards' });
+      unblur(nano, 120);
     }
     if (!src) setTimeout(enterIntroUI, 0);
     else {
