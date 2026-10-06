@@ -2565,6 +2565,12 @@
       inc.animate([{ translate: '0 300px', easing: spring(0.7, 0.52, 860) }, { translate: '0 0' }], { duration: 860, delay: 120, fill: 'backwards' });
       setGlow(i, true);
       aq('.av__ring').animate([{ scale: '1' }, { scale: '1.08', offset: 0.35 }, { scale: '1' }], { duration: 420, delay: 60, easing: 'cubic-bezier(0.3, 0.7, 0.4, 1)' });
+      // the big sparkle turns half a revolution with the change (4-point star: 180° lands on the same
+      // shape, so nothing snaps at the end). On `transform`, so it adds to the idle twinkle.
+      const star = aq('.av__sparkle--l');
+      star.getAnimations().filter((a) => a.id === 'star-spin').forEach((a) => a.cancel());
+      const spin = star.animate([{ transform: 'rotate(0deg)', easing: spring(0.78, 0.7, 900) }, { transform: 'rotate(180deg)' }], { duration: 900, delay: 60 });
+      spin.id = 'star-spin';
     }
     function resetAvatarRow() {
       cancelAnimationFrame(rowRaf); rowRaf = 0; rowDrag = null;
