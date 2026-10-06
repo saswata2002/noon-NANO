@@ -2779,7 +2779,9 @@
       chipEls.forEach((c) => { c.classList.remove('is-on'); c.setAttribute('aria-pressed', 'false'); c.querySelector('.ich__ico').getAnimations().forEach((a) => a.cancel()); });
       intScreen.classList.add('is-shown');
       intScreen.setAttribute('aria-hidden', 'false');
-      iq('.int__page').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 140, easing: FADE, fill: 'backwards' });
+      // the page and its white bottom panel fade in together — the panel showing up at once sliced off
+      // the bottom of the avatar row while it was still collapsing
+      [iq('.int__page'), iq('.int__dock')].forEach((el) => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 140, easing: FADE, fill: 'backwards' }));
       [iq('.int__bg'), iq('.int__back')].forEach((el) => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1, delay: 140, fill: 'backwards' }));
       const fadeUp = (el, delay, dy = 16) => el.animate([{ opacity: 0, translate: `0 ${dy}px`, filter: 'blur(6px)' }, { opacity: 1, translate: '0 0', filter: 'blur(0px)' }],
         { duration: 680, delay, easing: IOS, fill: 'backwards' });
