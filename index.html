@@ -148,6 +148,12 @@
     .main { opacity: .9; transition: transform var(--kb-dur) var(--kb-ease), opacity 200ms ease; }
     .ui.is-editing .main { transform: translateY(-318.77px); opacity: 1; }
 
+    /* Intro: the card and the Send OTP dock wait off-stage until the Splash video reaches 0.55 s,
+       then rise in (JS, WAAPI on the individual translate/scale props so the edit-state transform
+       is untouched). Hidden and untappable until then. */
+    .ui.is-pre-intro .card,
+    .ui.is-pre-intro .dock { opacity: 0; pointer-events: none; }
+
     /* Send OTP rides up to sit under the card (bar top 389.23); JS sets --bar-dy from layout */
     .action-bar { transition: transform var(--kb-dur) var(--kb-ease), opacity 200ms ease; }
     .ui.is-editing .action-bar { transform: translateY(var(--bar-dy, -318px)); }
@@ -846,7 +852,7 @@
     ></video>
 
     <!-- UI components (Figma section 24:4761: rest 23:3854 ⇄ edit 23:4163) -->
-    <div class="ui" id="ui">
+    <div class="ui is-pre-intro" id="ui">
       <div class="overlay" aria-hidden="true"></div>
 
       <div class="logo" aria-hidden="true">
@@ -1040,7 +1046,7 @@
       // A bad path keeps the still in place rather than showing an empty box.
       video.addEventListener('error', () => screen.classList.remove('is-playing'));
       video.src = src;
-      const play = () => video.play().catch(() => { /* autoplay blocked: the still stays visible */ });
+      const play = () => video.play().catch(() => enterIntroUI());   // autoplay blocked: poster + UI
       play();
       // Browsers hold autoplay in background tabs; start once the tab is shown (not after it's ended).
       document.addEventListener('visibilitychange', () => { if (!document.hidden && video.paused && !video.ended) play(); });
@@ -1051,6 +1057,48 @@
     new ResizeObserver(([entry]) => {
       ui.style.setProperty('--s', entry.contentRect.width / 375);
     }).observe(screen);
+
+    // ---------- Intro: card + Send OTP enter at 0.55 s of the Splash ----------
+    // Timed off the video's own clock (requestVideoFrameCallback → mediaTime), so a slow load
+    // can't put them out of sync. The card rises 56px and settles from 97% on a long, soft,
+    // barely-overshooting spring while it fades in; the Send OTP dock follows 110 ms later.
+    // If the video can't play (error / autoplay blocked / stalled), they come in anyway.
+    const INTRO_UI_AT = 0.55;            // seconds into the Splash
+    let introDone = false;
+    function enterIntroUI() {
+      if (introDone) return;
+      introDone = true;
+      const card = document.querySelector('.card');
+      const dock = document.querySelector('.dock');
+      const btn = document.querySelector('.nano-btn');
+      ui.classList.remove('is-pre-intro');
+      if (reduceMotion.matches) return;
+      const RISE = spring(0.88, 0.8, 1100);           // long, soft glide; ~0.3 % overshoot, no bounce
+      const FADE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
+      card.animate([{ translate: '0 56px', scale: '0.97', easing: RISE }, { translate: '0 0', scale: '1' }],
+        { duration: 1100, fill: 'backwards' });
+      card.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 640, easing: FADE, fill: 'backwards' });
+      dock.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 720, delay: 110, easing: FADE, fill: 'backwards' });
+      btn.animate([{ translate: '0 40px', easing: RISE }, { translate: '0 0' }],
+        { duration: 1100, delay: 110, fill: 'backwards' });
+    }
+    if (!src) setTimeout(enterIntroUI, 0);
+    else {
+      if ('requestVideoFrameCallback' in video) {
+        const tick = (now, meta) => {
+          if (meta.mediaTime >= INTRO_UI_AT || video.ended) enterIntroUI();
+          else video.requestVideoFrameCallback(tick);
+        };
+        video.requestVideoFrameCallback(tick);
+      } else {
+        video.addEventListener('playing', () => {
+          setTimeout(enterIntroUI, Math.max(0, (INTRO_UI_AT - video.currentTime) * 1000));
+        }, { once: true });
+      }
+      video.addEventListener('error', enterIntroUI);
+      video.addEventListener('ended', enterIntroUI);
+      setTimeout(() => { if (video.paused || video.readyState < 2) enterIntroUI(); }, 2500);   // blocked / stalled
+    }
 
     // Email field: Resting → Active → Typing → Filled / Error, button Disabled ↔ Primary.
     const form = document.getElementById('emailForm');
