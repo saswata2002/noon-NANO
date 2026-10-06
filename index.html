@@ -1876,7 +1876,8 @@
     function drawSheet() { pocketPath.setAttribute('d', sheetD(sheet.Y, sheet.k)); }
     function stopSheet() { cancelAnimationFrame(sheet.raf); sheet.raf = 0; }
     function setSheet(Y, k = 1) { stopSheet(); sheet.Y = Y; sheet.k = k; drawSheet(); }
-    // spring the sheet from wherever it is to (Y, k); ζ / response as in spring()
+    // spring the sheet from wherever it is to (Y, k); ζ / response as in spring(). toK can be a
+    // function of the current Y, so the pocket's shape can follow the sheet's height.
     function animSheet(toY, toK, zeta, response, ms) {
       stopSheet();
       const fromY = sheet.Y, fromK = sheet.k, t0 = performance.now();
@@ -1886,7 +1887,7 @@
           const t = (now - t0) / 1000, end = t * 1000 >= ms;
           const x = end ? 1 : 1 - Math.exp(-zeta * w * t) * (Math.cos(wd * t) + ((zeta * w) / wd) * Math.sin(wd * t));
           sheet.Y = fromY + (toY - fromY) * x;
-          sheet.k = Math.max(0, fromK + (toK - fromK) * x);
+          sheet.k = Math.max(0, typeof toK === 'function' ? toK(sheet.Y) : fromK + (toK - fromK) * x);
           drawSheet();
           if (end) { sheet.raf = 0; done(); } else sheet.raf = requestAnimationFrame(step);
         };
@@ -2130,36 +2131,31 @@
     }
 
     // ---- drag down: confirm (49:11447 → 49:11576) → Keep this skin (49:11331) ----
+    // Commit: one continuous motion, no stop at Sheet rising. The sheet carries on up from wherever the
+    // drag left it, keeps its pocket while it passes the wallet (54:12090 is a moment it travels
+    // through), flattens as it climbs from y 500 to the top and becomes the white Keep page; the
+    // wallet glides straight to its Keep spot on one spring, and the Keep content settles in on top.
+    const flattenAbove = (Y) => clamp01(Y / SHEET_REST);   // k = 1 at/below y 500 → 0 at the top
     function confirmSkin() {
       skinBusy = true;
-      skinPhase = 'confirm';
-      haptic.medium();
-      const LAND = { duration: 1000, easing: spring(0.76, 0.5, 1000) };   // drops onto the sheet with a soft give
-      const out = { duration: 240, easing: 'ease-out' };
-      tweenTo(roles.front, poseCss(POSE.confirm), LAND);
-      tweenTo(roles.mid, { ...poseCss({ ...POSE.front, s: 0.86 }), opacity: '0' }, { duration: 320, easing: 'ease-out' });
-      tweenTo(roles.back, { ...poseCss({ ...POSE.front, s: 0.86 }), opacity: '0' }, { duration: 320, easing: 'ease-out' });
-      tweenTo(sq('.skin__keepgoing'), { opacity: '0' }, out);
-      skinScreen.style.setProperty('--hint-fade', '0');
-      animSheet(SHEET_REST, 1, 0.84, 0.5, 700);                       // 54:12090 Sheet rising
-      skinTimers.push(setTimeout(() => haptic.light(), 280));        // the wallet lands in its pocket
-      skinTimers.push(setTimeout(showKeep, 560));
-    }
-    // the sheet keeps climbing and its pocket flattens out — it becomes the white Keep page
-    // (no fade); the wallet rises with it to its Keep spot and the Keep content settles in on top
-    function showKeep() {
       skinPhase = 'keep';
+      haptic.medium();
+      const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
+      tweenTo(roles.mid, { ...poseCss({ ...POSE.front, s: 0.86 }), opacity: '0' }, { duration: 300, easing: 'ease-out' });
+      tweenTo(roles.back, { ...poseCss({ ...POSE.front, s: 0.86 }), opacity: '0' }, { duration: 300, easing: 'ease-out' });
+      tweenTo(sq('.skin__keepgoing'), { opacity: '0' }, { duration: 200, easing: 'ease-out' });
+      skinScreen.style.setProperty('--hint-fade', '0');
+      animSheet(-24, flattenAbove, 0.9, 0.8, 1100);
+      tweenTo(roles.front, poseCss(POSE.keep), { duration: 1150, easing: spring(0.82, 0.68, 1150) });
       skinScreen.classList.add('is-keep');
       skinKeep.setAttribute('aria-hidden', 'false');
-      const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
-      animSheet(-24, 0, 0.92, 0.75, 1000);
-      tweenTo(roles.front, poseCss(POSE.keep), { duration: 1100, easing: spring(0.84, 0.62, 1100) });
       skinKeep.getAnimations().forEach((a) => a.cancel());
       skinKeep.style.opacity = '1';
-      sq('.skin__keep-head').animate([{ opacity: 0, translate: '0 -24px' }, { opacity: 1, translate: '0 0' }], { duration: 800, delay: 300, easing: IOS, fill: 'backwards' });
-      sq('.skin__ksteps').animate([{ opacity: 0, translate: '0 -8px' }, { opacity: 1, translate: '0 0' }], { duration: 600, delay: 380, easing: IOS, fill: 'backwards' });
-      sq('.skin__keep-copy').animate([{ opacity: 0, translate: '0 18px' }, { opacity: 1, translate: '0 0' }], { duration: 760, delay: 340, easing: IOS, fill: 'backwards' });
-      sq('.skin__keep-bar').animate([{ opacity: 0, translate: '0 40px' }, { opacity: 1, translate: '0 0' }], { duration: 800, delay: 420, easing: IOS, fill: 'backwards' });
+      sq('.skin__keep-head').animate([{ opacity: 0, translate: '0 -24px' }, { opacity: 1, translate: '0 0' }], { duration: 800, delay: 360, easing: IOS, fill: 'backwards' });
+      sq('.skin__ksteps').animate([{ opacity: 0, translate: '0 -8px' }, { opacity: 1, translate: '0 0' }], { duration: 600, delay: 420, easing: IOS, fill: 'backwards' });
+      sq('.skin__keep-copy').animate([{ opacity: 0, translate: '0 18px' }, { opacity: 1, translate: '0 0' }], { duration: 760, delay: 380, easing: IOS, fill: 'backwards' });
+      sq('.skin__keep-bar').animate([{ opacity: 0, translate: '0 40px' }, { opacity: 1, translate: '0 0' }], { duration: 800, delay: 460, easing: IOS, fill: 'backwards' });
+      skinTimers.push(setTimeout(() => haptic.light(), 520));        // the page lands
       skinTimers.push(setTimeout(() => { skinBusy = false; }, 900));
     }
     // reverse: the Keep content lifts away, the page drops back down into the pocket sheet and
@@ -2173,7 +2169,7 @@
       skinKeep.setAttribute('aria-hidden', 'true');
       const BACK = { duration: 950, easing: spring(0.82, 0.55, 950) };
       tweenTo(skinKeep, { opacity: '0' }, { duration: 220, easing: 'ease-out' });
-      animSheet(SHEET_PARK, 1, 0.94, 0.7, 900);
+      animSheet(SHEET_PARK, flattenAbove, 0.94, 0.7, 900);
       tweenTo(roles.front, poseCss(POSE.front), { ...BACK, delay: 60 });
       tweenTo(roles.mid, poseCss(POSE.mid), { ...BACK, delay: 200 });
       tweenTo(roles.back, poseCss(POSE.back), { ...BACK, delay: 250 });
