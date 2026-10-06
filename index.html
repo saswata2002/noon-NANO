@@ -148,7 +148,7 @@
     .main { opacity: .9; transition: transform var(--kb-dur) var(--kb-ease), opacity 200ms ease; }
     .ui.is-editing .main { transform: translateY(-318.77px); opacity: 1; }
 
-    /* Intro: the card and the Send OTP dock wait off-stage until the Splash video reaches 5.5 s,
+    /* Intro: the card and the Send OTP dock wait off-stage until the Splash video reaches 4.6 s,
        then rise in (JS, WAAPI on the individual translate/scale props so the edit-state transform
        is untouched). Hidden and untappable until then. */
     .ui.is-pre-intro .card,
@@ -1058,12 +1058,12 @@
       ui.style.setProperty('--s', entry.contentRect.width / 375);
     }).observe(screen);
 
-    // ---------- Intro: card + Send OTP enter at 5.5 s of the Splash (as it lands on its last scene) ----------
+    // ---------- Intro: card + Send OTP enter at 4.6 s of the Splash (the kids crouch by the open box) ----------
     // Timed off the video's own clock (requestVideoFrameCallback → mediaTime), so a slow load
     // can't put them out of sync. The card rises 56px and settles from 97% on a long, soft,
     // barely-overshooting spring while it fades in; the Send OTP dock follows 110 ms later.
     // If the video can't play (error / autoplay blocked / stalled), they come in anyway.
-    const INTRO_UI_AT = 5.5;             // seconds into the Splash (it runs 5.52 s — i.e. as it lands)
+    const INTRO_UI_AT = 4.6;             // seconds into the Splash: frame 276 @60fps — the kids crouched by the open box (user ref)
     let introDone = false;
     function enterIntroUI() {
       if (introDone) return;
