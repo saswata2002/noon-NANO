@@ -2713,7 +2713,8 @@
     // put; the dark Continue glides up 31px into this page's button and settles into Disabled; the
     // avatar page clears (title lifts away, the character sinks out of its circle, the row collapses
     // into the centre); the new title rises out of a blur and the chips cascade in row by row, each
-    // icon popping as its chip lands. Pick 3 and Continue turns on (cross-fade + soft spring).
+    // card comes in with its icon as one piece (icons don't animate on their own here). Every visit
+    // starts with nothing picked. Pick 3 and Continue turns on (cross-fade + soft spring).
     const intScreen = document.getElementById('intScreen');
     const iq = (sel) => intScreen.querySelector(sel);
     const intCta = iq('.int__cta');
@@ -2774,7 +2775,8 @@
       ex(aq('.av__ring'), [{ opacity: 1, scale: '1' }, { opacity: 0, scale: '0.6' }], { duration: 240, easing: OUT });
       avCta.style.opacity = '0';                           // handed to the interests page's button
 
-      // --- interests page ---
+      // --- interests page: always opens with nothing picked ---
+      chipEls.forEach((c) => { c.classList.remove('is-on'); c.setAttribute('aria-pressed', 'false'); c.querySelector('.ich__ico').getAnimations().forEach((a) => a.cancel()); });
       intScreen.classList.add('is-shown');
       intScreen.setAttribute('aria-hidden', 'false');
       iq('.int__page').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 140, easing: FADE, fill: 'backwards' });
@@ -2788,7 +2790,6 @@
         const d = 300 + (+chip.dataset.r) * 55 + (+chip.dataset.c) * 35;
         chip.animate([{ opacity: 0, translate: '0 22px', scale: '0.94', easing: spring(0.8, 0.5, 800) }, { opacity: 1, translate: '0 0', scale: '1' }], { duration: 800, delay: d, fill: 'backwards' });
         chip.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, delay: d, easing: FADE, fill: 'backwards' });
-        chip.querySelector('.ich__ico').animate([{ scale: '0.4', rotate: '-14deg', easing: POP }, { scale: '1', rotate: '0deg' }], { duration: 900, delay: d + 90, fill: 'backwards' });
       });
       // shared button: dark Continue (avatar page, top 721.2) → this page's button, settling into Disabled
       intCta.classList.add('is-instant');                 // start exactly as the dark 56px button it replaces
