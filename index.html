@@ -38,7 +38,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      height: 100%;
+      height: var(--app-h, 100%);
       background: #0b0b0d;
       overflow: hidden;
     }
@@ -54,7 +54,7 @@
     /* The screen: always 375:812, as large as fits the viewport. Full-bleed on phones. */
     .screen {
       position: relative;
-      width: min(100vw, 100dvh * var(--frame-w) / var(--frame-h));
+      width: var(--app-w, min(100vw, 100dvh * var(--frame-w) / var(--frame-h)));
       aspect-ratio: var(--frame-w) / var(--frame-h);
       background: var(--frame-bg);
       overflow: hidden;
@@ -186,7 +186,7 @@
        instead (email field / hidden one-time-code input). If it would cover what's being typed
        into, the frame lifts just enough (--kb-lift, set from visualViewport) on the keyboard curve;
        the top pills counter-shift so they stay pinned to the top edge. */
-    .is-touch .keyboard, .is-touch .numpad { display: none; }
+    .is-touch .keyboard { display: none; }
     .is-touch .screen {
       transform: translateY(calc(-1 * var(--kb-lift, 0px)));
       transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
@@ -737,27 +737,10 @@
 
     /* Digit boxes: active (blue), verified (green), error (red) */
     .otp__digits { pointer-events: auto; cursor: text; }
-    /* phones: an invisible one-time-code input over the boxes raises the numeric keyboard
-       (and lets iOS offer the code from Mail / Messages). Desktop types via keydown instead. */
+    /* The one-time-code input is kept for future native-keyboard use but not shown: on phones the
+       OTP uses the drawn number pad too, so it pops up on its own exactly as on desktop (iOS can't
+       raise its own keyboard without a tap). */
     .otp__input { display: none; }
-    .is-touch .otp__input {
-      display: block;
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 2;
-      margin: 0;
-      padding: 0;
-      border: 0;
-      opacity: 0;
-      background: transparent;
-      color: transparent;
-      caret-color: transparent;
-      font-size: 16px;               /* ≥ 16px: iOS doesn't zoom on focus */
-      letter-spacing: 40px;
-      outline: none;
-    }
     .otp__digit { position: relative; overflow: hidden; transition: border-color 220ms ease, background-color 220ms ease; }
     /* Active ring (#0f61ff, 1px, r12) — one element that slides between boxes (pitch 52px) */
     .otp__digits { position: relative; }
@@ -1005,25 +988,23 @@
     const haptic = (() => {
       const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
         || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      let label = null;
+      // A fresh <label style=display:none><input type=checkbox switch></label> in <head> per tick:
+      // display:none means the switch can never take focus (so a focused field never blurs and the
+      // keyboard never drops), and toggling it still plays the system haptic. iOS only plays it from
+      // a real tap, so callers fire it from click / submit handlers, not pointerdown.
       function iosTick() {
-        if (!label) {
-          label = document.createElement('label');
-          label.setAttribute('aria-hidden', 'true');
-          label.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none';
-          const sw = document.createElement('input');
-          sw.type = 'checkbox';
-          sw.setAttribute('switch', '');
-          sw.tabIndex = -1;
-          label.appendChild(sw);
-          document.body.appendChild(label);
-        }
-        // Never while a text field is focused: clicking the switch can pull focus off the field on
-        // iOS, which blurs it and drops / re-raises the keyboard (the page jumps). The keyboard's own
-        // key clicks cover typing anyway.
-        const a = document.activeElement;
-        if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable)) return;
+        const label = document.createElement('label');
+        label.setAttribute('aria-hidden', 'true');
+        label.style.display = 'none';
+        const sw = document.createElement('input');
+        sw.type = 'checkbox';
+        sw.setAttribute('switch', '');
+        label.appendChild(sw);
+        document.head.appendChild(label);
+        const active = document.activeElement;
         label.click();
+        label.remove();
+        if (active && active !== document.body && document.activeElement !== active) active.focus({ preventScroll: true });
       }
       function play(iosTicks, gap, androidPattern) {
         if (isIOS) {
@@ -1056,6 +1037,23 @@
       play();
       // Browsers hold autoplay in background tabs; start once the tab is shown (not after it's ended).
       document.addEventListener('visibilitychange', () => { if (!document.hidden && video.paused && !video.ended) play(); });
+    }
+
+    // Phones: size the frame in px from the window, and never while a field is focused — Safari's
+    // toolbar collapses as the keyboard opens, which used to rescale the whole screen mid-animation.
+    if (document.documentElement.classList.contains('is-touch')) {
+      const root = document.documentElement;
+      const sizeApp = () => {
+        const a = document.activeElement;
+        if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) return;
+        const vw = window.innerWidth, vh = window.innerHeight;
+        root.style.setProperty('--app-w', `${Math.min(vw, (vh * 375) / 812)}px`);
+        root.style.setProperty('--app-h', `${vh}px`);
+      };
+      sizeApp();
+      window.addEventListener('resize', sizeApp);
+      window.addEventListener('orientationchange', () => setTimeout(sizeApp, 300));
+      document.addEventListener('focusout', () => setTimeout(sizeApp, 600));   // after the keyboard is gone
     }
 
     // Keep the 375 × 812 UI layer locked to the screen box at any size.
@@ -1208,6 +1206,15 @@
     field.addEventListener('click', (e) => {
       if (IS_TOUCH_UI && e.target !== input && !clear.contains(e.target)) input.focus();
     });
+    // Phones, first tap into the field: take over the focus. Cancelling the native one stops iOS
+    // from scrolling the page to the field (it measures the card at rest, before the edit state
+    // lifts it — that was the jerk); focus() inside touchend still raises the keyboard. Once the
+    // field is focused, taps go through untouched so iOS can place the caret.
+    field.addEventListener('touchend', (e) => {
+      if (clear.contains(e.target) || document.activeElement === input) return;
+      e.preventDefault();
+      input.focus({ preventScroll: true });
+    }, { passive: false });
     clear.addEventListener('pointerdown', (e) => e.preventDefault()); // keep focus in the input
     clear.addEventListener('click', () => {
       haptic.light();
@@ -1453,12 +1460,10 @@
         };
         if (anim.isLoaded) start(); else anim.addEventListener('DOMLoaded', start, { once: true });
       }
-      // Desktop: once the page has landed (last item, the Resend row, settles at 800 + 560 ms),
-      // wait 0.2 s and bring the drawn number pad up on its own.
-      // Phones: iOS only raises its keyboard from a real tap, so it stays down until the boxes are
-      // tapped (no auto-open there — a programmatic focus would shift the layout with no keyboard).
+      // Once the page has landed (last item, the Resend row, settles at 800 + 560 ms), wait 0.2 s
+      // and bring the drawn number pad up on its own — phones included (same pad, same motion).
       clearTimeout(otpAutoTimer);
-      if (!IS_TOUCH) otpAutoTimer = setTimeout(() => {
+      otpAutoTimer = setTimeout(() => {
         if (otpScreen.classList.contains('is-shown') && !otpScreen.classList.contains('is-exiting')
             && !otpScreen.classList.contains('is-typing')) setOtpTyping(true);
       }, (reduceMotion.matches ? 0 : OTP_LAND_MS) + 200);
@@ -1713,11 +1718,16 @@
       setOtpTyping(false);
       if (IS_TOUCH) otpInput.blur();
     });
+    numpad.addEventListener('click', (e) => {          // iOS plays haptics only from a real tap
+      const key = e.target.closest('.numpad__key');
+      if (key && key.dataset.hapt) haptic.light();
+    });
+    document.addEventListener('touchstart', () => {}, { passive: true });   // lets iOS show :active
     numpad.addEventListener('pointerdown', (e) => {
       const key = e.target.closest('.numpad__key');
       if (!key) return;
       e.preventDefault();
-      if (!otpBusy) haptic.light();                  // each key press
+      key.dataset.hapt = otpBusy ? '' : '1';           // the haptic itself plays on click (below)
       otpKey(key.dataset.key);
     });
     // Physical keyboard on desktop
@@ -1777,7 +1787,7 @@
     }
     function kbSoon() {          // re-measure as the keyboard and the layout settle
       kbTimers.forEach(clearTimeout);
-      kbTimers = [0, 120, 480, 900, 1400].map((ms) => setTimeout(avoidKeyboard, ms));
+      kbTimers = [520, 1000].map((ms) => setTimeout(avoidKeyboard, ms));   // after the 450 ms lift
     }
     if (IS_TOUCH) {
       // iOS scrolls the page itself to reveal a focused field — measured while the card is still at
