@@ -1060,8 +1060,8 @@
 
     // ---------- Intro: card + Send OTP enter at 4.6 s of the Splash (the kids crouch by the open box) ----------
     // Timed off the video's own clock (requestVideoFrameCallback → mediaTime), so a slow load
-    // can't put them out of sync. The card springs up 64px from 94% with an elastic overshoot and
-    // one rebound while it fades in; the Send OTP dock follows 110 ms later on the same springs.
+    // can't put them out of sync. The card springs up 56px from 96% with a subtle elastic overshoot
+    // while it fades in; the Send OTP dock follows 110 ms later on the same springs.
     // If the video can't play (error / autoplay blocked / stalled), they come in anyway.
     const INTRO_UI_AT = 4.6;             // seconds into the Splash: frame 276 @60fps — the kids crouched by the open box (user ref)
     let introDone = false;
@@ -1073,17 +1073,17 @@
       const btn = document.querySelector('.nano-btn');
       ui.classList.remove('is-pre-intro');
       if (reduceMotion.matches) return;
-      // Elastic (user request): the rise overshoots ~10px past its spot, rebounds once and settles;
-      // the scale pops past 100% on its own, slightly quicker spring so the two wobbles don't sync
-      const RISE = spring(0.5, 0.62, 1300);          // ζ 0.5: ~16 % overshoot, one soft rebound
-      const POP = spring(0.45, 0.5, 1200);           // scale: 0.94 → ~1.012 → 1
+      // Subtle elastic (user request): the rise overshoots ~3–4px past its spot and settles;
+      // the scale pops just past 100% on its own, slightly quicker spring so the two don't sync
+      const RISE = spring(0.66, 0.62, 1200);         // ζ 0.66: ~6 % overshoot, no visible rebound
+      const POP = spring(0.62, 0.5, 1100);           // scale: 0.96 → ~1.003 → 1
       const FADE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
-      card.animate([{ translate: '0 64px', easing: RISE }, { translate: '0 0' }], { duration: 1300, fill: 'backwards' });
-      card.animate([{ scale: '0.94', easing: POP }, { scale: '1' }], { duration: 1200, fill: 'backwards' });
+      card.animate([{ translate: '0 56px', easing: RISE }, { translate: '0 0' }], { duration: 1200, fill: 'backwards' });
+      card.animate([{ scale: '0.96', easing: POP }, { scale: '1' }], { duration: 1100, fill: 'backwards' });
       card.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 380, easing: FADE, fill: 'backwards' });
       dock.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 480, delay: 110, easing: FADE, fill: 'backwards' });
-      btn.animate([{ translate: '0 48px', easing: RISE }, { translate: '0 0' }], { duration: 1300, delay: 110, fill: 'backwards' });
-      btn.animate([{ scale: '0.92', easing: POP }, { scale: '1' }], { duration: 1200, delay: 110, fill: 'backwards' });
+      btn.animate([{ translate: '0 44px', easing: RISE }, { translate: '0 0' }], { duration: 1200, delay: 110, fill: 'backwards' });
+      btn.animate([{ scale: '0.95', easing: POP }, { scale: '1' }], { duration: 1100, delay: 110, fill: 'backwards' });
     }
     if (!src) setTimeout(enterIntroUI, 0);
     else {
