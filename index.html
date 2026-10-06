@@ -860,6 +860,51 @@
     .skin__different { display: flex; align-items: center; justify-content: center; width: 100%; padding: 16px 0; border: 0; background: none;
       font: inherit; font-weight: 600; font-size: 15px; line-height: 18px; color: #1d2539; cursor: pointer; }
     .skin__different:active { opacity: .6; }
+    /* ================= Setup · Choose an avatar (Figma 61:15060) =================
+       Layered as in Figma (bottom → top): swoosh, grid header, title, big avatar (glow + circle),
+       avatar row (glows + circles), selection ring, back button, sparkles, action bar. Avatar circles
+       are baked from the source PNGs with Figma's exact mask circles (assets/avatar/*.webp, 3×). */
+    .avatar { position: absolute; inset: 0; z-index: 9; overflow: hidden; visibility: hidden; pointer-events: none; }
+    .avatar.is-shown { visibility: visible; pointer-events: auto; }
+    .av__page { position: absolute; inset: 0; background: #fff; }
+    .av__bg { position: absolute; left: 0; top: 0; width: 375px; height: 188px; display: block; }
+    /* 61:15061 swoosh: 369.85 × 360.41, centre (201.92, 447.25), rotated −14.37° in Figma (CSS +) */
+    .av__swoosh { position: absolute; left: 16.994px; top: 267.045px; width: 369.852px; height: 360.41px; rotate: 14.37deg; }
+    .av__swoosh svg { position: absolute; left: -2.996px; top: -3.172px; width: 373.772px; height: 365.026px; overflow: visible; }
+    /* 61:15079 title: two lines of H40 ExtraBold 36/48 with a black → purple gradient; the white
+       shapes behind it knock the grid out under the text */
+    .av__title { position: absolute; left: 48.5px; top: 118px; width: 278px; height: 87px;
+      filter: drop-shadow(0 5px 10px rgba(61,41,163,.14)); }   /* 61:15080 group shadow (0, 5, b10) */
+    .av__title-knock { position: absolute; background: #fff; }
+    .av__line { position: absolute; margin: 0; white-space: nowrap; transform: translateX(-50%);
+      font-weight: 800; font-size: 36px; line-height: 48px; letter-spacing: -0.25px;
+      color: transparent; -webkit-background-clip: text; background-clip: text; }
+    .av__line--1 { left: 139.5px; top: 0.49px; background-image: linear-gradient(35.58deg, #000 52.835%, #7924ff 104.2%); }
+    .av__line--2 { left: 139px; top: 31.67px; background-image: linear-gradient(46.52deg, #000 52.835%, #7924ff 104.2%); }
+    /* 61:15230 big avatar: glow ellipse 269.24 (its image fill is fully covered by the #e8fdff → #4ed7de
+       gradient, top → bottom in its own frame), turned 15°, centre (187.5, 399.99) + 272.27 circle */
+    .av__glow { position: absolute; left: 52.885px; top: 265.375px; width: 269.235px; height: 269.235px; rotate: -15deg;
+      border-radius: 50%; background: linear-gradient(180deg, #e8fdff 0%, #4ed7de 100%); }
+    .av__big { position: absolute; left: 51.467px; top: 262.939px; width: 272.272px; height: 272.272px; display: block; }
+    /* 61:15237–15260 avatar row */
+    .av__item { position: absolute; }
+    .av__item img { position: absolute; display: block; }
+    .av__ring { position: absolute; left: 146px; top: 615.07px; width: 84px; height: 84px; display: block; }
+    /* 61:15263 M-IconButton · back */
+    .av__back { position: absolute; left: 16px; top: 64px; width: 40px; height: 40px; display: grid; place-items: center; padding: 0;
+      background: #fff; border: 1px solid #f2f3f7; border-radius: 9999px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .av__back img { display: block; width: 20px; height: 20px; }
+    .av__back:active { scale: .94; }
+    /* 61:15264 / 61:15265 sparkles */
+    .av__sparkle { position: absolute; display: block; }
+    .av__sparkle--l { left: 7.12px; top: 405.88px; width: 154.897px; height: 154.897px; }
+    .av__sparkle--s { left: 257.02px; top: 250.47px; width: 46.977px; height: 46.977px; }
+    /* 61:16111 action bar: button at 16, 721.2 (343 × 56) */
+    .av__bar { position: absolute; left: 0; top: 709.2px; width: 375px; padding: 12px 16px; display: flex; }
+    .av__bar .nano-btn { flex: 1 1 0; }
+    .av__cta .nano-btn__label { transition: none; }
+    .av__cta-from { position: absolute; inset: 0; display: grid; place-items: center; z-index: 1; opacity: 0; pointer-events: none; }
+
 
     /* M-Toast / Error on the OTP sheet (Figma 41:5323) — 270 × 50 at 52, 53 */
     .toast--otp-error { top: 53px; left: 52px; z-index: 6; }
@@ -1200,6 +1245,37 @@
           </div>
         </div>
         <div class="wcard" data-role="front"><img alt="nano wallet card" draggable="false"></div>
+      </section>
+
+      <!-- ================= Setup · Choose an avatar (Figma 61:15060) ================= -->
+      <section class="avatar" id="avatarScreen" aria-hidden="true" aria-label="Choose an avatar for yourself">
+        <div class="av__page"></div>
+        <div class="av__swoosh" aria-hidden="true">
+          <svg viewBox="0 0 373.772 365.026" width="373.772" height="365.026" fill="none"><path class="av__swoosh-path" d="M2.99605 363.598C50.4245 264.091 140.26 203.658 334.719 195.691C272.411 174.301 222.193 46.896 372.848 3.18753" stroke="#A477FF" stroke-width="6.63794"/></svg>
+        </div>
+        <img class="av__bg" src="assets/avatar/bg-grid.webp" width="375" height="188" alt="">
+        <div class="av__title">
+          <span class="av__title-knock" style="left:55.8px;top:29.61px;width:171.947px;height:24.712px"></span>
+          <span class="av__title-knock" style="left:7.06px;top:21.48px;width:215.139px;height:16.006px"></span>
+          <h1 class="av__line av__line--1">Choose an avatar</h1>
+          <p class="av__line av__line--2">for yourself</p>
+        </div>
+        <div class="av__glow" aria-hidden="true"></div>
+        <img class="av__big" src="assets/avatar/big-headset.webp" width="272.272" height="272.272" alt="Selected avatar">
+        <div class="av__row">
+          <div class="av__item" data-i="0"><img src="assets/avatar/glow-1.svg" style="left:6.31px;top:627.79px;width:58.968px;height:58.968px" alt=""><img src="assets/avatar/row-1.webp" style="left:5.997px;top:627.258px;width:59.633px;height:59.633px" alt=""></div>
+          <div class="av__item" data-i="1"><img src="assets/avatar/glow-2.svg" style="left:74.31px;top:627.79px;width:58.968px;height:58.968px" alt=""><img src="assets/avatar/row-2.webp" style="left:74.004px;top:627.25px;width:59.633px;height:59.633px" alt=""></div>
+          <div class="av__item" data-i="2"><img src="assets/avatar/glow-3.svg" style="left:152.38px;top:621.72px;width:71.197px;height:71.197px" alt=""><img src="assets/avatar/row-3.webp" style="left:152.002px;top:621.067px;width:72px;height:72px" alt=""></div>
+          <div class="av__item" data-i="3"><img src="assets/avatar/glow-4.svg" style="left:242.31px;top:627.79px;width:58.968px;height:58.968px" alt=""><img src="assets/avatar/row-4.webp" style="left:242.001px;top:627.258px;width:59.633px;height:59.633px" alt=""></div>
+          <div class="av__item" data-i="4"><img src="assets/avatar/glow-5.svg" style="left:310.31px;top:627.79px;width:58.968px;height:58.968px" alt=""><img src="assets/avatar/row-5.webp" style="left:310.001px;top:627.252px;width:59.633px;height:59.633px" alt=""></div>
+        </div>
+        <img class="av__ring" src="assets/avatar/ring.svg" width="84" height="84" alt="">
+        <button class="av__back" type="button" aria-label="Back"><img src="assets/avatar/chevron-left.svg" width="20" height="20" alt=""></button>
+        <img class="av__sparkle av__sparkle--l" src="assets/avatar/sparkle.webp" width="154.897" height="154.897" alt="">
+        <img class="av__sparkle av__sparkle--s" src="assets/avatar/sparkle.webp" width="46.977" height="46.977" alt="">
+        <div class="av__bar">
+          <button class="nano-btn av__cta" type="button"><span class="nano-btn__label av__cta-to">Continue</span><span class="nano-btn__label av__cta-from" aria-hidden="true">Confirm skin</span></button>
+        </div>
       </section>
     </div>
   </main>
@@ -2214,9 +2290,123 @@
       skinTimers.push(setTimeout(() => { skinBusy = false; }, 820));
     }
     sq('.skin__different').addEventListener('click', pickDifferentSkin);
-    sq('.skin__confirm-skin').addEventListener('click', () => haptic.success());
+
+    // ---------- Confirm skin → Setup · Choose an avatar (Figma 61:15060) ----------
+    // One continuous hand-off. The dark button is shared: "Confirm skin" glides 51px down into the
+    // avatar page's "Continue" (widening 335 → 343, label cross-fading) while the wallet lifts away
+    // and the Keep copy clears upward. The white avatar page fades in under it and builds top → down:
+    // grid header, title (rises out of a blur), the big avatar pops in on its glow, the swoosh draws
+    // itself, sparkles spin in, the avatar row deals out from the centre and the ring settles on it.
+    const avatarScreen = document.getElementById('avatarScreen');
+    const aq = (sel) => avatarScreen.querySelector(sel);
+    const avCta = aq('.av__cta');
+    let avBusy = false, avTimers = [];
+    const twinkles = [];
+    function showAvatar() {
+      if (avBusy || skinPhase !== 'keep' || skinBusy || avatarScreen.classList.contains('is-shown')) return;
+      avBusy = true; skinBusy = true;
+      haptic.success();
+      const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
+      const OUT = 'cubic-bezier(0.4, 0, 0.6, 1)';
+      const FADE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
+      const POP = spring(0.62, 0.55, 1000);          // gentle overshoot
+      const SOFT = spring(0.86, 0.55, 900);
+
+      // --- Keep page clears ---
+      const wallet = roles.front;
+      tweenTo(wallet, { translate: '0px -128px', scale: String(0.86), opacity: '0' }, { duration: 340, easing: OUT });
+      wallet.animate([{ filter: 'blur(0px)' }, { filter: 'blur(6px)' }], { duration: 340, easing: OUT });
+      [['.skin__keep-head', -10, 0], ['.skin__keep-copy', -14, 40]].forEach(([sel, dy, delay]) =>
+        sq(sel).animate([{ opacity: 1, translate: '0 0' }, { opacity: 0, translate: `0 ${dy}px` }], { duration: 300, delay, easing: OUT, fill: 'forwards' }));
+      sq('.skin__different').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: OUT, fill: 'forwards' });
+      sq('.skin__confirm-skin').style.opacity = '0';      // handed to the avatar page's button (same spot, same look)
+
+      // --- avatar page ---
+      avatarScreen.classList.add('is-shown');
+      avatarScreen.setAttribute('aria-hidden', 'false');
+      const page = aq('.av__page');
+      page.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360, delay: 140, easing: FADE, fill: 'backwards' });
+      // shared button: from the Keep "Confirm skin" spot (19.6, 670, 335 wide) to Continue (16, 721.2, 343)
+      avCta.animate([{ translate: '-0.4px -51.2px', scale: `${335 / 343} 1`, easing: spring(0.86, 0.6, 820) }, { translate: '0 0', scale: '1 1' }],
+        { duration: 820, fill: 'backwards' });
+      aq('.av__cta-from').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, delay: 120, easing: FADE, fill: 'backwards' });
+      aq('.av__cta-to').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, delay: 220, easing: FADE, fill: 'backwards' });
+
+      const fadeUp = (el, delay, dy = 14, dur = 700) => {
+        el.animate([{ opacity: 0, translate: `0 ${dy}px`, filter: 'blur(6px)' }, { opacity: 1, translate: '0 0', filter: 'blur(0px)' }],
+          { duration: dur, delay, easing: IOS, fill: 'backwards' });
+      };
+      aq('.av__bg').animate([{ opacity: 0, translate: '0 -12px' }, { opacity: 1, translate: '0 0' }], { duration: 700, delay: 180, easing: IOS, fill: 'backwards' });
+      aq('.av__back').animate([{ opacity: 0, scale: '0.8' }, { opacity: 1, scale: '1' }], { duration: 600, delay: 420, easing: IOS, fill: 'backwards' });
+      fadeUp(aq('.av__line--1'), 240, 18);
+      fadeUp(aq('.av__line--2'), 300, 18);
+      // big avatar: the glow swells and turns into place, the circle pops in on it
+      aq('.av__glow').animate([{ opacity: 0, scale: '0.6', rotate: '-60deg' }, { opacity: 1, scale: '1', rotate: '-15deg' }], { duration: 1000, delay: 300, easing: IOS, fill: 'backwards' });
+      aq('.av__big').animate([{ scale: '0.72', translate: '0 24px', easing: POP }, { scale: '1', translate: '0 0' }], { duration: 1000, delay: 360, fill: 'backwards' });
+      aq('.av__big').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 360, easing: FADE, fill: 'backwards' });
+      // swoosh draws itself from the bottom-left
+      const path = aq('.av__swoosh-path'), len = path.getTotalLength();
+      path.style.strokeDasharray = `${len}`;
+      path.animate([{ strokeDashoffset: `${len}` }, { strokeDashoffset: '0' }], { duration: 900, delay: 460, easing: 'cubic-bezier(0.65, 0, 0.35, 1)', fill: 'backwards' });
+      // sparkles spin in, then twinkle gently
+      [[aq('.av__sparkle--l'), 640], [aq('.av__sparkle--s'), 760]].forEach(([el, delay], k) => {
+        el.animate([{ opacity: 0, scale: '0.2', rotate: '-120deg', easing: POP }, { opacity: 1, scale: '1', rotate: '0deg' }], { duration: 1000, delay, fill: 'backwards' });
+        avTimers.push(setTimeout(() => {
+          twinkles.push(el.animate([{ scale: '1', rotate: '0deg' }, { scale: k ? '0.82' : '0.9', rotate: k ? '12deg' : '-8deg' }, { scale: '1', rotate: '0deg' }],
+            { duration: k ? 2200 : 2800, iterations: Infinity, easing: 'ease-in-out' }));
+        }, delay + 1000));
+      });
+      // avatar row deals out from the centre; the ring settles on the selected one
+      const order = { 2: 0, 1: 1, 3: 1, 0: 2, 4: 2 };
+      avatarScreen.querySelectorAll('.av__item').forEach((el) => {
+        const d = 560 + order[el.dataset.i] * 70;
+        el.animate([{ opacity: 0, translate: '0 26px', scale: '0.8', easing: SOFT }, { opacity: 1, translate: '0 0', scale: '1' }], { duration: 900, delay: d, fill: 'backwards' });
+      });
+      aq('.av__ring').animate([{ opacity: 0, scale: '1.3' }, { opacity: 1, scale: '1' }], { duration: 700, delay: 640, easing: IOS, fill: 'backwards' });
+      avTimers.push(setTimeout(() => haptic.light(), 700));            // the avatar lands
+      avTimers.push(setTimeout(() => { avBusy = false; }, 1000));
+    }
+    // Back: the avatar page lifts away and the Keep page (wallet, copy, button) comes back
+    function backToKeep() {
+      if (avBusy || !avatarScreen.classList.contains('is-shown')) return;
+      avBusy = true;
+      haptic.light();
+      const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
+      const OUT = 'cubic-bezier(0.4, 0, 0.6, 1)';
+      twinkles.splice(0).forEach((a) => a.cancel());
+      avatarScreen.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 320, easing: OUT, fill: 'forwards' }).finished.then(() => {
+        avatarScreen.classList.remove('is-shown');
+        avatarScreen.setAttribute('aria-hidden', 'true');
+        avatarScreen.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
+        avatarScreen.getAnimations().forEach((a) => a.cancel());
+        avBusy = false; skinBusy = false;
+      }).catch(() => {});
+      ['.skin__keep-head', '.skin__keep-copy', '.skin__different'].forEach((sel) => sq(sel).getAnimations().forEach((a) => a.cancel()));
+      sq('.skin__confirm-skin').style.opacity = '';
+      const wallet = roles.front;
+      wallet.getAnimations().forEach((a) => a.cancel());
+      setPose(wallet, { ...POSE.keep, s: POSE.keep.s * 0.9, o: 0 });
+      tweenTo(wallet, poseCss(POSE.keep), { duration: 900, delay: 120, easing: spring(0.8, 0.55, 900) });
+      sq('.skin__keep-head').animate([{ opacity: 0, translate: '0 -16px' }, { opacity: 1, translate: '0 0' }], { duration: 600, delay: 160, easing: IOS, fill: 'backwards' });
+      sq('.skin__keep-copy').animate([{ opacity: 0, translate: '0 14px' }, { opacity: 1, translate: '0 0' }], { duration: 600, delay: 200, easing: IOS, fill: 'backwards' });
+      sq('.skin__keep-bar').animate([{ opacity: 0, translate: '0 24px' }, { opacity: 1, translate: '0 0' }], { duration: 600, delay: 240, easing: IOS, fill: 'backwards' });
+    }
+    function hideAvatar() {
+      avTimers.forEach(clearTimeout); avTimers = [];
+      twinkles.splice(0).forEach((a) => a.cancel());
+      avatarScreen.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
+      avatarScreen.getAnimations().forEach((a) => a.cancel());
+      avatarScreen.classList.remove('is-shown');
+      avatarScreen.setAttribute('aria-hidden', 'true');
+      sq('.skin__confirm-skin').style.opacity = '';
+      avBusy = false;
+    }
+    sq('.skin__confirm-skin').addEventListener('click', showAvatar);
+    aq('.av__back').addEventListener('click', backToKeep);
+    avCta.addEventListener('click', () => { if (!avBusy) haptic.success(); });
 
     function hideSkin() {
+      if (typeof hideAvatar === 'function') hideAvatar();
       skinTimers.forEach(clearTimeout); skinTimers = [];
       clearInterval(hintTimer);
       sg = null; skinBusy = false; skinPhase = 'pick';
