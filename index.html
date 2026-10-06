@@ -322,35 +322,40 @@
       opacity: 0;
       transform: translateY(11px) scale(1.1667);   /* sits on the resting label (centre 20, ×14/12) */
     }
-    .field.is-floated .field__label--rest { opacity: 0; transform: translateY(-11px) scale(0.8571); }
-    .field.is-floated .field__label--float { opacity: 1; transform: none; }
+    /* typing (user request): the label just fades away and the field reads as it did before —
+       the typed value (or the "enter your email" placeholder) in B16/SemiBold, centred */
+    .field__label--float { display: none; }
+    .field.is-floated .field__label--rest { opacity: 0; transform: translateY(-4px); }
 
-    /* Content row: 14/20 Medium #1d2539, caret #0f7eff. Laid out at 16px and scaled to 14 so iOS
-       doesn't zoom the page on focus (it does for any input under 16px). */
+    /* B16/SemiBold value and placeholder (16px, so iOS never zooms on focus), centred in the 56 */
     .field__input {
       position: absolute;
-      top: 20px;
+      top: 9px;
       left: 0;
       display: block;
-      width: calc(100% / 0.875);
-      height: 22.857px;
+      width: 100%;
+      height: 22px;
       border: 0;
       padding: 0;
       outline: none;
       background: transparent;
       font: inherit;
-      font-weight: 500;
+      font-weight: 600;
       font-size: 16px;
-      line-height: 22.857px;
-      letter-spacing: -0.114px;
+      line-height: 22px;
+      letter-spacing: -0.15px;
       color: var(--text-primary);
       caret-color: var(--caret);
-      transform: scale(0.875);
-      transform-origin: 0 0;
+      transition: opacity 180ms ease;
     }
-    /* Active shows a 14/20 Regular placeholder after the caret; Resting shows only the label */
-    .field__input::placeholder { color: var(--text-tertiary); font-weight: 400; opacity: 1; transition: color 180ms ease; }
+    .field__input::placeholder { color: var(--text-muted); opacity: 1; transition: color 180ms ease; }
     .field:not(.is-floated) .field__input::placeholder { color: transparent; }
+    /* checking the email: the OTP boxes' skeleton wave — a grey fill with a light gap sweeping
+       left → right — behind the typed value */
+    .field__shimmer { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0;
+      background: linear-gradient(90deg, #e7e9ee 0%, #e7e9ee 34%, #ffffff 50%, #e7e9ee 66%, #e7e9ee 100%);
+      background-size: 300% 100%; background-position: 100% 0; }
+    .field > .field__body, .field > .field__slot { z-index: 1; }
 
 
     /* Right slot (20 × 20): clear icon while typing / in Error — the right ID looks the same as any typing */
@@ -1133,6 +1138,7 @@
           </div>
 
           <div class="field" id="emailField">
+            <span class="field__shimmer" aria-hidden="true"></span>
             <div class="field__body">
               <span class="field__label field__label--rest" aria-hidden="true">Email ID<i>*</i></span>
               <span class="field__label field__label--float" aria-hidden="true">Email ID<i>*</i></span>
@@ -1561,7 +1567,7 @@
       const error = !accepted && (rejected || incomplete);   // only ever set by pressing Send OTP
       field.classList.toggle('is-floated', focused || value !== '');
       field.classList.toggle('is-error', error);
-      field.classList.toggle('has-clear', (focused && value !== '') || error);
+      field.classList.toggle('has-clear', ((focused && value !== '') || error) && !field.classList.contains('is-checking'));
       input.setAttribute('aria-invalid', String(error));
       const wasDisabled = cta.disabled;
       cta.disabled = value === '';   // Send OTP is active as soon as anything is typed
@@ -1822,9 +1828,10 @@
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       if (cta.disabled) return;
-      if (isAccepted()) {            // right ID → transition to "Check your mail"
+      if (emailChecking) return;
+      if (isAccepted()) {            // right ID → a short skeleton wave on the field, then "Check your mail"
         haptic.light();
-        showOtpScreen();
+        checkEmail();
         return;
       }
       if (isWrongId()) {             // complete but wrong: red + shake + toast (again on every press)
@@ -1837,6 +1844,28 @@
         haptic.error();
       }
     });
+
+    // Checking the email: the field runs the OTP boxes' skeleton wave (grey fill, a light gap sweeping
+    // left → right, 1 s a pass), the value locked; then the OTP step takes over.
+    const EMAIL_CHECK_MS = 1300;
+    let emailChecking = false;
+    function checkEmail() {
+      emailChecking = true;
+      input.readOnly = true;
+      field.classList.add('is-checking');
+      field.classList.remove('has-clear');
+      const sh = field.querySelector('.field__shimmer');
+      if (!reduceMotion.matches) {
+        sh.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'ease-out', fill: 'forwards' });
+        sh.animate([{ backgroundPosition: '100% 0' }, { backgroundPosition: '0% 0' }], { duration: 1000, iterations: Infinity, easing: 'cubic-bezier(0.45, 0, 0.55, 1)' });
+      }
+      setTimeout(() => {
+        sh.getAnimations().forEach((a) => a.cancel());
+        sh.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: 'ease-out' });
+        showOtpScreen();
+        setTimeout(() => { emailChecking = false; input.readOnly = false; field.classList.remove('is-checking'); }, 400);
+      }, reduceMotion.matches ? 300 : EMAIL_CHECK_MS);
+    }
 
     // ---------- OTP · Code sent (Figma 29:4829) ----------
     const otpScreen = document.getElementById('otpScreen');
