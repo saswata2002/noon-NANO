@@ -2502,7 +2502,17 @@
       const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
       const OUT = 'cubic-bezier(0.4, 0, 0.6, 1)';
       twinkles.splice(0).forEach((a) => a.cancel());
-      avatarScreen.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 320, easing: OUT, fill: 'forwards' }).finished.then(() => {
+      // everything but the button fades; the button is the forward hand-off in reverse — "Continue"
+      // glides 51px up into the Keep page's "Confirm skin" (343 → 335 wide, label cross-fading) and
+      // hands over in place: same spot, same look, nothing fades
+      const fades = [...avatarScreen.children].filter((el) => !el.classList.contains('av__bar'))
+        .map((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 320, easing: OUT, fill: 'forwards' }));
+      const ctaHome = avCta.animate([{ translate: '0 0', scale: '1 1', easing: spring(0.88, 0.55, 680) }, { translate: '-0.4px -51.2px', scale: `${335 / 343} 1` }],
+        { duration: 680, fill: 'forwards' });
+      aq('.av__cta-to').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, delay: 60, easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)', fill: 'forwards' });
+      aq('.av__cta-from').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, delay: 160, easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)', fill: 'forwards' });
+      Promise.all([ctaHome.finished, ...fades.map((a) => a.finished)]).then(() => {
+        sq('.skin__confirm-skin').style.opacity = '';     // Keep's own button takes over, pixel for pixel
         avatarScreen.classList.remove('is-shown');
         avatarScreen.setAttribute('aria-hidden', 'true');
         avatarScreen.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
@@ -2510,14 +2520,14 @@
         avBusy = false; skinBusy = false;
       }).catch(() => {});
       ['.skin__keep-head', '.skin__keep-copy', '.skin__different'].forEach((sel) => sq(sel).getAnimations().forEach((a) => a.cancel()));
-      sq('.skin__confirm-skin').style.opacity = '';
       const wallet = roles.front;
       wallet.getAnimations().forEach((a) => a.cancel());
       setPose(wallet, { ...POSE.keep, s: POSE.keep.s * 0.9, o: 0 });
       tweenTo(wallet, poseCss(POSE.keep), { duration: 900, delay: 120, easing: spring(0.8, 0.55, 900) });
       sq('.skin__keep-head').animate([{ opacity: 0, translate: '0 -16px' }, { opacity: 1, translate: '0 0' }], { duration: 600, delay: 160, easing: IOS, fill: 'backwards' });
       sq('.skin__keep-copy').animate([{ opacity: 0, translate: '0 14px' }, { opacity: 1, translate: '0 0' }], { duration: 600, delay: 200, easing: IOS, fill: 'backwards' });
-      sq('.skin__keep-bar').animate([{ opacity: 0, translate: '0 24px' }, { opacity: 1, translate: '0 0' }], { duration: 600, delay: 240, easing: IOS, fill: 'backwards' });
+      // only the link comes up — the bar stays put so the button lands exactly on "Confirm skin"
+      sq('.skin__different').animate([{ opacity: 0, translate: '0 12px' }, { opacity: 1, translate: '0 0' }], { duration: 560, delay: 260, easing: IOS, fill: 'backwards' });
     }
     function hideAvatar() {
       avTimers.forEach(clearTimeout); avTimers = [];
