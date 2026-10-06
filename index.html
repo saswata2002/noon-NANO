@@ -786,6 +786,25 @@
     .skin__card--front { left: 50.46px; top: 329.93px; width: 273.867px; height: 193.469px; }
     /* 45:5657 shadow stack, alpha-aware (the image has transparent rounded corners) */
     .skin__card--front img { filter: drop-shadow(0 4px 8px rgba(4,18,11,.1)) drop-shadow(0 29px 14px rgba(4,18,11,.09)); }
+    /* front card: the drag handle (47:5987 is the same card, settled 315.66 wide at 187.5, 434.26) */
+    .skin__card--front { touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    .skin__card--front:active { cursor: grabbing; }
+    .skin__card img { -webkit-user-drag: none; }
+    /* 47:5886 confirm sheet — full-frame layer, hidden 640px down until the drag brings it up */
+    .skin__sheet { position: absolute; inset: 0; pointer-events: none; translate: 0 640px; will-change: translate; }
+    /* 47:5985 pocket: 385.342 × 604.514 at bottom −34.51; its SVG box sits at −29.07, 198 */
+    .skin__pocket { position: absolute; left: -29.07px; top: 198px; width: 433.342px; height: 652.514px; overflow: visible;
+      filter: drop-shadow(0 -20px 24px rgba(0,0,0,.16)); }
+    /* 47:6017 */
+    .skin__confirm { position: absolute; left: 51.475px; top: 581.17px; width: 271.25px; display: flex; flex-direction: column; gap: 10px; text-align: center; }
+    .skin__confirm p { margin: 0; }
+    .skin__confirm-title { font-weight: 800; font-size: 40px; line-height: 50px; letter-spacing: -0.3125px; color: #000; }
+    .skin__confirm-sub { font-weight: 500; font-size: 20px; line-height: 27.5px; letter-spacing: -0.1875px; color: rgba(0,0,0,.8); }
+    /* 47:5989 bottom bar: 375 wide, 1px rgba(255,255,255,.22) border, r24 top, 20 / 24 padding.
+       Its 32.5px backdrop blur sits over the opaque white sheet, so it's visually a no-op — dropped (perf). */
+    .skin__cta { position: absolute; left: -0.4px; bottom: 0; width: 375px; display: flex; padding: 20px 16px 24px;
+      border: 1px solid rgba(255,255,255,.22); border-bottom: 0; border-radius: 24px 24px 0 0; pointer-events: auto; }
+
     /* 45:5658 — Figma's text has two trailing spaces but centres the glyphs (matched to 187.5) */
     .skin__hint {
       position: absolute;
@@ -1093,8 +1112,22 @@
         <p class="skin__sub">Make your card uniquely yours</p>
         <div class="skin__card skin__card--back"><img src="assets/skin/card-back.webp" alt=""></div>
         <div class="skin__card skin__card--mid"><img src="assets/skin/card-mid.webp" alt=""></div>
-        <div class="skin__card skin__card--front"><img src="assets/skin/card-front.webp" alt="nano wallet card"></div>
         <p class="skin__hint">Drag down to confirm</p>
+        <!-- 47:5886 confirm sheet: the white pocket (47:5985) rises as the wallet is dragged down,
+             carrying "Confirm?" (47:6017) and the Continue bar (47:5989). Full-frame layer, translated. -->
+        <div class="skin__sheet" aria-hidden="true">
+          <svg class="skin__pocket" viewBox="0 0 433.342 652.514" width="433.342" height="652.514">
+            <path d="M24 44L96.6917 44C99.0167 44 100.179 44 101.219 44.1089C108.637 44.8864 115.007 49.7276 117.741 56.6674C118.125 57.6397 118.436 58.7598 119.058 61C120.303 65.4803 120.925 67.7205 121.691 69.6653C127.161 83.5448 139.9 93.2272 154.737 94.7821C156.816 95 159.141 95 163.791 95H267.551C272.201 95 274.526 95 276.605 94.7821C291.442 93.2272 304.181 83.5448 309.65 69.6653C310.417 67.7205 311.039 65.4803 312.284 61C312.906 58.7598 313.217 57.6397 313.6 56.6674C316.335 49.7276 322.705 44.8864 330.123 44.1089C331.163 44 332.325 44 334.65 44L409.342 44V648.514H24L24 44Z" fill="#fff"/>
+          </svg>
+          <div class="skin__confirm">
+            <p class="skin__confirm-title">Confirm?</p>
+            <p class="skin__confirm-sub">Finalise wallet skin</p>
+          </div>
+          <div class="skin__cta">
+            <button class="nano-btn skin__continue" type="button"><span class="nano-btn__label">Continue</span></button>
+          </div>
+        </div>
+        <div class="skin__card skin__card--front"><img src="assets/skin/card-front.webp" alt="nano wallet card — drag down to confirm" draggable="false"></div>
       </section>
     </div>
   </main>
@@ -1755,7 +1788,108 @@
       skinScreen.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
       skinScreen.classList.remove('is-shown');
       skinScreen.setAttribute('aria-hidden', 'true');
+      resetSkinConfirm();
     }
+
+    // ---------- Drag the wallet down → confirm (Figma 45:5640 → 47:5886) ----------
+    // The wallet follows the finger against a soft rubber band while the white pocket sheet rises
+    // from the bottom in step with the drag (carrying "Confirm?" and Continue); the back cards drift
+    // down slower and slip behind it, the hint fades. Let go past ~45 % (or flick) and the sheet
+    // finishes rising while the wallet drops into its pocket on a soft spring, growing to its
+    // settled 315.66 size; let go early and it all springs back. Haptics at the detent + landing.
+    const skinFront = skinScreen.querySelector('.skin__card--front');
+    const skinBack = skinScreen.querySelector('.skin__card--back');
+    const skinMid = skinScreen.querySelector('.skin__card--mid');
+    const skinHint = skinScreen.querySelector('.skin__hint');
+    const skinSheet = skinScreen.querySelector('.skin__sheet');
+    const SHEET_OFF = 640;                        // px below its place while hidden
+    const DRAG_FULL = 200;                        // finger travel for the sheet to be fully up
+    const CARD_PULL = 80;                         // the wallet's own travel tops out here (rubber band)
+    const CARD_END = { x: 0.11, y: 7.6, s: 315.66 / 273.867 };   // settled: centre 187.5, 434.26
+    let skinDrag = null, skinConfirmed = false;
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const clamp01 = (v) => Math.min(Math.max(v, 0), 1);
+    function setSkinDrag(dy) {                    // dy: finger travel in frame px
+      const p = clamp01(dy / DRAG_FULL);
+      const pull = dy >= 0 ? CARD_PULL * (1 - Math.exp(-dy / CARD_PULL)) : dy * 0.18;   // resists, never stops
+      skinFront.style.translate = `0px ${pull}px`;
+      skinFront.style.scale = String(lerp(1, CARD_END.s, p));
+      skinSheet.style.translate = `0px ${lerp(SHEET_OFF, 0, p)}px`;
+      skinMid.style.translate = `0px ${pull * 0.6}px`;
+      skinBack.style.translate = `0px ${pull * 0.35}px`;
+      skinHint.style.opacity = String(Math.max(0, 1 - p * 2.2));
+      return p;
+    }
+    // animate from wherever the element is now to `to`, leaving `to` as its resting inline style
+    function tweenTo(el, to, opts) {
+      const cs = getComputedStyle(el), from = {};
+      for (const k of Object.keys(to)) from[k] = cs[k];
+      el.getAnimations().forEach((a) => a.cancel());
+      Object.assign(el.style, to);
+      return el.animate([from, to], opts);
+    }
+    function settleSkin() {
+      skinConfirmed = true;
+      skinSheet.setAttribute('aria-hidden', 'false');
+      const SHEET = { duration: 800, easing: spring(0.92, 0.5, 800) };
+      const LAND = { duration: 1000, easing: spring(0.72, 0.5, 1000) };   // drops in with a soft give
+      tweenTo(skinSheet, { translate: '0px 0px' }, SHEET);
+      tweenTo(skinFront, { translate: `${CARD_END.x}px ${CARD_END.y}px`, scale: String(CARD_END.s) }, LAND);
+      tweenTo(skinMid, { translate: '0px 40px' }, SHEET);
+      tweenTo(skinBack, { translate: '0px 24px' }, SHEET);
+      tweenTo(skinHint, { opacity: '0' }, { duration: 200, easing: 'ease-out' });
+      skinTimers.push(setTimeout(() => haptic.medium(), 220));   // the wallet lands in its pocket
+    }
+    function revertSkin() {
+      const BACK = { duration: 700, easing: spring(0.86, 0.45, 700) };
+      tweenTo(skinSheet, { translate: `0px ${SHEET_OFF}px` }, BACK);
+      tweenTo(skinFront, { translate: '0px 0px', scale: '1' }, BACK);
+      tweenTo(skinMid, { translate: '0px 0px' }, BACK);
+      tweenTo(skinBack, { translate: '0px 0px' }, BACK);
+      tweenTo(skinHint, { opacity: '1' }, { duration: 300, easing: 'ease-out' });
+    }
+    function resetSkinConfirm() {
+      skinDrag = null; skinConfirmed = false;
+      [skinFront, skinMid, skinBack, skinHint, skinSheet].forEach((el) => {
+        el.getAnimations().forEach((a) => a.cancel());
+        el.style.translate = ''; el.style.scale = ''; el.style.opacity = '';
+      });
+      skinSheet.setAttribute('aria-hidden', 'true');
+    }
+    skinFront.addEventListener('pointerdown', (e) => {
+      if (skinConfirmed || !skinScreen.classList.contains('is-shown')) return;
+      e.preventDefault();
+      [skinFront, skinMid, skinBack, skinHint, skinSheet].forEach((el) =>   // entrance / spring-back done
+        el.getAnimations().forEach((a) => { try { a.commitStyles(); } catch (err) {} a.cancel(); }));
+      try { skinFront.setPointerCapture(e.pointerId); } catch (err) {}   // keep the drag even off the card
+      const s = ui.getBoundingClientRect().width / 375;
+      const tr = getComputedStyle(skinFront).translate;               // "none" or "0px 35px"
+      const t = tr === 'none' ? 0 : parseFloat(tr.split(' ')[1] || '0');
+      // resume from wherever a spring-back left the wallet (invert the rubber band)
+      const start = t > 0 ? -CARD_PULL * Math.log(1 - Math.min(t / CARD_PULL, 0.99)) : 0;
+      skinDrag = { id: e.pointerId, y0: e.clientY, s, start, dy: start, p: 0, detent: false, samples: [[e.timeStamp, start]] };
+    });
+    skinFront.addEventListener('pointermove', (e) => {
+      if (!skinDrag || e.pointerId !== skinDrag.id) return;
+      const dy = skinDrag.start + (e.clientY - skinDrag.y0) / skinDrag.s;
+      skinDrag.dy = dy;
+      skinDrag.p = setSkinDrag(dy);
+      skinDrag.samples.push([e.timeStamp, dy]);
+      if (skinDrag.samples.length > 6) skinDrag.samples.shift();
+      if (!skinDrag.detent && skinDrag.p >= 0.45) { skinDrag.detent = true; haptic.light(); }   // past the point of no return
+      if (skinDrag.detent && skinDrag.p < 0.4) skinDrag.detent = false;
+    });
+    const endSkinDrag = (e) => {
+      if (!skinDrag || e.pointerId !== skinDrag.id) return;
+      const sm = skinDrag.samples, a = sm[0], b = sm[sm.length - 1];
+      const v = b[0] > a[0] ? (b[1] - a[1]) / (b[0] - a[0]) : 0;          // frame px per ms, + = down
+      const go = skinDrag.p >= 0.45 || (v > 0.45 && skinDrag.p > 0.12);
+      skinDrag = null;
+      if (go) settleSkin(); else revertSkin();
+    };
+    skinFront.addEventListener('pointerup', endSkinDrag);
+    skinFront.addEventListener('pointercancel', endSkinDrag);
+    skinScreen.querySelector('.skin__continue').addEventListener('click', () => haptic.light());
     walletIntro.addEventListener('ended', () => {
       if (otpScreen.classList.contains('is-done')) revealSkin();
     });
