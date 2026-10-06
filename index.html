@@ -999,6 +999,65 @@
       font: inherit; font-weight: 600; font-size: 14px; line-height: 20px; color: #989fb3; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .int__skip:active { opacity: .6; }
 
+    /* ================= Selected Wallet (76:22259) → Home Page (76:21578) =================
+       Home coordinates throughout. The page scrolls (content runs to 2236); the bottom nav is the
+       frame's one fixed child. The wallet header (0, −1, 375 × 577, bottom radius 24) is live — its
+       background and card are the skin picked earlier; every other section is a 3× Figma render. */
+    .hm { position: absolute; inset: 0; z-index: 11; overflow: hidden; visibility: hidden; pointer-events: none; }
+    .hm.is-shown { visibility: visible; pointer-events: auto; }
+    .hm__page { position: absolute; inset: 0; background: linear-gradient(180deg, #fff 0, #cc99ff 865px); opacity: 0; }
+    .hm__scroll { position: absolute; inset: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: pan-y; }
+    .hm__scroll::-webkit-scrollbar { display: none; }
+    .hm.is-locked .hm__scroll { overflow-y: hidden; }
+    .hm__content { position: relative; width: 375px; height: 2236px; isolation: isolate; }
+    .hm__content img { display: block; max-width: none; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
+    /* blank page with the grid at both ends: over the home content while the card pops, then under it */
+    .hm__selbg { position: absolute; left: 0; top: 0; width: 375px; height: 812px; z-index: 0; opacity: 0; pointer-events: none; }
+    .hm.is-sel .hm__selbg { z-index: 5; }
+    /* the header's clip (bottom radius 24) lives on its background only — the card's long baked shadow
+       must not be cut off while it pops on the blank page */
+    .hm__wallet { position: absolute; left: 0; top: -1px; width: 375px; height: 577px; }
+    .hm__wallet > * { position: absolute; z-index: 2; }
+    .hm__wbg { inset: 0; z-index: 1 !important; isolation: isolate; overflow: hidden; border-radius: 0 0 24px 24px; }
+    .hm__wbg-img { position: absolute; left: -30px; top: -64px; width: 435px; height: 772.922px; object-fit: cover; }
+    .hm__wbg-img.is-dim { filter: brightness(.8); }
+    /* 76:21597 navy vignette, blended as Overlay (radial 193.78 × 304.89 at 187.5, 271.05; clear to 61.6 %) */
+    .hm__wbg-ov { position: absolute; left: 0; top: 0.586px; width: 375px; height: 590px; mix-blend-mode: overlay;
+      background: radial-gradient(193.78px 304.89px at 187.5px 271.05px, rgba(3,25,74,0) 61.605%, rgb(3,25,74) 100%); }
+    .hm__ask { left: 0; top: 386px; width: 375px; margin: 0; text-align: center; font-weight: 600; font-size: 16px; line-height: 22px;
+      letter-spacing: -0.15px; color: rgba(255,255,255,.8); }
+    .hm__ready { left: 67.006px; top: 414.544px; width: 242px; height: 51px; }
+    /* 49:6059 Button / Neutral · Small: #212121 pill 143 × 40, its 3px white stroke OUTSIDE (Figma renders it
+       149 × 46), inner shadows cast from the stroke's outer edge */
+    .hm__topup { left: 114px; top: 477px; width: 149px; height: 46px; padding: 0 14px; border: 3px solid #fff; border-radius: 9999px;
+      background: #212121; display: flex; align-items: center; justify-content: center; gap: 6px; overflow: hidden;
+      font: inherit; font-weight: 600; font-size: 14px; line-height: 20px; color: #fff; white-space: nowrap; cursor: pointer;
+      -webkit-tap-highlight-color: transparent; transition: scale var(--pp-move-ms) var(--pp-move); }
+    .hm__topup::after { content: ''; position: absolute; inset: -3px; border-radius: inherit; pointer-events: none;
+      box-shadow: inset 0 -8px 5px #000, inset 0 4px 5px #a9a9a9; }
+    .hm__topup > * { position: relative; flex: none; }
+    .hm__topup span { transform: translateY(0.33px); }
+    .hm__topup:active { scale: .96; transition-duration: 90ms; }
+    /* 76:21602 card 272 × 192.15 at 52, 170 — the picker card canvas × 1.0925, its shadow re-baked to Figma's */
+    .hm__card { left: 52px; top: 171px; width: 272px; height: 192.15px; will-change: transform; }
+    .hm__card img { position: absolute; left: -60.318px; top: -34.467px; width: 392.64px; height: 347.26px; }
+    .hm.is-sel .hm__card { z-index: 6; }
+    .hm__tag { left: 0; top: 196.43px; width: 119px; height: 83px; }
+    .hm__cactus--r { left: 290.3px; top: 324px; width: 185px; height: 109px; }
+    .hm__cactus--l { left: 0; top: 307px; width: 187px; height: 135px; }
+    .hm__switcher { position: absolute; left: 0; top: 45px; width: 375px; height: 92px; z-index: 3; overflow-x: auto; overflow-y: hidden;
+      scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-x pan-y; }
+    .hm__switcher::-webkit-scrollbar { display: none; }
+    .hm__switcher img { width: 401px; height: 92px; }
+    .hm__market, .hm__quest, .hm__game, .hm__bell { position: absolute; z-index: 3; }
+    .hm__market { left: -24px; top: 470.22px; width: 423px; height: 551px; }
+    .hm__quest { left: 0; top: 998px; width: 375px; height: 622px; }
+    .hm__game { left: 0; top: 1614px; width: 375px; height: 622px; }
+    .hm__bell { left: 301.06px; top: 919.72px; width: 93px; height: 91px; z-index: 4; }
+    .hm__nav { position: absolute; left: 0; top: 680px; width: 375px; height: 132px; z-index: 2; display: block; pointer-events: none; }
+    .hm.is-sel .hm__nav { opacity: 0; }
+
 
 
     /* M-Toast / Error on the OTP sheet (Figma 41:5323) — 270 × 50 at 52, 53 */
@@ -1389,6 +1448,35 @@
         </div>
         <button class="int__skip" type="button">Skip for now</button>
         <button class="av__back int__back" type="button" aria-label="Back"><img src="assets/avatar/chevron-left.svg" width="20" height="20" alt=""></button>
+      </section>
+
+      <!-- ================= Selected Wallet (Figma 76:22259) → Home Page (76:21578) ================= -->
+      <section class="hm" id="homeScreen" aria-hidden="true" aria-label="Home">
+        <div class="hm__page"></div>
+        <div class="hm__scroll">
+          <div class="hm__content">
+            <!-- blank "Selected Wallet" page: same grid header as the interests page + the mirrored grid
+                 at the bottom; sits over the home content and under the wallet card while it pops -->
+            <img class="hm__selbg" src="assets/home/sel-bg.webp" width="375" height="812" alt="">
+            <div class="hm__wallet">
+              <div class="hm__wbg"><img class="hm__wbg-img" alt=""><div class="hm__wbg-ov"></div></div>
+              <p class="hm__ask">Ask your parents to add money</p>
+              <img class="hm__ready" src="assets/home/title.webp" width="242" height="51" alt="Wallet is Ready">
+              <button class="hm__topup" type="button"><img src="assets/home/plus.svg" width="20" height="20" alt=""><span>Top up wallet</span></button>
+              <!-- the one wallet card: pops on the blank page, then settles into the header -->
+              <div class="hm__card"><img alt=""></div>
+              <img class="hm__tag" src="assets/home/tag.webp" width="119" height="83" alt="Empty wallet">
+              <img class="hm__cactus hm__cactus--r" src="assets/home/cactusR.webp" width="185" height="109" alt="">
+              <img class="hm__cactus hm__cactus--l" src="assets/home/cactusL.webp" width="187" height="135" alt="">
+            </div>
+            <div class="hm__switcher"><img src="assets/home/switcher.webp" width="401" height="92" alt="noon nano, noon, supermall, noon Food, Minutes"></div>
+            <img class="hm__market" src="assets/home/market.webp" width="423" height="551" alt="Marketplaces: noon, Food, Minutes, supermall">
+            <img class="hm__quest" src="assets/home/quest.webp" width="375" height="622" alt="Customise your profile — win 5 dirhams">
+            <img class="hm__game" src="assets/home/game.webp" width="375" height="622" alt="nano Arcade — play daily and win rewards">
+            <img class="hm__bell" src="assets/home/bell.webp" width="93" height="91" alt="">
+          </div>
+        </div>
+        <img class="hm__nav" src="assets/home/nav.webp" width="375" height="132" alt="Tasks · Wallet · Account">
       </section>
     </div>
   </main>
@@ -2896,6 +2984,7 @@
     function showInterests() {
       if (avBusy || intBusy || !avatarScreen.classList.contains('is-shown') || intScreen.classList.contains('is-shown')) return;
       avBusy = intBusy = true;
+      preloadHome();                                      // the next page's card + sections are decoded before Continue
       haptic.success();
       const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
       const OUT = 'cubic-bezier(0.4, 0, 0.6, 1)';
@@ -2994,11 +3083,149 @@
       avExit.splice(0).forEach((a) => a.cancel());
       avCta.style.opacity = '';
       intBusy = false;
+      hideHome();
     }
     avCta.addEventListener('click', showInterests);
     iq('.int__back').addEventListener('click', backToAvatar);
-    intCta.addEventListener('click', () => { if (!intCta.disabled && !intBusy) haptic.success(); });
-    iq('.int__skip').addEventListener('click', () => haptic.light());
+    intCta.addEventListener('click', () => { if (!intCta.disabled && !intBusy) showHome(); });
+    iq('.int__skip').addEventListener('click', () => { if (!intBusy) showHome(); });
+
+    // ---------- Continue → Selected Wallet → Home (Figma 76:23066) ----------
+    // 1 · the interests page clears to a blank page (its grid header stays; the mirrored grid fades
+    //     in at the bottom) and the wallet picked earlier pops up in the middle on a bouncy spring;
+    // 2 · a beat later it settles up into the home header as one shared element — the header's skin
+    //     background grows out from behind the card, and the home page builds in around it top-down:
+    //     switcher, copy, Top up, sticker + cacti, the marketplace sheet rising, the nav.
+    const homeScreen = document.getElementById('homeScreen');
+    const hq = (sel) => homeScreen.querySelector(sel);
+    const hmScroll = hq('.hm__scroll');
+    const hmCard = hq('.hm__card');
+    const SEL_DY = 140, SEL_S = 320 / 272;               // Selected Wallet card (28, 293, 320 × 226.06) vs home (52, 170, 272)
+    const SEL_POSE = `translate(0px, ${SEL_DY}px) scale(${SEL_S})`;
+    // the header's reveal starts as the card's own rect in the Selected pose (wallet coordinates)
+    const WBG_FROM = 'inset(294.05px 27px 56.9px 28px round 24px)', WBG_TO = 'inset(0px 0px 0px 0px round 0px 0px 24px 24px)';
+    var homeTimers = [];
+    const homePre = [];
+    function preloadHome() {
+      const sk = wrapSkin(skinIdx);
+      [`assets/home/cards/${sk}.webp`, sk === 'lego' ? 'assets/home/wbg-lego.webp' : bgSrc(skinIdx), 'assets/home/sel-bg.webp',
+        'assets/home/title.webp', 'assets/home/switcher.webp', 'assets/home/market.webp', 'assets/home/quest.webp', 'assets/home/nav.webp',
+        'assets/home/tag.webp', 'assets/home/cactusL.webp', 'assets/home/cactusR.webp'].forEach((src) => {
+        const im = new Image(); im.decoding = 'async'; im.src = src; homePre.push(im); im.decode && im.decode().catch(() => {});
+      });
+    }                                   // var: hideHome() can run (via hideInterests) before this line
+    function showHome() {
+      if (intBusy || !intScreen.classList.contains('is-shown') || homeScreen.classList.contains('is-shown')) return;
+      intBusy = true;
+      haptic.success();
+      const OUT = 'cubic-bezier(0.4, 0, 0.6, 1)';
+      const FADE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
+      const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
+      const rm = reduceMotion.matches;
+
+      // wallet = the skin chosen on the picker
+      // same card as the picker, re-baked with Figma's tight home shadow (0, 5, blur 10, 55 %)
+      hmCard.querySelector('img').src = `assets/home/cards/${wrapSkin(skinIdx)}.webp`;
+      // the header background: Figma's own plate for lego (the picker's backdrop minus the loose
+      // bricks, a stop darker); other skins reuse their picker backdrop, dimmed to the same depth
+      const wbgImg = hq('.hm__wbg-img'), sk = wrapSkin(skinIdx);
+      wbgImg.src = sk === 'lego' ? 'assets/home/wbg-lego.webp' : bgSrc(skinIdx);
+      wbgImg.classList.toggle('is-dim', sk !== 'lego');
+
+      // --- 1 · interests content clears (header grid stays; the Selected page carries the same one) ---
+      const fadeOut = (el, d = 0, dy = 10) => el.animate([{ opacity: 1, translate: '0 0' }, { opacity: 0, translate: `0 ${dy}px` }], { duration: 200, delay: d, easing: OUT, fill: 'forwards' });
+      iq('.int__title').animate([{ opacity: 1, translate: '0 0' }, { opacity: 0, translate: '0 -10px' }], { duration: 180, easing: OUT, fill: 'forwards' });
+      fadeOut(iq('.int__sub'), 0, -8);
+      chipEls.forEach((chip) => chip.animate([{ opacity: 1, scale: '1' }, { opacity: 0, scale: '0.94' }],
+        { duration: 220, delay: ((+chip.dataset.r) * 2 + (+chip.dataset.c)) * 14, easing: OUT, fill: 'forwards', pp: false }));
+      fadeOut(iq('.int__bar'), 40, 12);
+      fadeOut(iq('.int__skip'), 40, 8);
+      iq('.int__back').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: OUT, fill: 'forwards' });
+
+      // --- Selected Wallet: blank page + the card popping up ---
+      homeScreen.classList.add('is-shown', 'is-sel', 'is-locked');
+      homeScreen.setAttribute('aria-hidden', 'false');
+      hmScroll.scrollTop = 0;
+      const selBg = hq('.hm__selbg');
+      selBg.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, delay: 120, easing: FADE, fill: 'both', pp: false });
+      selBg.style.opacity = '1';
+      const POP_AT = rm ? 120 : 240;
+      hmCard.style.transform = SEL_POSE;
+      if (rm) hmCard.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, delay: POP_AT, fill: 'backwards' });
+      else hmCard.animate([
+        { transform: `translate(0px, ${SEL_DY + 70}px) scale(${SEL_S * 0.55}) rotate(-7deg)`, opacity: 0 },
+        { transform: `translate(0px, ${SEL_DY}px) scale(${SEL_S}) rotate(0deg)`, opacity: 1 },
+      ], { duration: 820, delay: POP_AT, easing: spring(0.58, 0.46, 820), fill: 'backwards', pp: false });
+      if (!rm) hmCard.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, delay: POP_AT, easing: FADE, fill: 'backwards', pp: false });
+
+      // --- 2 · into the home page ---
+      homeTimers.push(setTimeout(() => homeBuild(rm), POP_AT + (rm ? 500 : 900)));
+    }
+    function homeBuild(rm) {
+      const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
+      const FADE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
+      const SETTLE = spring(0.86, 0.5, 760);           // the card + header: one quick, barely-overshooting glide
+      homeScreen.classList.remove('is-sel');           // card & header now sit over the blank page, under the sheet
+      hq('.hm__page').style.opacity = '1';             // the lilac page lands under the white one, which then lifts off
+      const selBg = hq('.hm__selbg');
+      selBg.getAnimations().forEach((a) => a.cancel());
+      selBg.style.opacity = '0';
+      selBg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 320, delay: rm ? 0 : 200, easing: FADE, fill: 'backwards', pp: false });
+      intScreen.classList.remove('is-shown');          // fully covered from here
+      intScreen.setAttribute('aria-hidden', 'true');
+
+      if (rm) {
+        hmCard.style.transform = '';
+        hq('.hm__wallet').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, fill: 'backwards' });
+        homeTimers.push(setTimeout(homeDone, 360));
+        return;
+      }
+      const go = (el, kf, dur, delay, easing, pp = false) => el.animate(kf, { duration: dur, delay, easing, fill: 'backwards', pp });
+      // shared element: Selected pose → header pose
+      hmCard.style.transform = '';
+      go(hmCard, [{ transform: SEL_POSE }, { transform: 'translate(0px, 0px) scale(1)' }], 760, 0, SETTLE);
+      // the skin background grows out from behind the card to fill the header
+      const wbg = hq('.hm__wbg');
+      go(wbg, [{ clipPath: WBG_FROM }, { clipPath: WBG_TO }], 760, 0, SETTLE);
+      go(hq('.hm__wbg-img'), [{ scale: '1.18' }, { scale: '1' }], 900, 0, SETTLE);
+      go(hq('.hm__wbg-ov'), [{ opacity: 0 }, { opacity: 1 }], 420, 80, FADE);
+      // header content: copy rises, title lands, Top up pops
+      go(hq('.hm__ask'), [{ opacity: 0, translate: '0 14px' }, { opacity: 1, translate: '0 0' }], 560, 220, IOS);
+      go(hq('.hm__ready'), [{ opacity: 0, translate: '0 16px', scale: '0.92' }, { opacity: 1, translate: '0 0', scale: '1' }], 640, 260, spring(0.78, 0.45, 640));
+      go(hq('.hm__topup'), [{ opacity: 0, scale: '0.6' }, { opacity: 1, scale: '1' }], 620, 320, spring(0.62, 0.42, 620));
+      // sticker slaps on, cacti spring up out of the ground
+      go(hq('.hm__tag'), [{ opacity: 0, scale: '1.6', rotate: '-14deg' }, { opacity: 1, scale: '1', rotate: '0deg' }], 600, 380, spring(0.6, 0.4, 600));
+      hq('.hm__tag').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, delay: 380, fill: 'backwards', pp: false });
+      const cR = hq('.hm__cactus--r'), cL = hq('.hm__cactus--l');
+      cR.style.transformOrigin = '66px 72px'; cL.style.transformOrigin = '41px 76px';   // each cactus's base
+      go(cL, [{ opacity: 0, scale: '0.3', translate: '0 18px' }, { opacity: 1, scale: '1', translate: '0 0' }], 640, 420, spring(0.6, 0.42, 640));
+      go(cR, [{ opacity: 0, scale: '0.3', translate: '0 18px' }, { opacity: 1, scale: '1', translate: '0 0' }], 640, 470, spring(0.6, 0.42, 640));
+      // switcher drops in from the top, the marketplace sheet rises from below, nav slides up
+      go(hq('.hm__switcher'), [{ opacity: 0, translate: '0 -24px' }, { opacity: 1, translate: '0 0' }], 620, 200, IOS);
+      go(hq('.hm__market'), [{ translate: '0 360px' }, { translate: '0 0' }], 820, 140, spring(0.84, 0.55, 820));
+      go(hq('.hm__quest'), [{ translate: '0 360px' }, { translate: '0 0' }], 820, 190, spring(0.84, 0.55, 820));
+      go(hq('.hm__nav'), [{ opacity: 0, translate: '0 60px' }, { opacity: 1, translate: '0 0' }], 600, 380, IOS);
+      homeTimers.push(setTimeout(homeDone, 1000));
+    }
+    function homeDone() {
+      homeScreen.classList.remove('is-locked');
+      intScreen.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
+      chipEls.forEach((c) => { c.classList.remove('is-on'); c.setAttribute('aria-pressed', 'false'); });
+      intCta.disabled = true;
+      intBusy = false;
+    }
+    function hideHome() {
+      (homeTimers || []).forEach(clearTimeout); homeTimers = [];
+      const hs = document.getElementById('homeScreen');
+      hs.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
+      hs.classList.remove('is-shown', 'is-sel', 'is-locked');
+      hs.setAttribute('aria-hidden', 'true');
+      hs.querySelector('.hm__page').style.opacity = '';
+      hs.querySelector('.hm__selbg').style.opacity = '';
+      hs.querySelector('.hm__card').style.transform = '';
+      hs.querySelector('.hm__scroll').scrollTop = 0;
+    }
+    hq('.hm__topup').addEventListener('click', () => haptic.light());
 
 
     function hideSkin() {
