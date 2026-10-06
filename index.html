@@ -689,16 +689,21 @@
       pointer-events: none;
     }
     .otp.is-done .otp__digits { pointer-events: none; }
-    /* success Lottie — 1125 × 2436 comp shown at 375 × 812, coin centre (187.3, 406) */
+    /* success tick (video of tick_OTP.lottie) — 375 × 812, coin centre (187.5, 406) */
     .otp__success {
       position: absolute;
       left: 0;
       top: 0;
       width: 375px;
       height: 812px;
+      object-fit: fill;
+      display: block;
+      mix-blend-mode: multiply;      /* white → see-through over the white sheet */
+      visibility: hidden;
       pointer-events: none;
       z-index: 3;
     }
+    .otp__success.is-playing { visibility: visible; }
     .otp__intro {
       position: absolute;
       left: 0;
@@ -938,7 +943,11 @@
             </div>
           </div>
         </div>
-        <div class="otp__success" id="otpSuccess" aria-hidden="true"></div>
+        <!-- The tick: tick_OTP.lottie pre-rendered to video (1126 × 2438 @60, 2.27 s) — smooth on
+             phones, where the Lottie's 6 track mattes + 12 full-size gradient ripples stuttered as
+             SVG. Shown with multiply: its white background drops out over the white page, so the
+             coin still grows out of the collapsing green disc beneath. -->
+        <video class="otp__success" id="otpTick" src="assets/tick-otp.mp4" muted playsinline preload="auto" aria-hidden="true"></video>
         <!-- plays the moment the tick Lottie ends (Wallet Intro, 750 × 1624 = 375 × 812 @2x, 2 s, opens on white) -->
         <video class="otp__intro" id="walletIntro" src="assets/wallet-intro.mp4" muted playsinline preload="auto" aria-hidden="true"></video>
         <div class="numpad" id="numpad" aria-label="Number pad">
@@ -1442,6 +1451,7 @@
     let otpAutoTimer = 0;
     function showOtpScreen() {
       clearTimeout(emailResetTimer);                     // the email error reset is moot now
+      primeVideo(otpTick); primeVideo(walletIntro);   // inside the Send OTP tap: iOS lets them buffer now
       backTimers.forEach(clearTimeout); backTimers = [];   // a back-transition still in flight
       otpScreen.classList.remove('is-exiting');
       hideToast();
@@ -1528,20 +1538,29 @@
       return w;
     });
     let otpSeqTimers = [];
-    let successAnim = null;
     const seq = (ms, fn) => otpSeqTimers.push(setTimeout(fn, ms));
-    function ensureSuccessLottie() {
-      if (successAnim || !window.lottie) return successAnim;
-      successAnim = lottie.loadAnimation({
-        container: document.getElementById('otpSuccess'),
-        renderer: 'svg', loop: false, autoplay: false,
-        path: 'assets/lottie/success-tick.json',
-      });
-      // tick ends on a blank white frame → the Wallet Intro video (which opens on white) takes over
-      successAnim.addEventListener('complete', () => {
-        if (otpScreen.classList.contains('is-done')) playWalletIntro();
-      });
-      return successAnim;
+    const otpTick = document.getElementById('otpTick');
+    function playTick() {
+      otpTick.currentTime = 0;
+      otpTick.addEventListener('playing', () => otpTick.classList.add('is-playing'), { once: true });
+      otpTick.play().catch(() => playWalletIntro());     // can't play → straight to the wallet intro
+    }
+    function stopTick() {
+      otpTick.pause();
+      otpTick.classList.remove('is-playing');
+      try { otpTick.currentTime = 0; } catch (e) {}
+    }
+    // tick ends on a blank white frame → the Wallet Intro video (which opens on white) takes over
+    otpTick.addEventListener('ended', () => {
+      if (otpScreen.classList.contains('is-done')) playWalletIntro();
+    });
+    // iOS only buffers + decodes a video once it has played: run each hidden one for a moment
+    // while the OTP screen is up, so the tick and the intro start instantly, with no first-frame hitch
+    function primeVideo(v) {
+      if (v.dataset.primed) return;
+      v.dataset.primed = '1';
+      const p = v.play();
+      if (p) p.then(() => { if (!v.classList.contains('is-playing')) { v.pause(); v.currentTime = 0; } }).catch(() => { delete v.dataset.primed; });
     }
     const walletIntro = document.getElementById('walletIntro');
     function playWalletIntro() {
@@ -1579,7 +1598,7 @@
       otpBusy = true;
       renderOtp();                                   // ring fades
       otpScreen.classList.add('is-checking', 'is-loading');   // pad slides down
-      ensureSuccessLottie();
+      primeVideo(otpTick); primeVideo(walletIntro);   // ready before they're needed
       if (!reduceMotion.matches) startWave();
       seq(LOADING_MS, () => {
         otpScreen.classList.remove('is-loading');
@@ -1674,14 +1693,8 @@
 
           // 5 — the coin grows out of the stack (tick_OTP: a dot from frame ~2, so play from 0)
           seq(reduce ? 0 : 90, () => {
-            const anim = ensureSuccessLottie();
-            if (!anim) return;
-            const go = () => {
-              const end = anim.animationData.op;          // comp out-point (131) — totalFrames shrinks after playSegments
-              if (reduce) { anim.goToAndStop(end - 1, true); playWalletIntro(); }
-              else anim.playSegments([0, end], true);     // play through to the last frame
-            };
-            if (anim.isLoaded) go(); else anim.addEventListener('DOMLoaded', go, { once: true });
+            if (reduce) playWalletIntro();
+            else playTick();                              // plays through; 'ended' hands over to the intro
           });
         });
       });
@@ -1700,7 +1713,7 @@
       });
       waveEls.forEach((w) => w.getAnimations().forEach((a) => a.cancel()));
       otpScreen.classList.remove('is-typing', 'is-checking', 'is-loading', 'is-done');
-      if (successAnim) { successAnim.resetSegments(true); successAnim.goToAndStop(0, true); }
+      stopTick();
       successToast.hide();
       renderOtp();
     }
