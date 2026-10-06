@@ -2347,8 +2347,9 @@
       fadeUp(aq('.av__line--2'), 300, 18);
       // big avatar: the glow swells and turns into place, the circle pops in on it
       aq('.av__glow').animate([{ opacity: 0, scale: '0.6', rotate: '-60deg' }, { opacity: 1, scale: '1', rotate: '-15deg' }], { duration: 1000, delay: 300, easing: IOS, fill: 'backwards' });
-      aq('.av__big').animate([{ scale: '0.72', translate: '0 24px', easing: POP }, { scale: '1', translate: '0 0' }], { duration: 1000, delay: 360, fill: 'backwards' });
-      aq('.av__big').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 360, easing: FADE, fill: 'backwards' });
+      // the character rises into its circle from below — the same move as changing avatar
+      const bigNow = [...avatarScreen.querySelectorAll('.av__big-img')].find((im) => im.style.zIndex === '2');
+      if (bigNow) bigNow.animate([{ translate: '0 300px', easing: spring(0.7, 0.52, 860) }, { translate: '0 0' }], { duration: 860, delay: 420, fill: 'backwards' });
       // swoosh draws itself from the bottom-left
       const path = aq('.av__swoosh-path'), len = path.getTotalLength();
       path.style.strokeDasharray = `${len}`;
