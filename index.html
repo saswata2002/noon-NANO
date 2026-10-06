@@ -2785,6 +2785,52 @@
     function resetStars() {
       avatarScreen.querySelectorAll('.av__sparkle').forEach((el) => { starTargets.delete(el); el.style.removeProperty('--spin'); });
     }
+
+    // ---------- Shake to change avatar ----------
+    // On the avatar page a shake (three strong jolts within 0.7 s) shuffles to a different avatar —
+    // the same row slide + rise-in swap as a swipe. iOS only reports motion after the user allows it,
+    // and the request has to come from a tap: it's asked on the "Confirm skin" tap that opens this page.
+    let motionAsked = false, motionOn = false;
+    function askMotion() {
+      if (motionAsked) return;
+      motionAsked = true;
+      const DME = window.DeviceMotionEvent;
+      if (!DME) return;
+      if (typeof DME.requestPermission === 'function') {
+        DME.requestPermission().then((r) => { if (r === 'granted') listenMotion(); }).catch(() => {});
+      } else listenMotion();
+    }
+    function listenMotion() {
+      if (motionOn) return;
+      motionOn = true;
+      window.addEventListener('devicemotion', onDeviceMotion);
+    }
+    const SHAKE_G = 14, SHAKE_HITS = 3, SHAKE_WINDOW = 700, SHAKE_COOL = 1100;   // m/s², jolts, ms, ms
+    let shakeHits = [], shakeCoolUntil = 0;
+    function onDeviceMotion(e) {
+      if (!avatarScreen.classList.contains('is-shown') || intScreen.classList.contains('is-shown') || avBusy || rowDrag) return;
+      const a = e.acceleration, g = e.accelerationIncludingGravity;
+      let mag;
+      if (a && a.x != null) mag = Math.hypot(a.x, a.y || 0, a.z || 0);
+      else if (g && g.x != null) mag = Math.abs(Math.hypot(g.x, g.y || 0, g.z || 0) - 9.81);
+      else return;
+      const now = performance.now();
+      if (mag < SHAKE_G) return;
+      shakeHits = shakeHits.filter((t) => now - t < SHAKE_WINDOW);
+      if (!shakeHits.length || now - shakeHits[shakeHits.length - 1] > 80) shakeHits.push(now);   // one jolt, not one per sample
+      if (shakeHits.length >= SHAKE_HITS && now >= shakeCoolUntil) {
+        shakeHits = [];
+        shakeCoolUntil = now + SHAKE_COOL;
+        shuffleAvatar();
+      }
+    }
+    function shuffleAvatar() {
+      const offsets = [-2, -1, 1, 2];
+      const by = offsets[Math.floor(Math.random() * offsets.length)];
+      rowVel = 0;
+      selectAvatar(Math.round(rowPos) + by);
+      if (navigator.vibrate) navigator.vibrate(18);        // Android; iOS gives haptics only for taps
+    }
     function resetAvatarRow() {
       cancelAnimationFrame(rowRaf); rowRaf = 0; rowDrag = null;
       rowPos = rowTarget = avSel = AV_DEFAULT; rowVel = 0; bigCur = 0;
@@ -2796,7 +2842,7 @@
     }
     resetAvatarRow();
     AVATARS.forEach((a) => { new Image().src = `assets/avatar/big-${a.id}.webp`; });
-    sq('.skin__confirm-skin').addEventListener('click', showAvatar);
+    sq('.skin__confirm-skin').addEventListener('click', () => { askMotion(); showAvatar(); });   // motion permission needs this tap
     aq('.av__back').addEventListener('click', backToKeep);
 
     // ---------- Continue → What are your interests (Figma 68:21474) ----------
