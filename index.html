@@ -1840,13 +1840,15 @@
     const mixPose = (a, b, t) => ({ x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t), r: lerp(a.r, b.r, t), s: lerp(a.s, b.s, t), o: lerp(a.o, b.o, t) });
     const poseCss = (q) => ({ translate: `${q.x}px ${q.y}px`, rotate: `${q.r}deg`, scale: `${q.s}`, opacity: `${q.o}` });
     const setPose = (el, q) => Object.assign(el.style, poseCss(q));
-    // animate from wherever the element is now to `to`, leaving `to` as its resting inline style
+    // animate from wherever the element is now to `to`, leaving `to` as its resting inline style.
+    // fill 'backwards' holds the start pose through any delay — without it a delayed tween showed
+    // its END pose until the delay ran out, then jumped back (the "Pick a different skin" glitch).
     function tweenTo(el, to, opts) {
       const cs = getComputedStyle(el), from = {};
       for (const k of Object.keys(to)) from[k] = cs[k];
       el.getAnimations().forEach((a) => a.cancel());
       Object.assign(el.style, to);
-      return el.animate([from, to], opts);
+      return el.animate([from, to], { fill: 'backwards', ...opts });
     }
     const cardEls = [...skinScreen.querySelectorAll('.wcard')];
     const bgEls = [...skinScreen.querySelectorAll('.skin__bg')];
@@ -1982,9 +1984,9 @@
     }
     // Drag down: the wallet follows against a rubber band (≈0.6× the finger at first, firmer as it
     // goes), the cards behind tuck in under it — they straighten, shrink and slide in behind it —
-    // and the sheet rises from the bottom to meet it. 60 % of the travel commits (no release needed);
+    // and the sheet rises from the bottom to meet it. 80 % of the travel commits (no release needed);
     // anything less springs back when released.
-    const DOWN_TRAVEL = 220, COMMIT_AT = 0.6;
+    const DOWN_TRAVEL = 220, COMMIT_AT = 0.8;
     const easeOut = (t) => 1 - Math.pow(1 - t, 3);
     function dragDown(dy) {                     // finger travel down (dy > 0) → progress 0…1
       const d = Math.max(dy, 0);
@@ -2020,7 +2022,7 @@
         if (sg.mode === 'up') dragUp(dy);
         else {
           sg.p = dragDown(dy);
-          if (sg.p >= COMMIT_AT) {                // 60 % down: hand over to the confirm transition
+          if (sg.p >= COMMIT_AT) {                // 80 % down: hand over to the confirm transition
             try { el.releasePointerCapture(sg.id); } catch (err) {}
             sg = null;
             skinScreen.classList.remove('is-dragging');
@@ -2036,7 +2038,7 @@
         sg = null;
         skinScreen.classList.remove('is-dragging');
         if (mode === 'up') { if (-dy >= 70 || v < -0.45) changeSkin(v); else springBackStack(true); }
-        else if (mode === 'down') springBackStack();          // only reaching 60 % commits
+        else if (mode === 'down') springBackStack();          // only reaching 80 % commits
       };
       el.addEventListener('pointerup', end);
       el.addEventListener('pointercancel', end);
@@ -2154,18 +2156,18 @@
       tweenTo(roles.back, { ...poseCss({ ...POSE.front, s: 0.86 }), opacity: '0' }, { duration: 300, easing: 'ease-out' });
       tweenTo(sq('.skin__keepgoing'), { opacity: '0' }, { duration: 200, easing: 'ease-out' });
       skinScreen.style.setProperty('--hint-fade', '0');
-      animSheet(-24, flattenAbove, 0.9, 0.8, 1100);
-      tweenTo(roles.front, poseCss(POSE.keep), { duration: 1150, easing: spring(0.82, 0.68, 1150) });
+      animSheet(-24, flattenAbove, 0.9, 0.6, 820);
+      tweenTo(roles.front, poseCss(POSE.keep), { duration: 900, easing: spring(0.84, 0.54, 900) });
       skinScreen.classList.add('is-keep');
       skinKeep.setAttribute('aria-hidden', 'false');
       skinKeep.getAnimations().forEach((a) => a.cancel());
       skinKeep.style.opacity = '1';
-      sq('.skin__keep-head').animate([{ opacity: 0, translate: '0 -24px' }, { opacity: 1, translate: '0 0' }], { duration: 800, delay: 360, easing: IOS, fill: 'backwards' });
-      sq('.skin__ksteps').animate([{ opacity: 0, translate: '0 -8px' }, { opacity: 1, translate: '0 0' }], { duration: 600, delay: 420, easing: IOS, fill: 'backwards' });
-      sq('.skin__keep-copy').animate([{ opacity: 0, translate: '0 18px' }, { opacity: 1, translate: '0 0' }], { duration: 760, delay: 380, easing: IOS, fill: 'backwards' });
-      sq('.skin__keep-bar').animate([{ opacity: 0, translate: '0 40px' }, { opacity: 1, translate: '0 0' }], { duration: 800, delay: 460, easing: IOS, fill: 'backwards' });
-      skinTimers.push(setTimeout(() => haptic.light(), 520));        // the page lands
-      skinTimers.push(setTimeout(() => { skinBusy = false; }, 900));
+      sq('.skin__keep-head').animate([{ opacity: 0, translate: '0 -20px' }, { opacity: 1, translate: '0 0' }], { duration: 620, delay: 240, easing: IOS, fill: 'backwards' });
+      sq('.skin__ksteps').animate([{ opacity: 0, translate: '0 -8px' }, { opacity: 1, translate: '0 0' }], { duration: 480, delay: 290, easing: IOS, fill: 'backwards' });
+      sq('.skin__keep-copy').animate([{ opacity: 0, translate: '0 16px' }, { opacity: 1, translate: '0 0' }], { duration: 600, delay: 260, easing: IOS, fill: 'backwards' });
+      sq('.skin__keep-bar').animate([{ opacity: 0, translate: '0 32px' }, { opacity: 1, translate: '0 0' }], { duration: 640, delay: 320, easing: IOS, fill: 'backwards' });
+      skinTimers.push(setTimeout(() => haptic.light(), 380));        // the page lands
+      skinTimers.push(setTimeout(() => { skinBusy = false; }, 650));
     }
     // Pick a different skin — the confirm played backwards, softly: the Keep content eases away
     // (buttons down, copy down, header up), then the white page sinks without bouncing, its pocket
@@ -2180,7 +2182,7 @@
       const OUT = 'cubic-bezier(0.4, 0, 0.6, 1)';
       const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
       const away = (el, dy, delay) => el.animate([{ opacity: 1, translate: '0 0' }, { opacity: 0, translate: `0 ${dy}px` }],
-        { duration: 280, delay, easing: OUT, fill: 'forwards' });
+        { duration: 220, delay, easing: OUT, fill: 'forwards' });
       away(sq('.skin__keep-bar'), 24, 0);
       away(sq('.skin__keep-copy'), 12, 30);
       away(sq('.skin__ksteps'), -6, 40);
@@ -2192,23 +2194,23 @@
       }).catch(() => {});
 
       // page sinks: near-critically damped, so it decelerates into place with no bounce
-      skinTimers.push(setTimeout(() => animSheet(SHEET_PARK, flattenAbove, 0.97, 1.0, 1200), 120));
-      tweenTo(roles.front, poseCss(POSE.front), { duration: 1150, delay: 120, easing: spring(0.9, 0.72, 1150) });
+      skinTimers.push(setTimeout(() => animSheet(SHEET_PARK, flattenAbove, 0.96, 0.78, 950), 60));
+      tweenTo(roles.front, poseCss(POSE.front), { duration: 900, delay: 60, easing: spring(0.88, 0.56, 900) });
       // the background breathes back in as it's uncovered
       const bg = bgEls.find((b) => b.classList.contains('is-on'));
-      if (bg) bg.animate([{ scale: '1.04' }, { scale: '1' }], { duration: 1300, delay: 120, easing: IOS });
+      if (bg) bg.animate([{ scale: '1.04' }, { scale: '1' }], { duration: 1000, delay: 60, easing: IOS, fill: 'backwards' });
       // the other two cards wait hidden behind the wallet, then fan out from under it as it lands
-      [[roles.mid, POSE.mid, 560], [roles.back, POSE.back, 620]].forEach(([el, pose, delay]) => {
+      [[roles.mid, POSE.mid, 420], [roles.back, POSE.back, 470]].forEach(([el, pose, delay]) => {
         el.getAnimations().forEach((a) => a.cancel());
-        el.animate([{ ...poseCss({ ...POSE.front, s: 0.9 }), easing: spring(0.8, 0.55, 900) }, poseCss(pose)],
-          { duration: 900, delay, fill: 'backwards' });
+        el.animate([{ ...poseCss({ ...POSE.front, s: 0.9 }), easing: spring(0.76, 0.46, 760) }, poseCss(pose)],
+          { duration: 760, delay, fill: 'backwards' });
         // invisible until the fan-out starts (the wallet is home by then and covers them)
         el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, delay, easing: 'ease-out', fill: 'backwards' });
         setPose(el, pose);
       });
       skinScreen.style.setProperty('--hint-fade', '1');
-      skinTimers.push(setTimeout(() => haptic.light(), 820));        // the wallet is home
-      skinTimers.push(setTimeout(() => { skinBusy = false; }, 1100));
+      skinTimers.push(setTimeout(() => haptic.light(), 600));        // the wallet is home
+      skinTimers.push(setTimeout(() => { skinBusy = false; }, 820));
     }
     sq('.skin__different').addEventListener('click', pickDifferentSkin);
     sq('.skin__confirm-skin').addEventListener('click', () => haptic.success());
