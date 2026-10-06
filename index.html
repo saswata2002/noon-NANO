@@ -883,12 +883,20 @@
     .av__line--2 { left: 139px; top: 31.67px; background-image: linear-gradient(46.52deg, #000 52.835%, #7924ff 104.2%); }
     /* 61:15230 big avatar: glow ellipse 269.24 (its image fill is fully covered by the #e8fdff → #4ed7de
        gradient, top → bottom in its own frame), turned 15°, centre (187.5, 399.99) + 272.27 circle */
-    .av__glow { position: absolute; left: 52.885px; top: 265.375px; width: 269.235px; height: 269.235px; rotate: -15deg;
-      border-radius: 50%; background: linear-gradient(180deg, #e8fdff 0%, #4ed7de 100%); }
-    .av__big { position: absolute; left: 51.467px; top: 262.939px; width: 272.272px; height: 272.272px; display: block; }
+    .av__glow { position: absolute; left: 52.885px; top: 265.375px; width: 269.235px; height: 269.235px; rotate: -15deg; }
+    .av__glow-l { position: absolute; inset: 0; border-radius: 50%; }   /* one layer per avatar colour; new ones fade in on top */
+    /* the circle clips the avatar: it sinks out of / rises into it (storyboard 61:19243) */
+    .av__big { position: absolute; left: 51.467px; top: 262.939px; width: 272.272px; height: 272.272px; clip-path: circle(50%); }
+    .av__big-img { position: absolute; left: 0; top: 0; width: 272.272px; height: 312.272px; display: block; will-change: translate; }
     /* 61:15237–15260 avatar row */
-    .av__item { position: absolute; }
-    .av__item img { position: absolute; display: block; }
+    /* endless avatar row: JS places each item on the slot curve (68 / 84 spacing, centre one ×1.207 = 72) */
+    .av__row { position: absolute; left: 0; top: 600px; width: 375px; height: 115px; touch-action: none; cursor: grab;
+      -webkit-user-select: none; user-select: none; }
+    .av__row:active { cursor: grabbing; }
+    .av__item { position: absolute; left: -29.8165px; top: -29.8165px; width: 59.633px; height: 59.633px; will-change: transform; }
+    .av__item-in { position: absolute; inset: 0; }
+    .av__item-glow { position: absolute; left: 0.31px; top: 0.54px; width: 58.968px; height: 58.968px; border-radius: 50%; }
+    .av__item img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; -webkit-user-drag: none; }
     .av__ring { position: absolute; left: 146px; top: 615.07px; width: 84px; height: 84px; display: block; }
     /* 61:15263 M-IconButton · back */
     .av__back { position: absolute; left: 16px; top: 64px; width: 40px; height: 40px; display: grid; place-items: center; padding: 0;
@@ -1261,14 +1269,11 @@
           <p class="av__line av__line--2">for yourself</p>
         </div>
         <div class="av__glow" aria-hidden="true"></div>
-        <img class="av__big" src="assets/avatar/big-headset.webp" width="272.272" height="272.272" alt="Selected avatar">
-        <div class="av__row">
-          <div class="av__item" data-i="0"><img src="assets/avatar/glow-1.svg" style="left:6.31px;top:627.79px;width:58.968px;height:58.968px" alt=""><img src="assets/avatar/row-1.webp" style="left:5.997px;top:627.258px;width:59.633px;height:59.633px" alt=""></div>
-          <div class="av__item" data-i="1"><img src="assets/avatar/glow-2.svg" style="left:74.31px;top:627.79px;width:58.968px;height:58.968px" alt=""><img src="assets/avatar/row-2.webp" style="left:74.004px;top:627.25px;width:59.633px;height:59.633px" alt=""></div>
-          <div class="av__item" data-i="2"><img src="assets/avatar/glow-3.svg" style="left:152.38px;top:621.72px;width:71.197px;height:71.197px" alt=""><img src="assets/avatar/row-3.webp" style="left:152.002px;top:621.067px;width:72px;height:72px" alt=""></div>
-          <div class="av__item" data-i="3"><img src="assets/avatar/glow-4.svg" style="left:242.31px;top:627.79px;width:58.968px;height:58.968px" alt=""><img src="assets/avatar/row-4.webp" style="left:242.001px;top:627.258px;width:59.633px;height:59.633px" alt=""></div>
-          <div class="av__item" data-i="4"><img src="assets/avatar/glow-5.svg" style="left:310.31px;top:627.79px;width:58.968px;height:58.968px" alt=""><img src="assets/avatar/row-5.webp" style="left:310.001px;top:627.252px;width:59.633px;height:59.633px" alt=""></div>
+        <div class="av__big" role="img" aria-label="Selected avatar">
+          <img class="av__big-img" src="assets/avatar/big-headset.webp" width="272.272" height="312.272" alt="">
+          <img class="av__big-img" alt="" width="272.272" height="312.272" style="translate: 0 340px">
         </div>
+        <div class="av__row" aria-label="Avatars"></div>
         <img class="av__ring" src="assets/avatar/ring.svg" width="84" height="84" alt="">
         <button class="av__back" type="button" aria-label="Back"><img src="assets/avatar/chevron-left.svg" width="20" height="20" alt=""></button>
         <img class="av__sparkle av__sparkle--l" src="assets/avatar/sparkle.webp" width="154.897" height="154.897" alt="">
@@ -2357,10 +2362,9 @@
         }, delay + 1000));
       });
       // avatar row deals out from the centre; the ring settles on the selected one
-      const order = { 2: 0, 1: 1, 3: 1, 0: 2, 4: 2 };
       avatarScreen.querySelectorAll('.av__item').forEach((el) => {
-        const d = 560 + order[el.dataset.i] * 70;
-        el.animate([{ opacity: 0, translate: '0 26px', scale: '0.8', easing: SOFT }, { opacity: 1, translate: '0 0', scale: '1' }], { duration: 900, delay: d, fill: 'backwards' });
+        const d = 560 + Math.min(Math.round(Math.abs(+el.dataset.s || 0)), 3) * 70;
+        el.firstElementChild.animate([{ opacity: 0, translate: '0 26px', scale: '0.8', easing: SOFT }, { opacity: 1, translate: '0 0', scale: '1' }], { duration: 900, delay: d, fill: 'backwards' });
       });
       aq('.av__ring').animate([{ opacity: 0, scale: '1.3' }, { opacity: 1, scale: '1' }], { duration: 700, delay: 640, easing: IOS, fill: 'backwards' });
       avTimers.push(setTimeout(() => haptic.light(), 700));            // the avatar lands
@@ -2400,7 +2404,164 @@
       avatarScreen.setAttribute('aria-hidden', 'true');
       sq('.skin__confirm-skin').style.opacity = '';
       avBusy = false;
+      resetAvatarRow();
     }
+
+    // ---------- Avatar row: endless loop + big avatar swap (storyboard 61:19243) ----------
+    // Drag the row (or tap an avatar): it follows the finger, then springs to the nearest avatar with
+    // the flick's momentum. 5 avatars on a ring — each has two elements so one can leave one edge
+    // while its twin enters the other. When the centre avatar changes, the big one sinks out through
+    // the bottom of its circle, the new one rises in on a spring, and the glow takes the new colour.
+    const AVATARS = [
+      { id: 'box',     glow: ['#ffffff', '#5759e3', -8.4], big: ['#ecedff', '#5759e3'] },
+      { id: 'lime',    glow: ['#ffffff', '#a9de4e', -9.3], big: ['#f3ffe0', '#a9de4e'] },
+      { id: 'headset', glow: ['#ffffff', '#4ed7de', -10.3], big: ['#e8fdff', '#4ed7de'] },
+      { id: 'hoodie',  glow: ['#ffefda', '#ff9500', 0], big: ['#ffefda', '#ff9500'] },
+      { id: 'bucket',  glow: ['#f1faff', '#3598d2', -2.7], big: ['#f1faff', '#3598d2'] },
+    ];
+    const AV_N = AVATARS.length, AV_DEFAULT = 2;
+    const SLOT_X = [-32.18, 35.82, 103.82, 188, 271.82, 339.82, 407.82];   // slots −3…3 (Figma 61:15237–15262)
+    const ROW_CY = 57.07, CENTRE_SCALE = 72 / 59.633, PX_PER_ITEM = 78;
+    const slotX = (s) => {
+      if (s <= -3) return SLOT_X[0] + (s + 3) * 68;
+      if (s >= 3) return SLOT_X[6] + (s - 3) * 68;
+      const i = Math.floor(s) + 3, f = s - Math.floor(s);
+      return SLOT_X[i] + (SLOT_X[Math.min(i + 1, 6)] - SLOT_X[i]) * f;
+    };
+    const wrapIdx = (i) => ((Math.round(i) % AV_N) + AV_N) % AV_N;
+    const rowEl = aq('.av__row');
+    const rowItems = [];
+    AVATARS.forEach((a, i) => {
+      for (let c = 0; c < 2; c++) {
+        const el = document.createElement('div');
+        el.className = 'av__item';
+        el.dataset.i = i;
+        el.innerHTML = `<div class="av__item-in"><span class="av__item-glow" style="background:linear-gradient(180deg, ${a.glow[0]} ${a.glow[2]}%, ${a.glow[1]} 100%)"></span><img src="assets/avatar/row-${a.id}.webp" alt="" draggable="false"></div>`;
+        rowEl.appendChild(el);
+        rowItems.push({ el, i, c });
+      }
+    });
+    let rowPos = AV_DEFAULT, rowVel = 0, rowTarget = AV_DEFAULT, rowRaf = 0, rowDrag = null, avSel = AV_DEFAULT, avPendingTick = false;
+    function renderRow() {
+      for (const it of rowItems) {
+        let s0 = ((((it.i - rowPos) % AV_N) + AV_N + 2.5) % AV_N) - 2.5;   // −2.5 … 2.5
+        const s = it.c === 0 ? s0 : (s0 < 0 ? s0 + AV_N : s0 - AV_N);
+        const off = Math.abs(s) > 3.6;
+        it.el.style.visibility = off ? 'hidden' : '';
+        if (off) continue;
+        const sc = 1 + (CENTRE_SCALE - 1) * Math.max(0, 1 - Math.abs(s));
+        it.el.style.transform = `translate(${slotX(s).toFixed(2)}px, ${ROW_CY}px) scale(${sc.toFixed(4)})`;
+        it.el.style.zIndex = String(10 - Math.round(Math.abs(s) * 2));
+        it.el.dataset.s = s.toFixed(3);
+      }
+    }
+    // spring the row to rowTarget, carrying rowVel (items / s); ζ ≈ .8 — a hair of settle, no wobble
+    function runRow() {
+      cancelAnimationFrame(rowRaf);
+      let last = performance.now();
+      const K = 230, C = 2 * Math.sqrt(K) * 0.8;
+      const step = (now) => {
+        const dt = Math.min((now - last) / 1000, 1 / 30); last = now;
+        rowVel += (-K * (rowPos - rowTarget) - C * rowVel) * dt;
+        rowPos += rowVel * dt;
+        if (Math.abs(rowPos - rowTarget) < 0.0008 && Math.abs(rowVel) < 0.01) { rowPos = rowTarget; rowVel = 0; renderRow(); rowRaf = 0; return; }
+        renderRow();
+        rowRaf = requestAnimationFrame(step);
+      };
+      rowRaf = requestAnimationFrame(step);
+    }
+    function selectAvatar(target) {
+      rowTarget = target;
+      runRow();
+      const i = wrapIdx(target);
+      if (i !== avSel) { avSel = i; swapBig(i); avPendingTick = true; }
+    }
+    rowEl.addEventListener('pointerdown', (e) => {
+      if (avBusy) return;
+      e.preventDefault();
+      cancelAnimationFrame(rowRaf); rowRaf = 0;
+      try { rowEl.setPointerCapture(e.pointerId); } catch (err) {}
+      rowDrag = { id: e.pointerId, x0: e.clientX, pos0: rowPos, s: ui.getBoundingClientRect().width / 375, moved: false, samples: [[e.timeStamp, rowPos]], target: e.target };
+    });
+    rowEl.addEventListener('pointermove', (e) => {
+      if (!rowDrag || e.pointerId !== rowDrag.id) return;
+      const dx = (e.clientX - rowDrag.x0) / rowDrag.s;
+      if (!rowDrag.moved && Math.abs(dx) < 5) return;
+      rowDrag.moved = true;
+      rowPos = rowDrag.pos0 - dx / PX_PER_ITEM;
+      rowDrag.samples.push([e.timeStamp, rowPos]); if (rowDrag.samples.length > 6) rowDrag.samples.shift();
+      renderRow();
+    });
+    const endRow = (e) => {
+      if (!rowDrag || e.pointerId !== rowDrag.id) return;
+      const d = rowDrag; rowDrag = null;
+      if (!d.moved) {                                   // tap: bring that avatar to the centre
+        const item = d.target.closest && d.target.closest('.av__item');
+        if (item) { const s = Math.round(+item.dataset.s); if (s) { rowVel = 0; selectAvatar(Math.round(rowPos) + s); } }
+        return;
+      }
+      const a = d.samples[0], b = d.samples[d.samples.length - 1];
+      rowVel = b[0] > a[0] ? ((b[1] - a[1]) / (b[0] - a[0])) * 1000 : 0;      // items / s
+      // a slow drag just snaps to the nearest avatar; a flick (> 1.6 avatars/s) carries on — always at
+      // least one avatar in the flick's direction, at most two past where the finger let go
+      let target = Math.round(rowPos);
+      if (Math.abs(rowVel) > 1.6) {
+        const dir = Math.sign(rowVel);
+        target = Math.round(rowPos + rowVel * 0.09);
+        if ((target - d.pos0) * dir < 1) target = Math.round(d.pos0) + dir;
+        target = Math.max(Math.round(rowPos) - 2, Math.min(Math.round(rowPos) + 2, target));
+      }
+      selectAvatar(target);
+    };
+    rowEl.addEventListener('pointerup', endRow);
+    rowEl.addEventListener('pointercancel', endRow);
+    // iOS only lets haptics fire from a touchend / click
+    rowEl.addEventListener('touchend', () => { if (avPendingTick) { avPendingTick = false; haptic.light(); } });
+    rowEl.addEventListener('click', () => { if (avPendingTick) { avPendingTick = false; haptic.light(); } });
+
+    // big avatar: old sinks out through the bottom of the circle, new rises in from below
+    const bigImgs = [...avatarScreen.querySelectorAll('.av__big-img')];
+    let bigCur = 0;
+    function setGlow(i, animate) {
+      const g = aq('.av__glow');
+      const layer = document.createElement('span');
+      layer.className = 'av__glow-l';
+      layer.style.background = `linear-gradient(180deg, ${AVATARS[i].big[0]} 0%, ${AVATARS[i].big[1]} 100%)`;
+      g.appendChild(layer);
+      const tidy = () => { while (g.children.length > 1) g.firstElementChild.remove(); };
+      // the new colour fills the circle up from the bottom with the rising avatar — a cross-fade
+      // would pass through a muddy mix of the two colours
+      if (animate) layer.animate([{ clipPath: 'circle(0% at 50% 104%)' }, { clipPath: 'circle(150% at 50% 104%)' }],
+        { duration: 620, delay: 110, easing: 'cubic-bezier(0.32, 0.72, 0, 1)', fill: 'backwards' }).finished.then(tidy, () => {});
+      else tidy();
+    }
+    function swapBig(i) {
+      const out = bigImgs[bigCur], inc = bigImgs[1 - bigCur];
+      bigCur = 1 - bigCur;
+      const yOut = parseFloat(String(getComputedStyle(out).translate).split(' ')[1]) || 0;
+      out.getAnimations().forEach((a) => a.cancel());
+      out.style.translate = '0 340px';
+      out.style.zIndex = '1';
+      out.animate([{ translate: `0 ${yOut}px` }, { translate: '0 340px' }], { duration: 300, easing: 'cubic-bezier(0.5, 0, 0.75, 0.15)' });
+      inc.getAnimations().forEach((a) => a.cancel());
+      inc.src = `assets/avatar/big-${AVATARS[i].id}.webp`;
+      inc.style.zIndex = '2';
+      inc.style.translate = '0 0';
+      inc.animate([{ translate: '0 300px', easing: spring(0.7, 0.52, 860) }, { translate: '0 0' }], { duration: 860, delay: 120, fill: 'backwards' });
+      setGlow(i, true);
+      aq('.av__ring').animate([{ scale: '1' }, { scale: '1.08', offset: 0.35 }, { scale: '1' }], { duration: 420, delay: 60, easing: 'cubic-bezier(0.3, 0.7, 0.4, 1)' });
+    }
+    function resetAvatarRow() {
+      cancelAnimationFrame(rowRaf); rowRaf = 0; rowDrag = null;
+      rowPos = rowTarget = avSel = AV_DEFAULT; rowVel = 0; bigCur = 0;
+      bigImgs.forEach((im) => im.getAnimations().forEach((a) => a.cancel()));
+      bigImgs[0].src = `assets/avatar/big-${AVATARS[AV_DEFAULT].id}.webp`; bigImgs[0].style.translate = '0 0'; bigImgs[0].style.zIndex = '2';
+      bigImgs[1].style.translate = '0 340px'; bigImgs[1].style.zIndex = '1';
+      setGlow(AV_DEFAULT, false);
+      renderRow();
+    }
+    resetAvatarRow();
+    AVATARS.forEach((a) => { new Image().src = `assets/avatar/big-${a.id}.webp`; });
     sq('.skin__confirm-skin').addEventListener('click', showAvatar);
     aq('.av__back').addEventListener('click', backToKeep);
     avCta.addEventListener('click', () => { if (!avBusy) haptic.success(); });
