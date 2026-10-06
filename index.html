@@ -61,8 +61,7 @@
     }
 
     /* ---------- Video container ---------- */
-    .screen__media,
-    .screen__still {
+    .screen__media {
       position: absolute;
       inset: 0;
       width: 100%;
@@ -71,8 +70,6 @@
       display: block;
     }
 
-    .screen__still { transition: opacity 240ms ease; }
-    .screen.is-playing .screen__still { opacity: 0; }
 
 
     /* ---------- UI layer: authored at 375 × 812, scaled to the screen ---------- */
@@ -833,34 +830,20 @@
 <body>
   <main class="screen" id="screen" aria-label="Welcome to noon nano">
     <!--
-      VIDEO CONTAINER
-      Drop your video in assets/ and set VIDEO_SRC below (or open ?video=assets/your.mp4).
-      Export it at 375:812 (e.g. 1125 × 2436) so it lines up 1:1 with the frame;
-      other ratios are centre-cropped by object-fit: cover.
+      VIDEO CONTAINER — Splash (750 × 1624 = 375 × 812 @2x, 5.5 s). It plays once and holds on its
+      final scene (the kids + gift box), which is the intro background the UI sits on. The poster
+      is the video's own first frame, so nothing jumps while it loads. Override with ?video=….
     -->
     <video
       class="screen__media"
       id="screenVideo"
-      poster="assets/screen@3x.png"
+      poster="assets/splash-poster.jpg"
       muted
-      loop
       playsinline
       autoplay
       preload="auto"
       aria-hidden="true"
     ></video>
-
-    <!-- Static frame from Figma; sits on top until the video starts playing. -->
-    <img
-      class="screen__still"
-      src="assets/screen@3x.png"
-      srcset="assets/screen@1x.png 375w, assets/screen@3x.png 1125w"
-      sizes="(max-width: 375px) 100vw, 375px"
-      width="375"
-      height="812"
-      alt=""
-      decoding="async"
-    >
 
     <!-- UI components (Figma section 24:4761: rest 23:3854 ⇄ edit 23:4163) -->
     <div class="ui" id="ui">
@@ -1045,8 +1028,8 @@
       };
     })();
 
-    // Set this to your video file when it's ready, e.g. 'assets/screen.mp4'.
-    const VIDEO_SRC = '';
+    // Intro background: the Splash video (plays once, then holds its last frame)
+    const VIDEO_SRC = 'assets/splash.mp4';
 
     const screen = document.getElementById('screen');
     const video = document.getElementById('screenVideo');
@@ -1059,8 +1042,8 @@
       video.src = src;
       const play = () => video.play().catch(() => { /* autoplay blocked: the still stays visible */ });
       play();
-      // Browsers hold autoplay in background tabs; start once the tab is shown.
-      document.addEventListener('visibilitychange', () => { if (!document.hidden && video.paused) play(); });
+      // Browsers hold autoplay in background tabs; start once the tab is shown (not after it's ended).
+      document.addEventListener('visibilitychange', () => { if (!document.hidden && video.paused && !video.ended) play(); });
     }
 
     // Keep the 375 × 812 UI layer locked to the screen box at any size.
