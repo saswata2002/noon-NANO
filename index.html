@@ -916,6 +916,53 @@
     .av__bar .nano-btn { flex: 1 1 0; }
     .av__cta .nano-btn__label { transition: none; }
     .av__cta-from { position: absolute; inset: 0; display: grid; place-items: center; z-index: 1; opacity: 0; pointer-events: none; }
+    /* ================= Setup · What are your interests (Figma 68:21474 — State 01 / State 02) =================
+       Same grid header + back button as the avatar page (they stay put across the hand-off). */
+    .int { position: absolute; inset: 0; z-index: 10; overflow: hidden; visibility: hidden; pointer-events: none; }
+    .int.is-shown { visibility: visible; pointer-events: auto; }
+    .int__page { position: absolute; inset: 0; background: #fff; }
+    .int__bg { position: absolute; left: 0; top: 0; width: 375px; height: 188px; display: block; }
+    /* 68:19564 title stack (278 wide at 48.5, 111.8): two gradient lines with a 5px white outline */
+    .int__title { position: absolute; left: 48.5px; top: 111.8px; width: 278px; height: 87px;
+      filter: drop-shadow(0 5px 10px rgba(61,41,163,.14)); }
+    .int__line { position: absolute; margin: 0; white-space: nowrap; text-align: center;
+      font-weight: 800; font-size: 36px; line-height: 48px; letter-spacing: -0.25px; }
+    .int__line--1 { left: 21px; top: 0.5px; width: 236px; }
+    .int__line--2 { left: 56px; top: 31.7px; width: 166px; }
+    /* Figma's 5px OUTSIDE white stroke, drawn as a ring of 24 shadows so its corners are round
+       (-webkit-text-stroke can only mitre, which spiked at the W and ?) */
+    .int__line.is-stroke { color: #fff; text-shadow: 5.00px 0.00px 0 #fff, 4.83px 1.29px 0 #fff, 4.33px 2.50px 0 #fff, 3.54px 3.54px 0 #fff, 2.50px 4.33px 0 #fff, 1.29px 4.83px 0 #fff, 0.00px 5.00px 0 #fff, -1.29px 4.83px 0 #fff, -2.50px 4.33px 0 #fff, -3.54px 3.54px 0 #fff, -4.33px 2.50px 0 #fff, -4.83px 1.29px 0 #fff, -5.00px 0.00px 0 #fff, -4.83px -1.29px 0 #fff, -4.33px -2.50px 0 #fff, -3.54px -3.54px 0 #fff, -2.50px -4.33px 0 #fff, -1.29px -4.83px 0 #fff, -0.00px -5.00px 0 #fff, 1.29px -4.83px 0 #fff, 2.50px -4.33px 0 #fff, 3.54px -3.54px 0 #fff, 4.33px -2.50px 0 #fff, 4.83px -1.29px 0 #fff; }
+    .int__line.is-fill { color: transparent; -webkit-background-clip: text; background-clip: text; }
+    .int__line--1.is-fill { background-image: linear-gradient(40.9deg, #000 52.85%, #7924ff 104.2%); }
+    .int__line--2.is-fill { background-image: linear-gradient(51.67deg, #000 52.87%, #7924ff 118.1%); }
+    .int__sub { position: absolute; left: 48.5px; top: 200.8px; width: 278px; margin: 0; text-align: center;
+      font-weight: 500; font-size: 16px; line-height: 22px; letter-spacing: -0.15px; color: #666d85; }
+    /* chips: 165 × 75, r 20, 2 columns (16 / 194) × 5 rows (246.7 + 87.8n); icon clipped by the chip */
+    .ich { position: absolute; width: 165px; height: 75px; padding: 0; border: 0; border-radius: 20px; overflow: hidden;
+      background: #f9f9fb; cursor: pointer; -webkit-tap-highlight-color: transparent; font: inherit; text-align: left;
+      transition: scale 260ms cubic-bezier(0.3, 0.7, 0.4, 1); }
+    .ich:active { scale: .965; transition-duration: 90ms; }
+    /* selected: white + the iridescent image (214 × 120 at −49, −29) + a 1px #d6e9ff inside stroke */
+    .ich__sel { position: absolute; inset: 0; border-radius: inherit; background: #fff; opacity: 0;
+      transition: opacity 320ms cubic-bezier(0.25, 0.1, 0.25, 1); }
+    .ich__sel img { position: absolute; left: -49px; top: -29px; width: 214px; height: 120px; display: block; }
+    .ich__sel::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px #d6e9ff; }
+    .ich__lbl { position: absolute; left: 16px; top: 16px; font-weight: 700; font-size: 18px; line-height: 24px; letter-spacing: -0.15px;
+      color: #343d54; white-space: nowrap; transition: opacity 280ms cubic-bezier(0.25, 0.1, 0.25, 1); }
+    .ich__lbl--on { color: transparent; background: linear-gradient(180deg, #a73bf3, #6cc3fc); -webkit-background-clip: text; background-clip: text; opacity: 0; }
+    .ich__ico { position: absolute; left: 103px; top: 27px; width: 60px; height: 60px; display: block; pointer-events: none; }
+    .ich__ico--toy { left: 106px; top: 23px; width: 62.2px; height: 62.2px; }
+    .ich.is-on .ich__sel, .ich.is-on .ich__lbl--on { opacity: 1; }
+    .ich.is-on .ich__lbl:not(.ich__lbl--on) { opacity: 0; }
+    /* 68:19540 bottom: white panel from 678, action bar (button bottom-aligned at 746: Disabled 52 / Primary 56), Skip for now */
+    .int__dock { position: absolute; left: 0; top: 678px; width: 375px; height: 134px; background: #fff; }
+    .int__bar { position: absolute; left: 0; top: 678px; width: 375px; height: 80px; padding: 12px 16px; display: flex; align-items: flex-end; }
+    .int__bar .nano-btn { flex: 1 1 0; }
+    .nano-btn.is-instant, .nano-btn.is-instant::before, .nano-btn.is-instant::after { transition: none !important; }
+    .int__skip { position: absolute; left: 139px; top: 758px; width: 97px; height: 28px; padding: 4px 8px; border: 0; border-radius: 6px; background: none;
+      font: inherit; font-weight: 600; font-size: 14px; line-height: 20px; color: #989fb3; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .int__skip:active { opacity: .6; }
+
 
 
     /* M-Toast / Error on the OTP sheet (Figma 41:5323) — 270 × 50 at 52, 53 */
@@ -1285,6 +1332,39 @@
         <div class="av__bar">
           <button class="nano-btn av__cta" type="button"><span class="nano-btn__label av__cta-to">Continue</span><span class="nano-btn__label av__cta-from" aria-hidden="true">Confirm skin</span></button>
         </div>
+      </section>
+
+      <!-- ================= Setup · What are your interests (Figma 68:21474) ================= -->
+      <section class="int" id="intScreen" aria-hidden="true" aria-label="What are your interests?">
+        <div class="int__page"></div>
+        <img class="int__bg" src="assets/avatar/bg-grid.webp" width="375" height="188" alt="">
+        <div class="int__title">
+          <span class="av__title-knock" style="left:55.3px;top:29.6px;width:162.5px;height:24.7px"></span>
+          <span class="av__title-knock" style="left:28.5px;top:21.5px;width:193.2px;height:16px"></span>
+          <span class="int__line int__line--1 is-stroke" aria-hidden="true">What are your</span>
+          <span class="int__line int__line--2 is-stroke" aria-hidden="true">interests?</span>
+          <h1 class="int__line int__line--1 is-fill">What are your</h1>
+          <p class="int__line int__line--2 is-fill">interests?</p>
+        </div>
+        <p class="int__sub">Pick at least 3 interests</p>
+        <div class="int__chips">
+          <button class="ich" type="button" data-k="art" data-r="0" data-c="0" aria-pressed="false" style="left:16px;top:246.7px"><span class="ich__sel"><img src="assets/interests/selected-bg.webp" alt=""></span><span class="ich__lbl">Art</span><span class="ich__lbl ich__lbl--on" aria-hidden="true">Art</span><img class="ich__ico" src="assets/interests/art.webp" alt=""></button>
+          <button class="ich" type="button" data-k="gadgets" data-r="0" data-c="1" aria-pressed="false" style="left:194px;top:246.7px"><span class="ich__sel"><img src="assets/interests/selected-bg.webp" alt=""></span><span class="ich__lbl">Gadgets</span><span class="ich__lbl ich__lbl--on" aria-hidden="true">Gadgets</span><img class="ich__ico" src="assets/interests/gadgets.webp" alt=""></button>
+          <button class="ich" type="button" data-k="stem" data-r="1" data-c="0" aria-pressed="false" style="left:16px;top:334.5px"><span class="ich__sel"><img src="assets/interests/selected-bg.webp" alt=""></span><span class="ich__lbl">STEM</span><span class="ich__lbl ich__lbl--on" aria-hidden="true">STEM</span><img class="ich__ico" src="assets/interests/stem.webp" alt=""></button>
+          <button class="ich" type="button" data-k="science" data-r="1" data-c="1" aria-pressed="false" style="left:194px;top:334.5px"><span class="ich__sel"><img src="assets/interests/selected-bg.webp" alt=""></span><span class="ich__lbl">Science</span><span class="ich__lbl ich__lbl--on" aria-hidden="true">Science</span><img class="ich__ico" src="assets/interests/science.webp" alt=""></button>
+          <button class="ich" type="button" data-k="beauty" data-r="2" data-c="0" aria-pressed="false" style="left:16px;top:422.3px"><span class="ich__sel"><img src="assets/interests/selected-bg.webp" alt=""></span><span class="ich__lbl">Beauty</span><span class="ich__lbl ich__lbl--on" aria-hidden="true">Beauty</span><img class="ich__ico" src="assets/interests/beauty.webp" alt=""></button>
+          <button class="ich" type="button" data-k="gaming" data-r="2" data-c="1" aria-pressed="false" style="left:194px;top:422.3px"><span class="ich__sel"><img src="assets/interests/selected-bg.webp" alt=""></span><span class="ich__lbl">Gaming</span><span class="ich__lbl ich__lbl--on" aria-hidden="true">Gaming</span><img class="ich__ico" src="assets/interests/gaming.webp" alt=""></button>
+          <button class="ich" type="button" data-k="fashion" data-r="3" data-c="0" aria-pressed="false" style="left:16px;top:510.1px"><span class="ich__sel"><img src="assets/interests/selected-bg.webp" alt=""></span><span class="ich__lbl">Fashion</span><span class="ich__lbl ich__lbl--on" aria-hidden="true">Fashion</span><img class="ich__ico" src="assets/interests/fashion.webp" alt=""></button>
+          <button class="ich" type="button" data-k="pets" data-r="3" data-c="1" aria-pressed="false" style="left:194px;top:510.1px"><span class="ich__sel"><img src="assets/interests/selected-bg.webp" alt=""></span><span class="ich__lbl">Pets</span><span class="ich__lbl ich__lbl--on" aria-hidden="true">Pets</span><img class="ich__ico" src="assets/interests/pets.webp" alt=""></button>
+          <button class="ich" type="button" data-k="anime" data-r="4" data-c="0" aria-pressed="false" style="left:16px;top:597.9px"><span class="ich__sel"><img src="assets/interests/selected-bg.webp" alt=""></span><span class="ich__lbl">Anime</span><span class="ich__lbl ich__lbl--on" aria-hidden="true">Anime</span><img class="ich__ico" src="assets/interests/anime.webp" alt=""></button>
+          <button class="ich" type="button" data-k="toy" data-r="4" data-c="1" aria-pressed="false" style="left:194px;top:597.9px"><span class="ich__sel"><img src="assets/interests/selected-bg.webp" alt=""></span><span class="ich__lbl">Toy</span><span class="ich__lbl ich__lbl--on" aria-hidden="true">Toy</span><img class="ich__ico ich__ico--toy" src="assets/interests/toy.webp" alt=""></button>
+        </div>
+        <div class="int__dock"></div>
+        <div class="int__bar">
+          <button class="nano-btn int__cta" type="button" disabled><span class="nano-btn__label">Continue</span></button>
+        </div>
+        <button class="int__skip" type="button">Skip for now</button>
+        <button class="av__back int__back" type="button" aria-label="Back"><img src="assets/avatar/chevron-left.svg" width="20" height="20" alt=""></button>
       </section>
     </div>
   </main>
@@ -2347,19 +2427,33 @@
       };
       aq('.av__bg').animate([{ opacity: 0, translate: '0 -12px' }, { opacity: 1, translate: '0 0' }], { duration: 700, delay: 180, easing: IOS, fill: 'backwards' });
       aq('.av__back').animate([{ opacity: 0, scale: '0.8' }, { opacity: 1, scale: '1' }], { duration: 600, delay: 420, easing: IOS, fill: 'backwards' });
-      fadeUp(aq('.av__line--1'), 240, 18);
-      fadeUp(aq('.av__line--2'), 300, 18);
+      avatarBuild(0);
+      avTimers.push(setTimeout(() => { avBusy = false; }, 1000));
+    }
+    // The avatar page's content building in (title, glow + character, swoosh, sparkles, row, ring).
+    // t shifts the whole sequence earlier — coming back from Interests it starts at once.
+    function avatarBuild(t) {
+      const D = (ms) => Math.max(0, ms - t);
+      const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
+      const FADE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
+      const POP = spring(0.62, 0.55, 1000);
+      const fadeUp = (el, delay, dy = 14, dur = 700) => {
+        el.animate([{ opacity: 0, translate: `0 ${dy}px`, filter: 'blur(6px)' }, { opacity: 1, translate: '0 0', filter: 'blur(0px)' }],
+          { duration: dur, delay, easing: IOS, fill: 'backwards' });
+      };
+      fadeUp(aq('.av__line--1'), D(240), 18);
+      fadeUp(aq('.av__line--2'), D(300), 18);
       // big avatar: the glow swells and turns into place, the circle pops in on it
-      aq('.av__glow').animate([{ opacity: 0, scale: '0.6', rotate: '-60deg' }, { opacity: 1, scale: '1', rotate: '-15deg' }], { duration: 1000, delay: 300, easing: IOS, fill: 'backwards' });
+      aq('.av__glow').animate([{ opacity: 0, scale: '0.6', rotate: '-60deg' }, { opacity: 1, scale: '1', rotate: '-15deg' }], { duration: 1000, delay: D(300), easing: IOS, fill: 'backwards' });
       // the character rises into its circle from below — the same move as changing avatar
       const bigNow = [...avatarScreen.querySelectorAll('.av__big-img')].find((im) => im.style.zIndex === '2');
-      if (bigNow) bigNow.animate([{ translate: '0 300px', easing: spring(0.7, 0.52, 860) }, { translate: '0 0' }], { duration: 860, delay: 420, fill: 'backwards' });
+      if (bigNow) bigNow.animate([{ translate: '0 300px', easing: spring(0.7, 0.52, 860) }, { translate: '0 0' }], { duration: 860, delay: D(420), fill: 'backwards' });
       // swoosh draws itself from the bottom-left
       const path = aq('.av__swoosh-path'), len = path.getTotalLength();
       path.style.strokeDasharray = `${len}`;
-      path.animate([{ strokeDashoffset: `${len}` }, { strokeDashoffset: '0' }], { duration: 900, delay: 460, easing: 'cubic-bezier(0.65, 0, 0.35, 1)', fill: 'backwards' });
+      path.animate([{ strokeDashoffset: `${len}` }, { strokeDashoffset: '0' }], { duration: 900, delay: D(460), easing: 'cubic-bezier(0.65, 0, 0.35, 1)', fill: 'backwards' });
       // sparkles spin in, then twinkle gently
-      [[aq('.av__sparkle--l'), 640], [aq('.av__sparkle--s'), 760]].forEach(([el, delay], k) => {
+      [[aq('.av__sparkle--l'), D(640)], [aq('.av__sparkle--s'), D(760)]].forEach(([el, delay], k) => {
         el.animate([{ opacity: 0, scale: '0.2', rotate: '-120deg', easing: POP }, { opacity: 1, scale: '1', rotate: '0deg' }], { duration: 1000, delay, fill: 'backwards' });
         avTimers.push(setTimeout(() => {
           twinkles.push(el.animate([{ scale: '1', rotate: '0deg' }, { scale: k ? '0.82' : '0.9', rotate: k ? '12deg' : '-8deg' }, { scale: '1', rotate: '0deg' }],
@@ -2369,7 +2463,7 @@
       // avatar row deals out from the centre; the ring settles on the selected one
       // avatar row: the selected avatar and its ring pop in together, then the others slide out from
       // behind it to their places — nearest first — on a soft spring
-      const ROW_POP = 560;
+      const ROW_POP = D(560);
       const FAN = spring(0.74, 0.5, 900);
       avatarScreen.querySelectorAll('.av__item').forEach((el) => {
         const sv = +el.dataset.s || 0, inner = el.firstElementChild;
@@ -2387,8 +2481,7 @@
       });
       aq('.av__ring').animate([{ scale: '0.2', easing: POP }, { scale: '1' }], { duration: 900, delay: ROW_POP, fill: 'backwards' });
       aq('.av__ring').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, delay: ROW_POP, easing: FADE, fill: 'backwards' });
-      avTimers.push(setTimeout(() => haptic.light(), 700));            // the avatar lands
-      avTimers.push(setTimeout(() => { avBusy = false; }, 1000));
+      avTimers.push(setTimeout(() => haptic.light(), D(700)));            // the avatar lands
     }
     // Back: the avatar page lifts away and the Keep page (wallet, copy, button) comes back
     function backToKeep() {
@@ -2426,6 +2519,7 @@
       avBusy = false;
       resetAvatarRow();
       resetStars();
+      if (typeof hideInterests === 'function') hideInterests();
     }
 
     // ---------- Avatar row: endless loop + big avatar swap (storyboard 61:19243) ----------
@@ -2602,7 +2696,139 @@
     AVATARS.forEach((a) => { new Image().src = `assets/avatar/big-${a.id}.webp`; });
     sq('.skin__confirm-skin').addEventListener('click', showAvatar);
     aq('.av__back').addEventListener('click', backToKeep);
-    avCta.addEventListener('click', () => { if (!avBusy) haptic.success(); });
+
+    // ---------- Continue → What are your interests (Figma 68:21474) ----------
+    // One hand-off: the grid header and back button are shared (same spot on both pages) and stay
+    // put; the dark Continue glides up 31px into this page's button and settles into Disabled; the
+    // avatar page clears (title lifts away, the character sinks out of its circle, the row collapses
+    // into the centre); the new title rises out of a blur and the chips cascade in row by row, each
+    // icon popping as its chip lands. Pick 3 and Continue turns on (cross-fade + soft spring).
+    const intScreen = document.getElementById('intScreen');
+    const iq = (sel) => intScreen.querySelector(sel);
+    const intCta = iq('.int__cta');
+    const chipEls = [...intScreen.querySelectorAll('.ich')];
+    const INT_MIN = 3;
+    let intBusy = false, avExit = [];
+    function intUpdateCta(animate) {
+      const n = chipEls.filter((c) => c.classList.contains('is-on')).length;
+      const was = intCta.disabled;
+      intCta.disabled = n < INT_MIN;
+      if (animate && was && !intCta.disabled && !reduceMotion.matches) {
+        intCta.animate([{ transform: 'scale(0.96)' }, { transform: 'scale(1.015)', offset: 0.45 }, { transform: 'scale(1)' }],
+          { duration: 560, easing: 'cubic-bezier(0.3, 0.7, 0.4, 1)' });
+      }
+    }
+    chipEls.forEach((chip) => chip.addEventListener('click', () => {
+      if (intBusy) return;
+      const on = !chip.classList.contains('is-on');
+      chip.classList.toggle('is-on', on);
+      chip.setAttribute('aria-pressed', String(on));
+      haptic.light();
+      if (!reduceMotion.matches) {
+        // the chip gives a small springy bump; the icon hops (and tilts) when picked, settles when dropped
+        chip.animate([{ scale: '0.965' }, { scale: on ? '1.02' : '1', offset: 0.4 }, { scale: '1' }], { duration: 420, easing: 'cubic-bezier(0.3, 0.7, 0.4, 1)' });
+        const ico = chip.querySelector('.ich__ico');
+        ico.getAnimations().forEach((a) => a.cancel());
+        if (on) ico.animate([{ translate: '0 0', rotate: '0deg', scale: '1' }, { translate: '0 -7px', rotate: '-8deg', scale: '1.08', offset: 0.35 }, { translate: '0 0', rotate: '0deg', scale: '1' }],
+          { duration: 620, easing: 'cubic-bezier(0.3, 0.7, 0.4, 1)' });
+        else ico.animate([{ scale: '0.94' }, { scale: '1' }], { duration: 320, easing: 'cubic-bezier(0.3, 0.7, 0.4, 1)' });
+      }
+      intUpdateCta(true);
+    }));
+
+    function showInterests() {
+      if (avBusy || intBusy || !avatarScreen.classList.contains('is-shown') || intScreen.classList.contains('is-shown')) return;
+      avBusy = intBusy = true;
+      haptic.success();
+      const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
+      const OUT = 'cubic-bezier(0.4, 0, 0.6, 1)';
+      const FADE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
+      const POP = spring(0.6, 0.5, 900);
+
+      // --- avatar page clears (shared grid + back stay) ---
+      twinkles.splice(0).forEach((a) => a.cancel());
+      const ex = (el, kf, opts) => avExit.push(el.animate(kf, { fill: 'forwards', ...opts }));
+      [['.av__line--1', 0], ['.av__line--2', 30]].forEach(([sel, d]) =>
+        ex(aq(sel), [{ opacity: 1, translate: '0 0', filter: 'blur(0px)' }, { opacity: 0, translate: '0 -12px', filter: 'blur(6px)' }], { duration: 260, delay: d, easing: OUT }));
+      const bigNow = bigImgs[bigCur];
+      ex(bigNow, [{ translate: '0 0' }, { translate: '0 340px' }], { duration: 320, easing: 'cubic-bezier(0.5, 0, 0.75, 0.15)' });
+      ex(aq('.av__glow'), [{ opacity: 1, scale: '1' }, { opacity: 0, scale: '0.82' }], { duration: 320, delay: 90, easing: OUT });
+      ex(aq('.av__swoosh'), [{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: OUT });
+      avatarScreen.querySelectorAll('.av__sparkle').forEach((el) => ex(el, [{ opacity: 1, scale: '1' }, { opacity: 0, scale: '0.3' }], { duration: 260, easing: OUT }));
+      avatarScreen.querySelectorAll('.av__item').forEach((el) => {
+        const sv = +el.dataset.s || 0;
+        const sc = parseFloat((el.style.transform.match(/scale\(([\d.]+)\)/) || [0, 1])[1]);
+        const dx = (slotX(0) - slotX(sv)) / sc;
+        ex(el.firstElementChild, [{ opacity: 1, translate: '0 0', scale: '1' }, { opacity: 0, translate: `${dx.toFixed(2)}px 0`, scale: '0.7' }], { duration: 280, easing: OUT });
+      });
+      ex(aq('.av__ring'), [{ opacity: 1, scale: '1' }, { opacity: 0, scale: '0.6' }], { duration: 240, easing: OUT });
+      avCta.style.opacity = '0';                           // handed to the interests page's button
+
+      // --- interests page ---
+      intScreen.classList.add('is-shown');
+      intScreen.setAttribute('aria-hidden', 'false');
+      iq('.int__page').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 140, easing: FADE, fill: 'backwards' });
+      [iq('.int__bg'), iq('.int__back')].forEach((el) => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1, delay: 140, fill: 'backwards' }));
+      const fadeUp = (el, delay, dy = 16) => el.animate([{ opacity: 0, translate: `0 ${dy}px`, filter: 'blur(6px)' }, { opacity: 1, translate: '0 0', filter: 'blur(0px)' }],
+        { duration: 680, delay, easing: IOS, fill: 'backwards' });
+      // lines (not the container — it carries the drop-shadow filter the blur would replace)
+      intScreen.querySelectorAll('.int__line').forEach((el) => fadeUp(el, el.classList.contains('int__line--1') ? 200 : 250));
+      fadeUp(iq('.int__sub'), 280, 10);
+      chipEls.forEach((chip) => {
+        const d = 300 + (+chip.dataset.r) * 55 + (+chip.dataset.c) * 35;
+        chip.animate([{ opacity: 0, translate: '0 22px', scale: '0.94', easing: spring(0.8, 0.5, 800) }, { opacity: 1, translate: '0 0', scale: '1' }], { duration: 800, delay: d, fill: 'backwards' });
+        chip.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, delay: d, easing: FADE, fill: 'backwards' });
+        chip.querySelector('.ich__ico').animate([{ scale: '0.4', rotate: '-14deg', easing: POP }, { scale: '1', rotate: '0deg' }], { duration: 900, delay: d + 90, fill: 'backwards' });
+      });
+      // shared button: dark Continue (avatar page, top 721.2) → this page's button, settling into Disabled
+      intCta.classList.add('is-instant');                 // start exactly as the dark 56px button it replaces
+      intCta.disabled = false;
+      void intCta.offsetWidth;
+      intCta.classList.remove('is-instant');
+      intCta.animate([{ translate: '0 31.2px', easing: spring(0.86, 0.55, 760) }, { translate: '0 0' }], { duration: 760, fill: 'backwards' });
+      avTimers.push(setTimeout(() => intUpdateCta(false), 240));
+      iq('.int__skip').animate([{ opacity: 0, translate: '0 8px' }, { opacity: 1, translate: '0 0' }], { duration: 520, delay: 560, easing: IOS, fill: 'backwards' });
+      avTimers.push(setTimeout(() => { intBusy = false; }, 900));
+    }
+    // Back: the interests content clears and the avatar page builds back in around the shared header
+    function backToAvatar() {
+      if (intBusy || !intScreen.classList.contains('is-shown')) return;
+      intBusy = true;
+      haptic.light();
+      const OUT = 'cubic-bezier(0.4, 0, 0.6, 1)';
+      const fadeOut = (el, d = 0, dy = 10) => el.animate([{ opacity: 1, translate: '0 0' }, { opacity: 0, translate: `0 ${dy}px` }], { duration: 220, delay: d, easing: OUT, fill: 'forwards' });
+      fadeOut(iq('.int__title'), 0, -10); fadeOut(iq('.int__sub'), 20, -8);
+      chipEls.forEach((chip) => fadeOut(chip, (4 - +chip.dataset.r) * 25, 14));
+      fadeOut(iq('.int__skip'), 0, 8);
+      iq('.int__cta').animate([{ translate: '0 0' }, { translate: '0 31.2px' }], { duration: 420, easing: 'cubic-bezier(0.32, 0.72, 0, 1)', fill: 'forwards' });
+      iq('.int__cta').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, delay: 260, fill: 'forwards' });
+      iq('.int__page').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, delay: 120, easing: OUT, fill: 'forwards' }).finished.then(() => {
+        intScreen.classList.remove('is-shown');
+        intScreen.setAttribute('aria-hidden', 'true');
+        intScreen.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
+        intBusy = false; avBusy = false;
+      }).catch(() => {});
+      // avatar page back in (the shared header never moved)
+      avExit.splice(0).forEach((a) => a.cancel());
+      avCta.style.opacity = '';
+      avCta.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, delay: 400, fill: 'backwards' });
+      avatarBuild(160);
+    }
+    function hideInterests() {
+      intScreen.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
+      intScreen.classList.remove('is-shown');
+      intScreen.setAttribute('aria-hidden', 'true');
+      chipEls.forEach((c) => { c.classList.remove('is-on'); c.setAttribute('aria-pressed', 'false'); });
+      intCta.disabled = true;
+      avExit.splice(0).forEach((a) => a.cancel());
+      avCta.style.opacity = '';
+      intBusy = false;
+    }
+    avCta.addEventListener('click', showInterests);
+    iq('.int__back').addEventListener('click', backToAvatar);
+    intCta.addEventListener('click', () => { if (!intCta.disabled && !intBusy) haptic.success(); });
+    iq('.int__skip').addEventListener('click', () => haptic.light());
+
 
     function hideSkin() {
       if (typeof hideAvatar === 'function') hideAvatar();
