@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-visual">
+  <script>
+    // Phones / tablets use their own keyboards: the drawn keyboard + number pad are desktop-only
+    if (matchMedia('(hover: none) and (pointer: coarse)').matches) document.documentElement.classList.add('is-touch');
+  </script>
   <title>Login · Email</title>
   <link rel="preload" href="fonts/Noontree-ExtraBold.otf" as="font" type="font/otf" crossorigin>
   <link rel="preload" href="fonts/Noontree-Medium.otf" as="font" type="font/otf" crossorigin>
@@ -170,6 +174,18 @@
       visibility: visible;
       transition: transform var(--kb-dur) var(--kb-ease), visibility 0s;
     }
+
+    /* ---------- Phones: the real keyboard replaces the drawn ones ----------
+       The drawn email keyboard and OTP number pad are hidden; the phone's own keyboard comes up
+       instead (email field / hidden one-time-code input). If it would cover what's being typed
+       into, the frame lifts just enough (--kb-lift, set from visualViewport) on the keyboard curve;
+       the top pills counter-shift so they stay pinned to the top edge. */
+    .is-touch .keyboard, .is-touch .numpad { display: none; }
+    .is-touch .screen {
+      transform: translateY(calc(-1 * var(--kb-lift, 0px)));
+      transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .is-touch .toast { translate: 0 var(--kb-lift-ui, 0px); transition: translate 450ms cubic-bezier(0.32, 0.72, 0, 1); }
 
     @media (prefers-reduced-motion: reduce) {
       .ui { --kb-dur: 1ms; }
@@ -715,6 +731,27 @@
 
     /* Digit boxes: active (blue), verified (green), error (red) */
     .otp__digits { pointer-events: auto; cursor: text; }
+    /* phones: an invisible one-time-code input over the boxes raises the numeric keyboard
+       (and lets iOS offer the code from Mail / Messages). Desktop types via keydown instead. */
+    .otp__input { display: none; }
+    .is-touch .otp__input {
+      display: block;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      opacity: 0;
+      background: transparent;
+      color: transparent;
+      caret-color: transparent;
+      font-size: 16px;               /* ≥ 16px: iOS doesn't zoom on focus */
+      letter-spacing: 40px;
+      outline: none;
+    }
     .otp__digit { position: relative; overflow: hidden; transition: border-color 220ms ease, background-color 220ms ease; }
     /* Active ring (#0f61ff, 1px, r12) — one element that slides between boxes (pitch 52px) */
     .otp__digits { position: relative; }
@@ -917,6 +954,8 @@
               <div class="otp__digit" data-rise style="--d: 680ms; --i: 4"><span class="otp__num"></span></div>
               <div class="otp__digit" data-rise style="--d: 720ms; --i: 5"><span class="otp__num"></span></div>
               <div class="otp__ring" id="otpRing" aria-hidden="true"></div>
+              <input class="otp__input" id="otpInput" type="text" inputmode="numeric" pattern="[0-9]*"
+                     autocomplete="one-time-code" maxlength="6" aria-label="6-digit code">
             </div>
             <div class="otp__resend-row" data-rise style="--d: 800ms">
               <p class="otp__muted">Didn’t get it? </p>
@@ -1335,10 +1374,13 @@
       resetOtp();
       otpEmail.textContent = input.value.trim();
       ui.classList.add('is-leaving');           // drawn keyboard drops under the incoming sheet
-      input.blur();                             // closes the phone's own keyboard too
+      if (!IS_TOUCH) input.blur();             // desktop: drop focus (the drawn pad comes up later)
       otpScreen.setAttribute('aria-hidden', 'false');
       void otpScreen.offsetWidth;               // make sure the entrance transitions run
       otpScreen.classList.add('is-shown');
+      // phones: hand focus straight to the one-time-code input inside this tap (the sheet is visible
+      // now), so the keyboard stays up and just switches to the number pad
+      if (IS_TOUCH) { otpInput.focus({ preventScroll: true }); setOtpTyping(true); }
       const anim = ensureOtpLottie();
       if (anim) {
         const start = () => {
@@ -1359,6 +1401,14 @@
     // ---------- OTP · Typing (Figma 34:5021) → verified (29:4900) ----------
     const OTP_CODE = '111111';          // the only code this prototype accepts
     const otpDigits = document.getElementById('otpDigits');
+    const IS_TOUCH = document.documentElement.classList.contains('is-touch');
+    const otpInput = document.getElementById('otpInput');   // phones only: raises the numeric keyboard
+    // keep the hidden input mirroring the code (empty while a wrong code is on show, so the next
+    // digit typed starts the new code)
+    function syncOtpInput() {
+      const want = otpError ? '' : otp;
+      if (otpInput.value !== want) otpInput.value = want;
+    }
     const digitEls = [...otpDigits.querySelectorAll('.otp__digit')];
     const otpRing = document.getElementById('otpRing');
     const DIGIT_PITCH = 52;             // 46px box + 6px gap
@@ -1379,6 +1429,7 @@
       otpRing.style.setProperty('--ring-x', `${Math.max(otp.length - 1, 0) * DIGIT_PITCH}px`);
       // hidden until the first digit is typed, then it fades in on that box and slides along
       otpRing.classList.toggle('is-on', typing && !otpBusy && !otpError && otp.length > 0);
+      syncOtpInput();
     }
     function setOtpTyping(on) {
       otpScreen.classList.toggle('is-typing', on);
@@ -1507,6 +1558,7 @@
       const reduce = reduceMotion.matches;
       const T = (ms) => (reduce ? 1 : ms);
       digitEls.forEach((el) => el.classList.add('is-verified'));   // 1 — green, staggered (CSS)
+      if (IS_TOUCH) otpInput.blur();                                 //     phone keyboard goes down
       successToast.show(null);                                       //     + the success pill drops in
       haptic.success();
 
@@ -1593,6 +1645,7 @@
       if (!otpScreen.classList.contains('is-typing') || otpBusy) return;
       if (numpad.contains(e.target) || otpDigits.contains(e.target) || e.target.closest('button')) return;
       setOtpTyping(false);
+      if (IS_TOUCH) otpInput.blur();
     });
     numpad.addEventListener('pointerdown', (e) => {
       const key = e.target.closest('.numpad__key');
@@ -1602,7 +1655,65 @@
       otpKey(key.dataset.key);
     });
     // Physical keyboard on desktop
+    // Phones: the real keyboard types into the hidden one-time-code input; mirror it into the boxes
+    // (also handles iOS's "From Mail" autofill and pastes — all six digits at once)
+    if (IS_TOUCH) {
+      otpInput.addEventListener('focus', () => {
+        if (otpScreen.classList.contains('is-shown') && !otpBusy && !otpScreen.classList.contains('is-done')) setOtpTyping(true);
+      });
+      otpInput.addEventListener('blur', () => {
+        if (!otpBusy && !otpScreen.classList.contains('is-done')) setOtpTyping(false);
+      });
+      otpInput.addEventListener('input', () => {
+        const v = otpInput.value.replace(/\D/g, '').slice(0, 6);
+        if (!otpBusy) {
+          if (otpError) { for (const ch of v) otpKey(ch); }
+          else {
+            let keep = 0;
+            while (keep < otp.length && keep < v.length && otp[keep] === v[keep]) keep++;
+            while (otp.length > keep) otpKey('back');
+            for (const ch of v.slice(keep)) { if (otpBusy) break; otpKey(ch); }
+          }
+        }
+        syncOtpInput();
+      });
+    }
+
+    // ---------- Phone keyboard avoidance ----------
+    // If the phone's keyboard would cover the field / code being typed, lift the whole frame just
+    // enough (12px clear), on the keyboard curve. Measured against the frame's untransformed spot,
+    // so it's stable mid-transition.
+    const screenEl = document.getElementById('screen');
+    let kbLift = 0, kbTimers = [];
+    function avoidKeyboard() {
+      if (!IS_TOUCH || !window.visualViewport) return;
+      const vv = window.visualViewport;
+      const a = document.activeElement;
+      const target = a === input ? field : a === otpInput ? otpInput.closest('.otp__code') : null;
+      let lift = 0;
+      if (target && vv.height < document.documentElement.clientHeight - 80) {    // keyboard is up
+        const base = target.getBoundingClientRect().bottom - screenEl.getBoundingClientRect().top + screenEl.offsetTop;
+        lift = Math.max(0, Math.round(base + 12 - (vv.offsetTop + vv.height)));
+      }
+      if (lift === kbLift) return;
+      kbLift = lift;
+      const s = ui.getBoundingClientRect().width / 375;
+      screenEl.style.setProperty('--kb-lift', `${lift}px`);
+      screenEl.style.setProperty('--kb-lift-ui', `${lift / s}px`);   // pills stay pinned to the top
+    }
+    function kbSoon() {          // re-measure as the keyboard and the layout settle
+      kbTimers.forEach(clearTimeout);
+      kbTimers = [0, 120, 480, 900].map((ms) => setTimeout(avoidKeyboard, ms));
+    }
+    if (IS_TOUCH && window.visualViewport) {
+      visualViewport.addEventListener('resize', kbSoon);
+      visualViewport.addEventListener('scroll', avoidKeyboard);
+      document.addEventListener('focusin', kbSoon);
+      document.addEventListener('focusout', kbSoon);
+    }
+
     document.addEventListener('keydown', (e) => {
+      if (e.target === otpInput) return;             // phones: handled by the input listener
       if (!otpScreen.classList.contains('is-shown') || otpScreen.classList.contains('is-exiting')) return;
       if (/^[0-9]$/.test(e.key)) { if (!otpBusy && !otpScreen.classList.contains('is-typing')) setOtpTyping(true); otpKey(e.key); }
       else if (e.key === 'Backspace') otpKey('back');
