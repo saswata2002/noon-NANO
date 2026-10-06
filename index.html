@@ -824,9 +824,9 @@
       font-weight: 500; font-size: 16px; line-height: 22px; letter-spacing: -0.15px; color: #fff; text-shadow: 0 3px 4px rgba(0,0,0,.85); }
     .skin__hint { top: 579px; opacity: 0; transition: opacity 360ms ease; }
     .skin__steps, .skin__title, .skin__sub, .skin__plain { z-index: 2; }   /* above the two BG layers (z 0/1) */
-    .skin__hint, .skin__keepgoing { z-index: 4; }
-    .skin__sheet { z-index: 5; }
-    .skin__keep { z-index: 6; }
+    .skin__hint, .skin__keepgoing { z-index: 6; }
+    .skin__sheet { z-index: 7; }   /* cards behind the wallet: z 3–5 (always over the header text, z 2) */
+    .skin__keep { z-index: 8; }
     .skin__hint.is-on { opacity: var(--hint-fade, 1); }
     .skin.is-dragging .skin__hint { transition: none; }
     .skin__keepgoing { top: 716.43px; opacity: 0; }         /* 49:11322 */
@@ -1895,7 +1895,7 @@
       });
     }
     drawSheet();
-    const Z = { spare: 1, back: 2, mid: 3, front: 9 };
+    const Z = { spare: 3, back: 4, mid: 5, front: 9 };     // all above the header text (z 2)
     let roles = {}, skinIdx = 0, skinPhase = 'pick', skinBusy = false, skinTimers = [], hintTimer = 0, sg = null;
     function assignRoles(map) {
       roles = map;
@@ -1976,8 +1976,9 @@
       const lift = -160 * (1 - Math.exp(-d / 190));
       const pu = clamp01(d / 160);
       setPose(roles.front, { x: 0, y: lift, r: -3 * pu, s: 1 - 0.04 * pu, o: 1 });
-      setPose(roles.mid, mixPose(POSE.mid, POSE.front, pu * 0.28));
-      setPose(roles.back, mixPose(POSE.back, POSE.mid, pu * 0.28));
+      const push = easeOut(pu);                   // the cards behind push the next one up into view
+      setPose(roles.mid, mixPose(POSE.mid, { x: 0, y: -8, r: 0, s: 1.05, o: 1 }, push * 0.7));
+      setPose(roles.back, mixPose(POSE.back, POSE.mid, push * 0.55));
     }
     // Drag down: the wallet follows against a rubber band (≈0.6× the finger at first, firmer as it
     // goes), the cards behind tuck in under it — they straighten, shrink and slide in behind it —
@@ -2083,9 +2084,16 @@
       nbImg.src = cardSrc(skinIdx + 2);
       assignRoles({ front: nf, mid: nm, back: nb, spare: fly });
       fly.style.zIndex = 10;                    // on top until it's clear of the stack
-      const STEP = { duration: 950, easing: spring(0.74, 0.52, 950) };   // a soft, slightly elastic step up
-      tweenTo(nf, poseCss(POSE.front), STEP);
-      tweenTo(nm, poseCss(POSE.mid), { ...STEP, delay: 40 });
+      const STEP = { duration: 800, easing: spring(0.72, 0.44, 800) };   // a quick, slightly elastic step up
+      // the next card pops up into the front slot: it's already pushed up and growing from the drag,
+      // overshoots a little bigger and settles
+      const nfScale = parseFloat(getComputedStyle(nf).scale) || 1;
+      const { scale: _s, ...frontNoScale } = poseCss(POSE.front);
+      tweenTo(nf, frontNoScale, STEP);
+      nf.style.scale = '1';
+      nf.animate([{ scale: String(nfScale) }, { scale: '1.07', offset: 0.32 }, { scale: '1' }],
+        { duration: 620, easing: 'cubic-bezier(0.3, 0.7, 0.4, 1)' });
+      tweenTo(nm, poseCss(POSE.mid), { ...STEP, delay: 30 });
       // the next skin fans out into the back slot once the old wallet has gone behind the stack — and
       // only once its image is decoded, so a recycled card never flashes the skin it showed last time
       let surfaced = false;
@@ -2093,41 +2101,41 @@
         if (surfaced || run !== flyRun) return;
         surfaced = true;
         setPose(nb, { ...POSE.mid, s: 0.9, o: 0 });                     // starts tucked under the middle card
-        tweenTo(nb, poseCss(POSE.back), { duration: 820, easing: spring(0.78, 0.52, 820) });
+        tweenTo(nb, poseCss(POSE.back), { duration: 700, easing: spring(0.76, 0.46, 700) });
       };
 
       const cs = getComputedStyle(fly);
       const from = { translate: cs.translate, rotate: cs.rotate, scale: cs.scale, opacity: '1' };
       const y0 = transY(cs.translate);
-      const peakY = Math.min(y0 - 30, -228);                         // bottom edge just above the fan
+      const peakY = Math.min(y0 - 24, -200);                         // bottom edge just clear of the stack's top corners
       const speed = Math.max(Math.abs(Math.min(v, 0)), 0.9);          // px / ms, at least a brisk toss
-      const riseMs = Math.round(Math.min(Math.max((y0 - peakY) / speed * 1.6, 160), 300));
-      const peak = { translate: `0px ${peakY}px`, rotate: '-6deg', scale: '0.95', opacity: '1' };
+      const riseMs = Math.round(Math.min(Math.max((y0 - peakY) / speed * 1.2, 120), 220));
+      const peak = { translate: `0px ${peakY}px`, rotate: '-3deg', scale: '0.95', opacity: '1' };
       fly.getAnimations().forEach((a) => a.cancel());
       setPose(fly, SPARE);
       const rise = fly.animate([from, peak], { duration: riseMs, easing: 'cubic-bezier(0.25, 0.8, 0.4, 1)', fill: 'forwards' });
       rise.finished.then(() => {
         if (run !== flyRun) return;
-        fly.style.zIndex = 1;                   // behind the whole stack (still over the BG layers, z 0/1, by DOM order)
+        fly.style.zIndex = 3;                   // behind the whole stack, still in front of the header text
         const under = poseCss({ ...POSE.mid, s: 0.9, o: 1 });          // fully covered by the middle card
         fly.animate([
           { ...peak, easing: 'cubic-bezier(0.45, 0, 0.25, 1)' },
           { ...under, offset: 0.86 },
           { ...poseCss(SPARE), opacity: '0' },
-        ], { duration: 820 }).finished
+        ], { duration: 560 }).finished
           .then(() => { if (run === flyRun) fly.style.zIndex = Z.spare; }).catch(() => {});
         rise.cancel();
-        skinTimers.push(setTimeout(() => haptic.light(), 520));        // it settles into the deck
+        skinTimers.push(setTimeout(() => haptic.light(), 360));        // it settles into the deck
       }).catch(() => {});
       // the old wallet is behind the front card by ~riseMs + 420 ms: deal the next skin out then
       skinTimers.push(setTimeout(() => {
         (nbImg.decode ? nbImg.decode() : Promise.resolve()).then(surface, surface);
         skinTimers.push(setTimeout(surface, 300));                     // never wait longer than this
-      }, riseMs + 420));
+      }, riseMs + 280));
       crossfadeBg(skinIdx);
       preloadSkins(skinIdx + 1);
       // the next swipe can start once this wallet is tucked under the back card (it's recycled as the spare)
-      skinTimers.push(setTimeout(() => { skinBusy = false; }, riseMs + 700));
+      skinTimers.push(setTimeout(() => { skinBusy = false; }, riseMs + 480));
     }
 
     // ---- drag down: confirm (49:11447 → 49:11576) → Keep this skin (49:11331) ----
