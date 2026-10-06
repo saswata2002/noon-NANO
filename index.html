@@ -721,6 +721,88 @@
 
     /* ---------- M-Toast / Success (Figma 29:4956) — 242 × 48 at 66.5, 52, above the OTP sheet ---------- */
     .toast--success { top: 52px; left: 66.5px; width: 242px; height: 48px; z-index: 6; }
+    /* ================= Wallet · Pick your skin (Figma 45:5640) ================= */
+    .skin {
+      position: absolute;
+      inset: 0;
+      z-index: 7;
+      overflow: hidden;
+      background: transparent;        /* the page grows out of the Wallet Intro's last (near-white) frame */
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .skin.is-shown { visibility: visible; pointer-events: auto; }
+    .skin__bg { position: absolute; left: 0; top: 0; width: 375px; height: 812px; display: block; }
+    /* 45:5647 stepper — 16 · 4 · 24 · 4 · 16 · 4 · 24 · 4 · 16, centred at 187.6, top 76 */
+    .skin__steps { position: absolute; left: 131.6px; top: 76px; display: flex; align-items: center; gap: 4px; }
+    .skin__step { position: relative; flex: none; width: 16px; height: 16px; border-radius: 16px; background: rgba(255,255,255,.5); }
+    .skin__step.is-on { background: #fff; }
+    .skin__step.is-on::after {         /* 8px muted dot, centred */
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 4px;
+      width: 8px;
+      height: 8px;
+      border-radius: 24px;
+      background: #989fb3;
+    }
+    .skin__bar { flex: none; width: 24px; height: 4px; border-radius: 23px; background: rgba(255,255,255,.5); }
+    /* 45:5660 title — 278 × 87 at 48.1, 131 */
+    .skin__title { position: absolute; left: 48.1px; top: 131px; width: 278px; height: 87px; overflow: visible; filter: drop-shadow(0 5px 10px rgba(61,41,163,.14)); }
+    .skin__line {
+      font-family: 'Noontree', system-ui, sans-serif;
+      font-weight: 800;
+      font-size: 36px;
+      letter-spacing: -0.25px;
+      text-anchor: middle;
+      white-space: pre;
+      stroke: #fff;
+      stroke-width: 10px;              /* centred → 5px outside; the fill paints over the inner half */
+      stroke-linejoin: round;
+      paint-order: stroke;
+    }
+    /* 45:5665 */
+    .skin__sub {
+      position: absolute;
+      left: 14.6px;
+      top: 220px;
+      width: 345px;
+      margin: 0;
+      text-align: center;
+      font-weight: 500;
+      font-size: 16px;
+      line-height: 22px;
+      letter-spacing: -0.15px;
+      color: rgba(255,255,255,.8);
+    }
+    /* 45:5654 cards — each centred on its Figma wrapper, rotated as in the frame */
+    .skin__card { position: absolute; will-change: transform, opacity; }
+    .skin__card img { display: block; width: 100%; height: 100%; }
+    .skin__card--back  { left: 51.79px; top: 337.17px; width: 273.755px; height: 189.774px; }
+    .skin__card--back img { transform: rotate(18deg); }
+    .skin__card--mid   { left: 59.41px; top: 327.48px; width: 273.755px; height: 193.39px; }
+    .skin__card--mid img { transform: rotate(8deg); }
+    .skin__card--front { left: 50.46px; top: 329.93px; width: 273.867px; height: 193.469px; }
+    /* 45:5657 shadow stack, alpha-aware (the image has transparent rounded corners) */
+    .skin__card--front img { filter: drop-shadow(0 4px 8px rgba(4,18,11,.1)) drop-shadow(0 29px 14px rgba(4,18,11,.09)); }
+    /* 45:5658 — Figma's text has two trailing spaces but centres the glyphs (matched to 187.5) */
+    .skin__hint {
+      position: absolute;
+      left: 0;
+      top: 579px;
+      width: 375px;
+      margin: 0;
+      text-align: center;
+      white-space: pre;
+      font-weight: 500;
+      font-size: 16px;
+      line-height: 22px;
+      letter-spacing: -0.15px;
+      color: #fff;
+      text-shadow: 0 3px 4px rgba(0,0,0,.85);
+    }
+
     /* M-Toast / Error on the OTP sheet (Figma 41:5323) — 270 × 50 at 52, 53 */
     .toast--otp-error { top: 53px; left: 52px; z-index: 6; }
     .toast--success .toast__blob { width: 242px; height: 48px; background: #0f8857; }
@@ -982,6 +1064,38 @@
           </div>
         </div>
       </div>
+
+      <!-- ================= Wallet · Pick your skin (Figma 45:5640) =================
+           Revealed when the Wallet Intro video ends. Background, title (sticker-outlined gradient
+           type) are @3x Figma exports; the three cards are the Figma card images, laid out with
+           the frame's own rotations so they can spring in one by one. -->
+      <section class="skin" id="skinScreen" aria-hidden="true" aria-label="Pick your wallet skin">
+        <img class="skin__bg" src="assets/skin/bg.webp" width="375" height="812" alt="">
+        <div class="skin__steps" aria-hidden="true">
+          <span class="skin__step is-on"></span><span class="skin__bar"></span><span class="skin__step"></span><span class="skin__bar"></span><span class="skin__step"></span>
+        </div>
+        <!-- 45:5660 title: Noontree ExtraBold 36/48, black → violet gradient, 5px white OUTSIDE stroke
+             (round joins — SVG text, painted stroke-first), a white bridge between the lines, and a
+             drop shadow 0 5 10 rgba(61,41,163,.14) on the group. Baselines from the font metrics. -->
+        <svg class="skin__title" viewBox="0 0 278 87" width="278" height="87" role="img" aria-label="Pick your wallet skin">
+          <defs>
+            <linearGradient id="skinG1" gradientUnits="userSpaceOnUse" x1="78.60" y1="70.92" x2="200.40" y2="-21.95">
+              <stop offset="0.52835" stop-color="#000"/><stop offset="1" stop-color="#6f21ea"/>
+            </linearGradient>
+            <linearGradient id="skinG2" gradientUnits="userSpaceOnUse" x1="76.46" y1="110.08" x2="201.55" y2="1.25">
+              <stop offset="0.52835" stop-color="#000"/><stop offset="1" stop-color="#6f21ea"/>
+            </linearGradient>
+          </defs>
+          <rect x="65.005" y="29.607" width="143.517" height="24.712" fill="#fff"/>
+          <text class="skin__line" x="139.5" y="36.985" fill="url(#skinG1)" xml:space="preserve">Pick your </text>
+          <text class="skin__line" x="139.005" y="68.165" fill="url(#skinG2)" xml:space="preserve">wallet skin</text>
+        </svg>
+        <p class="skin__sub">Make your card uniquely yours</p>
+        <div class="skin__card skin__card--back"><img src="assets/skin/card-back.webp" alt=""></div>
+        <div class="skin__card skin__card--mid"><img src="assets/skin/card-mid.webp" alt=""></div>
+        <div class="skin__card skin__card--front"><img src="assets/skin/card-front.webp" alt="nano wallet card"></div>
+        <p class="skin__hint">Drag down to confirm</p>
+      </section>
     </div>
   </main>
 
@@ -1590,6 +1704,62 @@
       try { walletIntro.currentTime = 0; } catch (e) {}
     }
 
+    // ---------- Wallet · Pick your skin (Figma 45:5640): revealed as the Wallet Intro ends ----------
+    // Apple-style: the page grows into place out of the intro's soft white ending (zoom 1.1 → 1 on
+    // the iOS ease, like an app opening), then the content settles in top → bottom on gentle,
+    // critically-damped springs — stepper, title + subtitle out of a soft blur, the three cards
+    // springing up back → front and fanning out to their tilt (the front one lands with a haptic),
+    // and the hint last. Individual transform props, so the cards' own rotations stay put.
+    const skinScreen = document.getElementById('skinScreen');
+    let skinTimers = [];
+    function revealSkin() {
+      if (skinScreen.classList.contains('is-shown')) return;
+      skinScreen.classList.add('is-shown');
+      skinScreen.setAttribute('aria-hidden', 'false');
+      const q = (sel) => skinScreen.querySelector(sel);
+      if (reduceMotion.matches) { haptic.medium(); return; }
+      const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';              // UIKit-style ease-out
+      const SOFT = spring(0.86, 0.55, 1000);                       // settles with ~0.5 % overshoot
+      const CARD = spring(0.74, 0.6, 1200);                        // a touch livelier for the cards
+      const fade = (el, delay, dur = 420) => el.animate([{ opacity: 0 }, { opacity: 1 }],
+        { duration: dur, delay, easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)', fill: 'backwards' });
+      // page
+      q('.skin__bg').animate([{ scale: '1.1' }, { scale: '1' }], { duration: 1100, easing: IOS, fill: 'backwards' });
+      fade(q('.skin__bg'), 0, 520);
+      // stepper
+      q('.skin__steps').animate([{ translate: '0 -10px', easing: SOFT }, { translate: '0 0' }], { duration: 1000, delay: 240, fill: 'backwards' });
+      fade(q('.skin__steps'), 240);
+      // title + subtitle: rise out of a soft blur
+      const lift = (el, delay, dy, from, keep = '') => {   // keep: the element's own filter, kept throughout
+        el.animate([{ translate: `0 ${dy}px`, scale: from, easing: SOFT }, { translate: '0 0', scale: '1' }], { duration: 1000, delay, fill: 'backwards' });
+        el.animate([{ opacity: 0, filter: `blur(8px) ${keep}` }, { opacity: 1, filter: `blur(0px) ${keep}` }],
+          { duration: 560, delay, easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)', fill: 'backwards' });
+      };
+      lift(q('.skin__title'), 300, 18, '0.95', 'drop-shadow(0 5px 10px rgba(61,41,163,.14))');
+      lift(q('.skin__sub'), 380, 12, '1');
+      // cards: back → mid → front spring up and fan out to their final tilt
+      [['.skin__card--back', 420, -10], ['.skin__card--mid', 500, -6], ['.skin__card--front', 580, 0]].forEach(([sel, delay, rot]) => {
+        const el = q(sel);
+        el.animate([{ translate: '0 90px', scale: '0.86', rotate: `${rot}deg`, easing: CARD }, { translate: '0 0', scale: '1', rotate: '0deg' }],
+          { duration: 1200, delay, fill: 'backwards' });
+        fade(el, delay, 320);
+      });
+      skinTimers.push(setTimeout(() => haptic.medium(), 580 + 330));   // the front card lands
+      // hint
+      q('.skin__hint').animate([{ translate: '0 8px', easing: SOFT }, { translate: '0 0' }], { duration: 1000, delay: 900, fill: 'backwards' });
+      fade(q('.skin__hint'), 900, 600);
+      skinTimers.push(setTimeout(() => walletIntro.pause(), 1200));   // fully covered now
+    }
+    function hideSkin() {
+      skinTimers.forEach(clearTimeout); skinTimers = [];
+      skinScreen.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
+      skinScreen.classList.remove('is-shown');
+      skinScreen.setAttribute('aria-hidden', 'true');
+    }
+    walletIntro.addEventListener('ended', () => {
+      if (otpScreen.classList.contains('is-done')) revealSkin();
+    });
+
     // Toss loading: every box's grey fill rises slowly and drops fast, 100 ms apart,
     // so a light gap keeps sweeping left → right across the code
     function startWave() {
@@ -1720,6 +1890,7 @@
       otpSeqTimers.forEach(clearTimeout); otpSeqTimers = [];
       otp = ''; otpBusy = false; otpError = false;
       stopWalletIntro();
+      hideSkin();
       otpErrorToast.hide();
       digitEls.forEach((el) => {
         el.classList.remove('is-verified', 'is-error', 'is-active');
