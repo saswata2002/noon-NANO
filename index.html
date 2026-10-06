@@ -1516,7 +1516,7 @@
     // ---- check → loading → success / error (refs: OTP.mov, Toss OTP on 60fps.design) ----
     const LOADING_MS = 1500;            // skeleton wave across the boxes while "verifying"
     const WAVE_MS = 1000, WAVE_STAGGER = 100;
-    const COINX = 187.3, COINY = 406;   // success Lottie coin centre (Main Control 562,1218 ÷ 3)
+    const COINX = 187.5, COINY = 406;   // tick_OTP Lottie coin centre (750 × 1624 comp ÷ 2, measured)
     const waveEls = digitEls.map((el) => {
       const w = document.createElement('i');
       w.className = 'otp__wave';
@@ -1618,7 +1618,7 @@
 
     // Success (Figma 39:5121 + ref OTP.mov): boxes go green and the "OTP Verified" pill drops in →
     // as the pill leaves, the rest of the page fades and the boxes glide together into one stack on
-    // the coin centre (last box on top) → the stack rounds off and shrinks while the gold coin grows
+    // the coin centre (last box on top) → the stack rounds off and shrinks while the green tick coin grows
     // out of it → tick. Each stage starts before the previous one lands, so it reads as one motion.
     const SUCCESS_PILL_MS = TOAST_HOLD_MS;   // pill entry + 0.8 s on screen, then it exits
     function playOtpSuccess() {
@@ -1668,14 +1668,14 @@
           digitEls[5].firstElementChild.animate([{ opacity: 1 }, { opacity: 0 }],
             { duration: T(140), easing: 'ease-out', fill: 'forwards' });
 
-          // 5 — the coin grows out of the stack (Lottie frame 12 = the coin's first pixel)
+          // 5 — the coin grows out of the stack (tick_OTP: a dot from frame ~2, so play from 0)
           seq(reduce ? 0 : 90, () => {
             const anim = ensureSuccessLottie();
             if (!anim) return;
             const go = () => {
               const end = anim.animationData.op;          // comp out-point (131) — totalFrames shrinks after playSegments
               if (reduce) { anim.goToAndStop(end - 1, true); playWalletIntro(); }
-              else anim.playSegments([12, end], true);    // play through to the last frame
+              else anim.playSegments([0, end], true);     // play through to the last frame
             };
             if (anim.isLoaded) go(); else anim.addEventListener('DOMLoaded', go, { once: true });
           });
