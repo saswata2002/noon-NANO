@@ -1441,13 +1441,10 @@
       resetOtp();
       otpEmail.textContent = input.value.trim();
       ui.classList.add('is-leaving');           // drawn keyboard drops under the incoming sheet
-      if (!IS_TOUCH) input.blur();             // desktop: drop focus (the drawn pad comes up later)
+      input.blur();                             // drops focus: on phones the keyboard goes down (user request)
       otpScreen.setAttribute('aria-hidden', 'false');
       void otpScreen.offsetWidth;               // make sure the entrance transitions run
       otpScreen.classList.add('is-shown');
-      // phones: hand focus straight to the one-time-code input inside this tap (the sheet is visible
-      // now), so the keyboard stays up and just switches to the number pad
-      if (IS_TOUCH) { otpInput.focus({ preventScroll: true }); setOtpTyping(true); }
       const anim = ensureOtpLottie();
       if (anim) {
         const start = () => {
@@ -1456,10 +1453,12 @@
         };
         if (anim.isLoaded) start(); else anim.addEventListener('DOMLoaded', start, { once: true });
       }
-      // Once the page has landed (last item, the Resend row, settles at 800 + 560 ms),
-      // wait 0.2 s and bring the number pad up on its own.
+      // Desktop: once the page has landed (last item, the Resend row, settles at 800 + 560 ms),
+      // wait 0.2 s and bring the drawn number pad up on its own.
+      // Phones: iOS only raises its keyboard from a real tap, so it stays down until the boxes are
+      // tapped (no auto-open there — a programmatic focus would shift the layout with no keyboard).
       clearTimeout(otpAutoTimer);
-      otpAutoTimer = setTimeout(() => {
+      if (!IS_TOUCH) otpAutoTimer = setTimeout(() => {
         if (otpScreen.classList.contains('is-shown') && !otpScreen.classList.contains('is-exiting')
             && !otpScreen.classList.contains('is-typing')) setOtpTyping(true);
       }, (reduceMotion.matches ? 0 : OTP_LAND_MS) + 200);
