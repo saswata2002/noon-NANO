@@ -2991,8 +2991,9 @@
       });
 
       // 3 — …and the boxes glide into one stack as it goes (a slight deck fan, the last box on top)
-      const GLIDE = 460, GLIDE_EASE = 'cubic-bezier(0.55, 0, 0.15, 1)';
-      seq(reduce ? 0 : SUCCESS_PILL_MS + 120, () => {
+      // snappy: they leave at once and decelerate into the stack (was 460 ms on a slow-start curve)
+      const GLIDE = 340, GLIDE_EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
+      seq(reduce ? 0 : SUCCESS_PILL_MS + 60, () => {
         const s = ui.getBoundingClientRect().width / 375;            // .ui scale
         const uiR = ui.getBoundingClientRect();
         digitEls.forEach((el, i) => {
@@ -3006,11 +3007,11 @@
             { duration: T(GLIDE), easing: GLIDE_EASE, fill: 'forwards' });
           // the digits that end up under the stack fade on the way; the top one stays until the coin
           if (i < 5) el.firstElementChild.animate([{ opacity: 1 }, { opacity: 0 }],
-            { duration: T(220), delay: T(140), easing: 'ease-out', fill: 'forwards' });
+            { duration: T(160), delay: T(80), easing: 'ease-out', fill: 'forwards' });
         });
 
         // 4 — the stack rounds into a disc and shrinks, overlapping the end of the glide
-        seq(reduce ? 0 : GLIDE - 90, () => {
+        seq(reduce ? 0 : GLIDE - 120, () => {
           digitEls.forEach((el) => {
             // shrink inside the same transform; the deck fan closes so the discs end dead centre
             const t = `translate(${el.dataset.dx}px, ${el.dataset.dy}px)`;
@@ -3019,13 +3020,13 @@
               { transform: `${t} scale(1, 1)`, borderRadius: '12px', opacity: 1 },
               { transform: `${c} scale(0.7, 0.54)`, borderRadius: '50%', opacity: 1, offset: 0.55 },
               { transform: `${c} scale(0.42, 0.32)`, borderRadius: '50%', opacity: 0 },
-            ], { duration: T(340), easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' });
+            ], { duration: T(260), easing: 'cubic-bezier(0.32, 0.72, 0, 1)', fill: 'forwards' });
           });
           digitEls[5].firstElementChild.animate([{ opacity: 1 }, { opacity: 0 }],
-            { duration: T(140), easing: 'ease-out', fill: 'forwards' });
+            { duration: T(110), easing: 'ease-out', fill: 'forwards' });
 
           // 5 — the coin grows out of the stack (tick_OTP: a dot from frame ~2, so play from 0)
-          seq(reduce ? 0 : 90, () => {
+          seq(reduce ? 0 : 60, () => {
             if (reduce) playWalletIntro();
             else playTick();                              // plays through; 'ended' hands over to the intro
           });
