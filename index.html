@@ -830,12 +830,14 @@
     .skin__hint.is-on { opacity: var(--hint-fade, 1); }
     .skin.is-dragging .skin__hint { transition: none; }
     .skin__keepgoing { top: 716.43px; opacity: 0; }         /* 49:11322 */
-    /* pocket sheet (54:12093) — top edge at y 500 when risen, parked 380px down */
-    .skin__sheet { position: absolute; inset: 0; pointer-events: none; translate: 0 380px; will-change: translate; }
-    .skin__pocket { position: absolute; left: -29.07px; top: 456px; width: 433.342px; height: 652.514px; overflow: visible;
+    /* pocket sheet (54:12093) — one white shape drawn by JS (drawSheet): its top edge Y and the
+       pocket notch depth k move together, so it rises with the drag, rests at y 500 under the wallet
+       (Sheet rising) and then climbs to y 0 while the notch flattens: the sheet becomes the Keep page. */
+    .skin__sheet { position: absolute; inset: 0; pointer-events: none; }
+    .skin__pocket { position: absolute; left: 0; top: 0; width: 375px; height: 812px; overflow: visible;
       filter: drop-shadow(0 -20px 24px rgba(0,0,0,.16)); }
-    /* 49:11331 Keep this skin — white page with the light header, over everything but the card */
-    .skin__keep { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+    /* 54:11974 Keep this skin — content only; the white page under it is the sheet */
+    .skin__keep { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
     .skin.is-keep .skin__keep { pointer-events: auto; }
     .skin__keep-head { position: absolute; left: 0; top: 0; width: 375px; height: 259px;
       background: linear-gradient(180deg, rgba(255,255,255,0), #fff), url('assets/skin/keep-header.webp') center / cover; }
@@ -1176,8 +1178,8 @@
         <p class="skin__keepgoing">Keep going…</p>
         <!-- pocket sheet (47:5985 path) — rises as the wallet is dragged down -->
         <div class="skin__sheet" aria-hidden="true">
-          <svg class="skin__pocket" viewBox="0 0 433.342 652.514" width="433.342" height="652.514">
-            <path d="M24 44L96.6917 44C99.0167 44 100.179 44 101.219 44.1089C108.637 44.8864 115.007 49.7276 117.741 56.6674C118.125 57.6397 118.436 58.7598 119.058 61C120.303 65.4803 120.925 67.7205 121.691 69.6653C127.161 83.5448 139.9 93.2272 154.737 94.7821C156.816 95 159.141 95 163.791 95H267.551C272.201 95 274.526 95 276.605 94.7821C291.442 93.2272 304.181 83.5448 309.65 69.6653C310.417 67.7205 311.039 65.4803 312.284 61C312.906 58.7598 313.217 57.6397 313.6 56.6674C316.335 49.7276 322.705 44.8864 330.123 44.1089C331.163 44 332.325 44 334.65 44L409.342 44V648.514H24L24 44Z" fill="#fff"/>
+          <svg class="skin__pocket" viewBox="0 0 375 812" width="375" height="812">
+            <path id="skinPocket" data-src="M24 44L96.6917 44C99.0167 44 100.179 44 101.219 44.1089C108.637 44.8864 115.007 49.7276 117.741 56.6674C118.125 57.6397 118.436 58.7598 119.058 61C120.303 65.4803 120.925 67.7205 121.691 69.6653C127.161 83.5448 139.9 93.2272 154.737 94.7821C156.816 95 159.141 95 163.791 95H267.551C272.201 95 274.526 95 276.605 94.7821C291.442 93.2272 304.181 83.5448 309.65 69.6653C310.417 67.7205 311.039 65.4803 312.284 61C312.906 58.7598 313.217 57.6397 313.6 56.6674C316.335 49.7276 322.705 44.8864 330.123 44.1089C331.163 44 332.325 44 334.65 44L409.342 44V648.514H24L24 44Z" fill="#fff"/>
           </svg>
         </div>
         <!-- 49:11331 · Keep this skin -->
@@ -1848,6 +1850,48 @@
     const bgEls = [...skinScreen.querySelectorAll('.skin__bg')];
     const hintEls = [...skinScreen.querySelectorAll('.skin__hint')];
     const skinSheet = sq('.skin__sheet'), skinKeep = sq('.skin__keep');
+    // Sheet shape: the 54:12094 pocket path, re-drawn each frame from its top edge Y (frame px) and
+    // notch depth k (1 = Figma's pocket, 0 = flat). Source coords: top edge at 44, notch bottom 95,
+    // x offset −29.07 (the shape is 385 wide, centred under the 375 frame).
+    const pocketPath = document.getElementById('skinPocket');
+    const pocketTok = pocketPath.dataset.src.match(/[A-Za-z]|-?[\d.]+(?:e-?\d+)?/g);
+    const SHEET_PARK = 860, SHEET_REST = 500;        // parked: just below the frame (shadow included)
+    const sheet = { Y: SHEET_PARK, k: 1, raf: 0 };
+    function sheetD(Y, k) {
+      const fx = (x) => (+x - 29.07).toFixed(2);
+      const bottom = Math.max(Y + 700, 900);
+      const fy = (y) => (+y > 600 ? bottom : Y + (+y - 44) * k).toFixed(2);
+      let out = '', cmd = '', i = 0;
+      while (i < pocketTok.length) {
+        const t = pocketTok[i];
+        if (/[A-Za-z]/.test(t)) { cmd = t; out += t; i++; if (t === 'Z') continue; }
+        if (cmd === 'H') { out += fx(pocketTok[i]) + ' '; i++; }
+        else if (cmd === 'V') { out += fy(pocketTok[i]) + ' '; i++; }
+        else { out += fx(pocketTok[i]) + ' ' + fy(pocketTok[i + 1]) + ' '; i += 2; }
+      }
+      return out;
+    }
+    function drawSheet() { pocketPath.setAttribute('d', sheetD(sheet.Y, sheet.k)); }
+    function stopSheet() { cancelAnimationFrame(sheet.raf); sheet.raf = 0; }
+    function setSheet(Y, k = 1) { stopSheet(); sheet.Y = Y; sheet.k = k; drawSheet(); }
+    // spring the sheet from wherever it is to (Y, k); ζ / response as in spring()
+    function animSheet(toY, toK, zeta, response, ms) {
+      stopSheet();
+      const fromY = sheet.Y, fromK = sheet.k, t0 = performance.now();
+      const w = (2 * Math.PI) / response, wd = w * Math.sqrt(1 - zeta * zeta);
+      return new Promise((done) => {
+        const step = (now) => {
+          const t = (now - t0) / 1000, end = t * 1000 >= ms;
+          const x = end ? 1 : 1 - Math.exp(-zeta * w * t) * (Math.cos(wd * t) + ((zeta * w) / wd) * Math.sin(wd * t));
+          sheet.Y = fromY + (toY - fromY) * x;
+          sheet.k = Math.max(0, fromK + (toK - fromK) * x);
+          drawSheet();
+          if (end) { sheet.raf = 0; done(); } else sheet.raf = requestAnimationFrame(step);
+        };
+        sheet.raf = requestAnimationFrame(step);
+      });
+    }
+    drawSheet();
     const Z = { spare: 1, back: 2, mid: 3, front: 9 };
     let roles = {}, skinIdx = 0, skinPhase = 'pick', skinBusy = false, skinTimers = [], hintTimer = 0, sg = null;
     function assignRoles(map) {
@@ -1862,6 +1906,7 @@
       setPose(roles.spare, SPARE);
       bgEls[0].src = bgSrc(0); bgEls[0].classList.add('is-on'); bgEls[0].style.zIndex = 1;
       bgEls[1].classList.remove('is-on'); bgEls[1].style.zIndex = 0;
+      setSheet(SHEET_PARK, 1);
     }
     // warm only what the next swipes need (current + next two) — 7 full-screen BGs + cards decoded at
     // once is a lot of image memory for a phone (and stalled the compositor in testing)
@@ -1928,15 +1973,24 @@
       setPose(roles.mid, mixPose(POSE.mid, POSE.front, pu * 0.3));   // the stack leans in, ready to step up
       setPose(roles.back, mixPose(POSE.back, POSE.mid, pu * 0.3));
     }
-    function dragDown(dy) {                     // finger travel down (dy > 0) → 0…1
-      const p = clamp01(dy / 200);
-      const q = mixPose(POSE.front, POSE.dFront, p);
-      q.y = dy >= 0 ? 110 * (1 - Math.exp(-dy / 110)) : dy * 0.15;   // follows the finger against a rubber band
-      setPose(roles.front, q);
-      setPose(roles.mid, mixPose(POSE.mid, POSE.dMid, p));
-      setPose(roles.back, mixPose(POSE.back, POSE.dBack, p));
-      skinScreen.style.setProperty('--hint-fade', String(clamp01(1 - p * 3)));
-      sq('.skin__keepgoing').style.opacity = String(clamp01(p * 3 - 0.3));
+    // Drag down: the wallet follows against a rubber band (≈0.6× the finger at first, firmer as it
+    // goes), the cards behind tuck in under it — they straighten, shrink and slide in behind it —
+    // and the sheet rises from the bottom to meet it. 40 % of the travel commits (no release needed).
+    const DOWN_TRAVEL = 220, COMMIT_AT = 0.4;
+    const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+    function dragDown(dy) {                     // finger travel down (dy > 0) → progress 0…1
+      const d = Math.max(dy, 0);
+      const p = clamp01(d / DOWN_TRAVEL);
+      const sp = clamp01(p / COMMIT_AT);          // 0…1 up to the commit point
+      const y = dy >= 0 ? 120 * (1 - Math.exp(-d / 200)) : dy * 0.15;
+      setPose(roles.front, { x: 0, y, r: 3 * sp, s: 1 + 0.03 * sp, o: 1 });
+      const tuck = { x: 0, y: y * 0.9, r: 0, s: 0.86, o: 1 };   // hidden behind the wallet
+      const e = easeOut(sp);
+      setPose(roles.mid, mixPose(POSE.mid, tuck, e));
+      setPose(roles.back, mixPose(POSE.back, tuck, Math.min(1, e * 1.08)));
+      setSheet(SHEET_PARK + (590 - SHEET_PARK) * easeOut(sp), 1);
+      skinScreen.style.setProperty('--hint-fade', String(clamp01(1 - sp * 2.5)));
+      sq('.skin__keepgoing').style.opacity = String(clamp01(sp * 2.5 - 0.4));
       return p;
     }
     cardEls.forEach((el) => {
@@ -1944,6 +1998,7 @@
         if (el !== roles.front || skinBusy || skinPhase !== 'pick' || !skinScreen.classList.contains('is-shown')) return;
         e.preventDefault();
         settleSkinAnims();
+        stopSheet();
         try { el.setPointerCapture(e.pointerId); } catch (err) {}
         sg = { id: e.pointerId, y0: e.clientY, s: ui.getBoundingClientRect().width / 375, mode: null, dy: 0, p: 0, detent: false, samples: [[e.timeStamp, 0]] };
         skinScreen.classList.add('is-touched', 'is-dragging');
@@ -1957,8 +2012,12 @@
         if (sg.mode === 'up') dragUp(dy);
         else {
           sg.p = dragDown(dy);
-          if (!sg.detent && sg.p >= 0.55) { sg.detent = true; haptic.light(); }   // past the point of no return
-          if (sg.detent && sg.p < 0.5) sg.detent = false;
+          if (sg.p >= COMMIT_AT) {                // 40 % down: hand over to the confirm transition
+            try { el.releasePointerCapture(sg.id); } catch (err) {}
+            sg = null;
+            skinScreen.classList.remove('is-dragging');
+            confirmSkin();
+          }
         }
       });
       const end = (e) => {
@@ -1969,7 +2028,7 @@
         sg = null;
         skinScreen.classList.remove('is-dragging');
         if (mode === 'up') { if (-dy >= 70 || v < -0.45) changeSkin(); else springBackStack(); }
-        else if (mode === 'down') { if (p >= 0.55 || (v > 0.45 && p > 0.15)) confirmSkin(); else springBackStack(); }
+        else if (mode === 'down') { if (v > 0.6 && p > 0.15) confirmSkin(); else springBackStack(); }   // a flick also commits
       };
       el.addEventListener('pointerup', end);
       el.addEventListener('pointercancel', end);
@@ -1979,7 +2038,7 @@
       tweenTo(roles.front, poseCss(POSE.front), BACK);
       tweenTo(roles.mid, poseCss(POSE.mid), BACK);
       tweenTo(roles.back, poseCss(POSE.back), BACK);
-      tweenTo(skinSheet, { translate: '0px 380px' }, BACK);
+      animSheet(SHEET_PARK, 1, 0.9, 0.45, 700);
       tweenTo(sq('.skin__keepgoing'), { opacity: '0' }, { duration: 200, easing: 'ease-out' });
       skinScreen.style.setProperty('--hint-fade', '1');
     }
@@ -2048,30 +2107,37 @@
     function confirmSkin() {
       skinBusy = true;
       skinPhase = 'confirm';
-      const SHEET = { duration: 800, easing: spring(0.92, 0.5, 800) };
-      const LAND = { duration: 1000, easing: spring(0.74, 0.5, 1000) };   // drops in with a soft give
-      const out = { duration: 260, easing: 'ease-out' };
-      tweenTo(skinSheet, { translate: '0px 0px' }, SHEET);
+      haptic.medium();
+      const LAND = { duration: 1000, easing: spring(0.76, 0.5, 1000) };   // drops onto the sheet with a soft give
+      const out = { duration: 240, easing: 'ease-out' };
       tweenTo(roles.front, poseCss(POSE.confirm), LAND);
-      tweenTo(roles.mid, { opacity: '0' }, out);
-      tweenTo(roles.back, { opacity: '0' }, out);
+      tweenTo(roles.mid, { ...poseCss({ ...POSE.front, s: 0.86 }), opacity: '0' }, { duration: 320, easing: 'ease-out' });
+      tweenTo(roles.back, { ...poseCss({ ...POSE.front, s: 0.86 }), opacity: '0' }, { duration: 320, easing: 'ease-out' });
       tweenTo(sq('.skin__keepgoing'), { opacity: '0' }, out);
       skinScreen.style.setProperty('--hint-fade', '0');
-      skinTimers.push(setTimeout(() => haptic.medium(), 240));        // the wallet lands in its pocket
-      skinTimers.push(setTimeout(showKeep, 760));
+      animSheet(SHEET_REST, 1, 0.84, 0.5, 700);                       // 54:12090 Sheet rising
+      skinTimers.push(setTimeout(() => haptic.light(), 280));        // the wallet lands in its pocket
+      skinTimers.push(setTimeout(showKeep, 560));
     }
+    // the sheet keeps climbing and its pocket flattens out — it becomes the white Keep page
+    // (no fade); the wallet rises with it to its Keep spot and the Keep content settles in on top
     function showKeep() {
       skinPhase = 'keep';
       skinScreen.classList.add('is-keep');
       skinKeep.setAttribute('aria-hidden', 'false');
       const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
-      tweenTo(skinKeep, { opacity: '1' }, { duration: 520, easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)' });
-      tweenTo(roles.front, poseCss(POSE.keep), { duration: 1000, easing: spring(0.86, 0.55, 1000) });
-      sq('.skin__keep-copy').animate([{ opacity: 0, translate: '0 16px' }, { opacity: 1, translate: '0 0' }], { duration: 700, delay: 160, easing: IOS, fill: 'backwards' });
-      sq('.skin__keep-bar').animate([{ opacity: 0, translate: '0 40px' }, { opacity: 1, translate: '0 0' }], { duration: 760, delay: 220, easing: IOS, fill: 'backwards' });
-      sq('.skin__ksteps').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 420, delay: 100, easing: 'ease-out', fill: 'backwards' });
-      skinTimers.push(setTimeout(() => { skinBusy = false; }, 600));
+      animSheet(-24, 0, 0.92, 0.75, 1000);
+      tweenTo(roles.front, poseCss(POSE.keep), { duration: 1100, easing: spring(0.84, 0.62, 1100) });
+      skinKeep.getAnimations().forEach((a) => a.cancel());
+      skinKeep.style.opacity = '1';
+      sq('.skin__keep-head').animate([{ opacity: 0, translate: '0 -24px' }, { opacity: 1, translate: '0 0' }], { duration: 800, delay: 300, easing: IOS, fill: 'backwards' });
+      sq('.skin__ksteps').animate([{ opacity: 0, translate: '0 -8px' }, { opacity: 1, translate: '0 0' }], { duration: 600, delay: 380, easing: IOS, fill: 'backwards' });
+      sq('.skin__keep-copy').animate([{ opacity: 0, translate: '0 18px' }, { opacity: 1, translate: '0 0' }], { duration: 760, delay: 340, easing: IOS, fill: 'backwards' });
+      sq('.skin__keep-bar').animate([{ opacity: 0, translate: '0 40px' }, { opacity: 1, translate: '0 0' }], { duration: 800, delay: 420, easing: IOS, fill: 'backwards' });
+      skinTimers.push(setTimeout(() => { skinBusy = false; }, 900));
     }
+    // reverse: the Keep content lifts away, the page drops back down into the pocket sheet and
+    // off the bottom, and the wallet returns to the top of its stack
     function pickDifferentSkin() {
       if (skinBusy || skinPhase !== 'keep') return;
       skinBusy = true;
@@ -2079,14 +2145,14 @@
       skinPhase = 'pick';
       skinScreen.classList.remove('is-keep');
       skinKeep.setAttribute('aria-hidden', 'true');
-      const BACK = { duration: 900, easing: spring(0.82, 0.5, 900) };
-      tweenTo(skinKeep, { opacity: '0' }, { duration: 380, easing: 'ease-out' });
-      tweenTo(skinSheet, { translate: '0px 380px' }, { duration: 700, easing: spring(0.9, 0.5, 700) });
-      tweenTo(roles.front, poseCss(POSE.front), BACK);
-      tweenTo(roles.mid, poseCss(POSE.mid), { ...BACK, delay: 120 });
-      tweenTo(roles.back, poseCss(POSE.back), { ...BACK, delay: 170 });
+      const BACK = { duration: 950, easing: spring(0.82, 0.55, 950) };
+      tweenTo(skinKeep, { opacity: '0' }, { duration: 220, easing: 'ease-out' });
+      animSheet(SHEET_PARK, 1, 0.94, 0.7, 900);
+      tweenTo(roles.front, poseCss(POSE.front), { ...BACK, delay: 60 });
+      tweenTo(roles.mid, poseCss(POSE.mid), { ...BACK, delay: 200 });
+      tweenTo(roles.back, poseCss(POSE.back), { ...BACK, delay: 250 });
       skinScreen.style.setProperty('--hint-fade', '1');
-      skinTimers.push(setTimeout(() => { skinBusy = false; }, 650));
+      skinTimers.push(setTimeout(() => { skinBusy = false; }, 750));
     }
     sq('.skin__different').addEventListener('click', pickDifferentSkin);
     sq('.skin__confirm-skin').addEventListener('click', () => haptic.success());
@@ -2095,6 +2161,7 @@
       skinTimers.forEach(clearTimeout); skinTimers = [];
       clearInterval(hintTimer);
       sg = null; skinBusy = false; skinPhase = 'pick';
+      setSheet(SHEET_PARK, 1);
       skinScreen.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
       [...cardEls, ...bgEls, skinSheet, skinKeep, sq('.skin__title'), sq('.skin__sub'), sq('.skin__plain'), sq('.skin__keepgoing')]
         .forEach((el) => el.removeAttribute('style'));
