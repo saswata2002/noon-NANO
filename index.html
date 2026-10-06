@@ -2813,9 +2813,14 @@
       fadeOut(iq('.int__title'), 0, -10); fadeOut(iq('.int__sub'), 20, -8);
       chipEls.forEach((chip) => fadeOut(chip, (4 - +chip.dataset.r) * 25, 14));
       fadeOut(iq('.int__skip'), 0, 8);
-      iq('.int__cta').animate([{ translate: '0 0' }, { translate: '0 31.2px' }], { duration: 420, easing: 'cubic-bezier(0.32, 0.72, 0, 1)', fill: 'forwards' });
-      iq('.int__cta').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, delay: 260, fill: 'forwards' });
-      iq('.int__page').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, delay: 120, easing: OUT, fill: 'forwards' }).finished.then(() => {
+      // shared button, the forward hand-off in reverse: it eases from Disabled back to the dark 56px
+      // button (CSS cross-fade) while gliding down 31px to the avatar page's Continue, then hands over
+      // in place — same spot, same look, nothing fades
+      intCta.disabled = false;
+      const ctaHome = intCta.animate([{ translate: '0 0', easing: spring(0.88, 0.5, 620) }, { translate: '0 31.2px' }], { duration: 620, fill: 'forwards' });
+      const pageOut = iq('.int__page').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, delay: 120, easing: OUT, fill: 'forwards' });
+      Promise.all([ctaHome.finished, pageOut.finished]).then(() => {
+        avCta.style.opacity = '';                         // the avatar page's Continue takes over, pixel for pixel
         intScreen.classList.remove('is-shown');
         intScreen.setAttribute('aria-hidden', 'true');
         intScreen.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
@@ -2823,8 +2828,6 @@
       }).catch(() => {});
       // avatar page back in (the shared header never moved)
       avExit.splice(0).forEach((a) => a.cancel());
-      avCta.style.opacity = '';
-      avCta.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, delay: 400, fill: 'backwards' });
       avatarBuild(160);
     }
     function hideInterests() {
