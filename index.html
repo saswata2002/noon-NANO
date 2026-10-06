@@ -102,24 +102,27 @@
     }
     .ui.is-editing .overlay { opacity: 1; }
 
-    /* Welcome to · group — rest 16:2875 (375 × 120 at y 82) → edit 16:3555 (noon nano only, ×0.867) */
+    /* Welcome to · group — rest 1:4514 (375 × 150 at y 71) → edit: noon nano only, nano 130 wide.
+       The group's 5-layer purple drop shadow is an SVG filter (#logoShadow): CSS drop-shadow()s
+       would chain, each one shadowing the shadows before it. */
     .logo {
       position: absolute;
-      top: 82px;
+      top: 71px;
       left: 0;
       width: 375px;
-      height: 120px;
+      height: 150px;
+      filter: url(#logoShadow);
     }
     .overlay, .logo { pointer-events: none; }
     .logo__welcome {                 /* 16:2898 */
       position: absolute;
       top: 0.12px;
-      left: 107.66px;      /* 23:4151 glyph start; CSS centring would include the trailing 5px tracking */
+      left: 115.66px;      /* 1:4538 text box (136 wide, centred 3.84px left of the frame's centre) */
       margin: 0;
       font-weight: 800;
-      font-size: 16px;
-      line-height: 20px;
-      letter-spacing: 5px;
+      font-size: 13.924px;
+      line-height: 14.66px;
+      letter-spacing: 4.6322px;
       text-transform: uppercase;
       white-space: nowrap;
       color: #fff;
@@ -130,23 +133,23 @@
       transform: translateY(-16px);
       transition: opacity 180ms ease, transform var(--kb-dur) var(--kb-ease);
     }
-    /* 16:2876 Decoration · group: noon (64.74 × 17.65) over nano (150 × 55.44), drop shadow 0 4 14 */
+    /* 1:4515 Decoration · group: noon (89.69 × 24.25) over nano (207.80 × 76.16) */
     .logo__mark {
       position: absolute;
       inset: 0;
-      filter: drop-shadow(0 4px 7px rgba(45,2,110,.54));
-      transform-origin: 187.5px 91.4px;     /* nano centre: 145.68 + 27.72 − 82 */
+      transform-origin: 184px 111.5px;      /* nano centre: 80.1 + 103.9, 144.42 + 38.08 − 71 */
       transition: transform var(--kb-dur) var(--kb-ease);
     }
-    /* nano centre 173.40 → 128.12; Figma scales 150→130 wide (.8667) but 55.44→47.65 tall (.8594) (23:4442) */
-    .ui.is-editing .logo__mark { transform: translateY(-45.28px) scale(0.8667, 0.8594); }
+    /* Edit: nano centre 182.5 → 128.12 and 207.8 → 130 wide (23:4442), uniform */
+    .ui.is-editing .logo__mark { transform: translateY(-54.38px) scale(0.6256); }
     .logo__noon, .logo__nano { position: absolute; display: block; }
-    .logo__noon { width: 64.744px; height: 17.654px; left: 155.12px; top: 40.12px; }   /* 23:4128 → 155.12, 122.12 */
-    .logo__nano { width: 150px; height: 55.442px; left: 112.5px; top: 63.68px; }       /* 23:4128 → 112.5, 145.68 */
+    .logo__noon { width: 89.692px; height: 24.252px; left: 139.15px; top: 41.06px; }   /* 1:4517 → 139.15, 112.06 */
+    .logo__nano { width: 207.802px; height: 76.163px; left: 80.1px; top: 73.42px; }    /* 1:4522 → 80.1, 144.42 */
 
-    /* Card lifts 516 → 197.23 (23:4153 → 23:4466); rest block is at 90%, edit block at 100% */
-    .main { opacity: .9; transition: transform var(--kb-dur) var(--kb-ease), opacity 200ms ease; }
-    .ui.is-editing .main { transform: translateY(-318.77px); opacity: 1; }
+    /* Card lifts with the action bar (same --bar-dy), so it keeps sitting 16px above it: 500 → 177.23.
+       Fully opaque at rest and in edit (1:4513). */
+    .main { transition: transform var(--kb-dur) var(--kb-ease); }
+    .ui.is-editing .main { transform: translateY(var(--bar-dy, -322.77px)); }
 
     /* Intro: the card and the Send OTP dock wait off-stage until the Splash video reaches 4.6 s,
        then rise in (JS, WAAPI on the individual translate/scale props so the edit-state transform
@@ -197,17 +200,17 @@
       .ui { --kb-dur: 1ms; }
     }
 
-    /* 23:4154 Main (card at 516) — above the dock's fade, like the frame's fill sits behind it */
+    /* 1:4540 Main — 375 × 228 at y 484, padding 16 (card at 500) */
     .main {
       position: absolute;
       z-index: 1;
-      top: 508px;
+      top: 484px;
       left: 0;
       width: 375px;
-      padding: 8px 16px;
+      padding: 16px;
     }
 
-    /* 16:3112 Container */
+    /* 1:4541 Container — 343 × 196, r 24 */
     .card {
       position: relative;
       display: flex;
@@ -216,7 +219,7 @@
       gap: 24px;
       padding: 24px 16px;
       border: 1px solid #fff;
-      border-radius: 20px;
+      border-radius: 24px;
       background: linear-gradient(180deg, #fff 20.125%, #ebe3ff 136.07%);
     }
     .card::after {
@@ -236,10 +239,10 @@
       width: 100%;
       text-align: center;
     }
-    .card__title {        /* H28/Bold */
-      font-weight: 700;
-      font-size: 28px;
-      line-height: 36px;
+    .card__title {        /* 1:4544 H32/ExtraBold */
+      font-weight: 800;
+      font-size: 32px;
+      line-height: 40px;
       letter-spacing: -0.25px;
       color: var(--text-primary);
     }
@@ -251,22 +254,26 @@
       color: var(--text-tertiary);
     }
 
-    /* 16:3116 M-Input — 48px single-line field, placeholder + caret at rest */
+    /* 1:4547 M-Input-alt — 56px, white (instance override), stroke #f2f3f7 inside, r 12, padding 8/12.
+       Resting: "Email ID *" label, 14/20 Regular, centred. Active / Typing / Filled / Error:
+       the label floats to 12/18 Medium #475067 at the top and the value sits under it (gap 2).
+       The two label sizes are separate spans that morph into each other (move + scale + cross-fade),
+       so each one lands as Figma's own type style instead of a scaled copy. */
     .field {
       position: relative;
       display: flex;
       align-items: center;
       gap: 8px;
       width: 100%;
-      height: 48px;
-      padding: 0 11px;    /* Figma 12 with the 1px stroke drawn inside it */
-      background: #f9f9fb;                 /* surface/secondary */
-      border: 1px solid #eaecf0;           /* border/primary */
+      height: 56px;
+      padding: 7px 11px;    /* Figma 8/12 with the 1px stroke drawn inside it */
+      background: #fff;
+      border: 1px solid #f2f3f7;
       border-radius: 12px;
       cursor: text;
       transition: border-color 160ms ease, background-color 160ms ease;
     }
-    /* Error (Figma 10:1299): red stroke */
+    /* Error (State=Error): red stroke */
     .field.is-error { border-color: var(--text-error); }
 
     /* Wrong email ID: horizontal shake, decaying */
@@ -279,33 +286,71 @@
       82%      { transform: translateX(1px); }
     }
 
-    /* 16:3118 Content */
+    /* Frame 2147228356: label row (18) + 2 + content (20) = 40 when floated */
     .field__body {
       position: relative;
       flex: 1 1 0;
       min-width: 0;
-      height: 22px;
+      height: 40px;
     }
+    .field__label {
+      position: absolute;
+      left: 0;
+      display: flex;
+      gap: 2px;
+      white-space: nowrap;
+      pointer-events: none;
+      transform-origin: 0 50%;
+      --lbl-ease: cubic-bezier(0.32, 0.72, 0, 1);
+      transition: transform 280ms var(--lbl-ease), opacity 180ms ease;
+    }
+    .field__label i { font-style: normal; color: var(--text-error); }
+    .field__label--rest {            /* State=Resting: B14/Regular #666d85, centred in the 56 */
+      top: 10px;
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 20px;
+      letter-spacing: -0.1px;
+      color: var(--text-tertiary);
+    }
+    .field__label--float {           /* State=Active…: 12/18 Medium #475067 */
+      top: 0;
+      font-weight: 500;
+      font-size: 12px;
+      line-height: 18px;
+      color: #475067;
+      opacity: 0;
+      transform: translateY(11px) scale(1.1667);   /* sits on the resting label (centre 20, ×14/12) */
+    }
+    .field.is-floated .field__label--rest { opacity: 0; transform: translateY(-11px) scale(0.8571); }
+    .field.is-floated .field__label--float { opacity: 1; transform: none; }
 
-    /* B16/SemiBold for both the placeholder (muted) and the typed value (primary) */
+    /* Content row: 14/20 Medium #1d2539, caret #0f7eff. Laid out at 16px and scaled to 14 so iOS
+       doesn't zoom the page on focus (it does for any input under 16px). */
     .field__input {
+      position: absolute;
+      top: 20px;
+      left: 0;
       display: block;
-      width: 100%;
-      height: 22px;
+      width: calc(100% / 0.875);
+      height: 22.857px;
       border: 0;
-      padding: 0 1px;
+      padding: 0;
       outline: none;
       background: transparent;
       font: inherit;
-      font-weight: 600;
+      font-weight: 500;
       font-size: 16px;
-      line-height: 22px;
-      letter-spacing: -0.15px;
+      line-height: 22.857px;
+      letter-spacing: -0.114px;
       color: var(--text-primary);
       caret-color: var(--caret);
+      transform: scale(0.875);
+      transform-origin: 0 0;
     }
-    .field__input::placeholder { color: var(--text-muted); opacity: 1; }
-    .field.is-floated .field__input { padding-left: 0; }   /* 16:3256: no px in the edit/typing content */
+    /* Active shows a 14/20 Regular placeholder after the caret; Resting shows only the label */
+    .field__input::placeholder { color: var(--text-tertiary); font-weight: 400; opacity: 1; transition: color 180ms ease; }
+    .field:not(.is-floated) .field__input::placeholder { color: transparent; }
 
 
     /* Right slot (20 × 20): clear icon while typing / in Error — the right ID looks the same as any typing */
@@ -332,8 +377,8 @@
     .field.has-clear .field__clear { visibility: visible; }
     .field__clear img { display: block; }
 
-    /* 23:4153 frame (rest): 375 × 304 at y 508 — white fade fill + M-StackedActionBar + home-bar space,
-       whole frame at 90%. The card (.main) is drawn separately above this fill. */
+    /* Bottom block: action bar + home-bar space. 1:4513 has no fill or fade behind it — the card
+       and button sit straight on the background, fully opaque. */
     .dock {
       position: absolute;
       left: 0;
@@ -345,24 +390,25 @@
       align-items: center;
       justify-content: flex-end;
     }
-    .dock::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, rgba(255,255,255,0) 61.439%, #fff 105.46%);
-      opacity: .9;
-      transition: opacity 300ms ease;
-    }
     .ui > .dock { pointer-events: none; }        /* it now spans the card area; only the bar is tappable */
     .ui > .dock .action-bar { pointer-events: auto; }
-    .ui.is-editing .dock::before { opacity: 0; }
     .dock > * { position: relative; }
-    .action-bar { opacity: .9; }
-    .ui.is-editing .action-bar { opacity: 1; }
+    /* 1:4549 Action bar — 375 × 76 at y 712, padding 12/16. Fixed height with the button pinned to
+       its top, so Disabled (52) → Primary (56) grows downward and the bar never moves. */
     .action-bar {
       display: flex;
+      align-items: flex-start;
       width: 375px;
+      height: 76px;
       padding: 12px 16px;
+    }
+    /* 1:4548 bottom container's upward shadow, cast by the button */
+    #continueBtn {
+      box-shadow:
+        0 -7px 15px rgba(224,224,224,.10),
+        0 -27px 27px rgba(224,224,224,.09),
+        0 -60px 36px rgba(224,224,224,.05),
+        0 -107px 43px rgba(224,224,224,.01);
     }
 
     /* nano button 1:177 — Primary/Default (Figma 26:4772), Primary/Disabled 1:180.
@@ -392,6 +438,8 @@
       --btn-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
       transition:
         transform 120ms ease,
+        height 320ms var(--btn-ease),
+        padding 320ms var(--btn-ease),
         background-color 320ms var(--btn-ease),
         color 320ms var(--btn-ease);
     }
@@ -425,9 +473,9 @@
       transform: translateY(0.33px); /* Noontree metrics sit 1/3 px high in Chrome vs Figma */
     }
     .nano-btn:active { transform: scale(.98); }
-    .nano-btn:disabled {             /* Disabled = flat fill, no inner shadow, no stroke.
-                                        Kept at the Primary's 56px (Figma's variant is 52) so the
-                                        button doesn't shift when it activates on the first keystroke. */
+    .nano-btn:disabled {             /* Disabled (1:4550) = flat fill, no inner shadow, no stroke, 52 tall */
+      height: 52px;
+      padding: 14px;
       background: var(--surface-muted);
       color: var(--text-muted);
       cursor: default;
@@ -947,11 +995,29 @@
     <div class="ui is-pre-intro" id="ui">
       <div class="overlay" aria-hidden="true"></div>
 
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <!-- 1:4514 drop shadows: (0,6) b13 53% · (0,23) b23 46% · (0,51) b31 27% · (0,91) b37 8% · (0,143) b40 1%, #2d026e; σ = blur / 2 -->
+        <filter id="logoShadow" filterUnits="userSpaceOnUse" x="-60" y="-60" width="495" height="440" color-interpolation-filters="sRGB">
+          <feFlood flood-color="#2d026e" result="c"/>
+          <feGaussianBlur in="SourceAlpha" stdDeviation="6.5"/><feOffset dy="6" result="b1"/>
+          <feGaussianBlur in="SourceAlpha" stdDeviation="11.5"/><feOffset dy="23" result="b2"/>
+          <feGaussianBlur in="SourceAlpha" stdDeviation="15.5"/><feOffset dy="51" result="b3"/>
+          <feGaussianBlur in="SourceAlpha" stdDeviation="18.5"/><feOffset dy="91" result="b4"/>
+          <feGaussianBlur in="SourceAlpha" stdDeviation="20"/><feOffset dy="143" result="b5"/>
+          <feComposite in="c" in2="b1" operator="in"/><feComponentTransfer result="s1"><feFuncA type="linear" slope=".53"/></feComponentTransfer>
+          <feComposite in="c" in2="b2" operator="in"/><feComponentTransfer result="s2"><feFuncA type="linear" slope=".46"/></feComponentTransfer>
+          <feComposite in="c" in2="b3" operator="in"/><feComponentTransfer result="s3"><feFuncA type="linear" slope=".27"/></feComponentTransfer>
+          <feComposite in="c" in2="b4" operator="in"/><feComponentTransfer result="s4"><feFuncA type="linear" slope=".08"/></feComponentTransfer>
+          <feComposite in="c" in2="b5" operator="in"/><feComponentTransfer result="s5"><feFuncA type="linear" slope=".01"/></feComponentTransfer>
+          <feMerge><feMergeNode in="s5"/><feMergeNode in="s4"/><feMergeNode in="s3"/><feMergeNode in="s2"/><feMergeNode in="s1"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </svg>
+
       <div class="logo" aria-hidden="true">
         <p class="logo__welcome">Welcome to</p>
         <div class="logo__mark">
-          <img class="logo__noon" src="assets/logo/noon.svg" width="64.744" height="17.654" alt="">
-          <img class="logo__nano" src="assets/logo/nano.svg" width="150" height="55.442" alt="">
+          <img class="logo__noon" src="assets/logo/noon.svg" width="89.692" height="24.252" alt="">
+          <img class="logo__nano" src="assets/logo/nano.svg" width="207.802" height="76.163" alt="">
         </div>
       </div>
 
@@ -964,6 +1030,8 @@
 
           <div class="field" id="emailField">
             <div class="field__body">
+              <span class="field__label field__label--rest" aria-hidden="true">Email ID<i>*</i></span>
+              <span class="field__label field__label--float" aria-hidden="true">Email ID<i>*</i></span>
               <input
                 class="field__input"
                 id="email"
@@ -989,7 +1057,7 @@
 
       <div class="dock">
         <div class="action-bar">
-          <button class="nano-btn" id="continueBtn" type="submit" form="emailForm" disabled><span class="nano-btn__label">Send OTP</span></button>
+          <button class="nano-btn" id="continueBtn" type="submit" form="emailForm" disabled><span class="nano-btn__label">Continue</span></button>
         </div>
         <div class="home-bar" aria-hidden="true"></div>
       </div>
@@ -1278,7 +1346,7 @@
       const unblur = (el, delay) => el.animate([{ opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)' }],
         { duration: 520, delay, easing: FADE, fill: 'backwards' });
       // 9 gaps widen by 5px → the word is 45px wider; shift it back by half so it closes in on centre
-      welcome.animate([{ letterSpacing: '10px', translate: '-22.5px 8px' }, { letterSpacing: '5px', translate: '0 0' }],
+      welcome.animate([{ letterSpacing: '9.6322px', translate: '-22.5px 8px' }, { letterSpacing: '4.6322px', translate: '0 0' }],
         { duration: 900, easing: OUT_EXPO, fill: 'backwards' });
       unblur(welcome, 0);
       noon.animate([{ translate: '0 14px', easing: RISE }, { translate: '0 0' }], { duration: 1200, delay: 60, fill: 'backwards' });
