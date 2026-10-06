@@ -1817,7 +1817,9 @@
     // "Pick a different skin" plays it all back. Poses are offsets from the Pick front slot.
     const skinScreen = document.getElementById('skinScreen');
     const sq = (sel) => skinScreen.querySelector(sel);
-    const SKINS = ['lego', 'croc', 'stitch', 'pink', 'orange', 'purple', 'silver'];   // Figma 49:11118 order
+    // Figma 49:11118 skins, re-ordered so the two dark-green ones (croc, stitch) are never in the same
+    // visible stack of three (they read as one colour side by side)
+    const SKINS = ['lego', 'croc', 'pink', 'orange', 'stitch', 'purple', 'silver'];
     const wrapSkin = (i) => SKINS[((i % SKINS.length) + SKINS.length) % SKINS.length];
     const cardSrc = (i) => `assets/skin/cards/${wrapSkin(i)}.webp`;
     const bgSrc = (i) => `assets/skin/bg/${wrapSkin(i)}.webp`;
@@ -1965,13 +1967,16 @@
       [...cardEls.filter((el) => el !== roles.spare), skinSheet, sq('.skin__keepgoing')].forEach((el) =>
         el.getAnimations().forEach((a) => { try { a.commitStyles(); } catch (err) {} a.cancel(); }));
     }
+    // Swipe up: the wallet follows on a rubber band — ~0.85× the finger at first, getting heavier the
+    // further it goes (never more than ~160px) — tilting a touch and lifting off the stack, while the
+    // stack leans in behind it ready to step up.
     function dragUp(dy) {                       // finger travel up (dy < 0)
-      const d = Math.min(dy, 0);
-      const lift = d > -240 ? d : -240 + (d + 240) * 0.35;           // a little resistance past 240
-      const pu = clamp01(-d / 160);
-      setPose(roles.front, { x: 0, y: lift, r: lift * 0.012, s: 1 - 0.05 * pu, o: 1 });
-      setPose(roles.mid, mixPose(POSE.mid, POSE.front, pu * 0.3));   // the stack leans in, ready to step up
-      setPose(roles.back, mixPose(POSE.back, POSE.mid, pu * 0.3));
+      const d = Math.max(-Math.min(dy, 0), 0);
+      const lift = -160 * (1 - Math.exp(-d / 190));
+      const pu = clamp01(d / 160);
+      setPose(roles.front, { x: 0, y: lift, r: -3 * pu, s: 1 - 0.04 * pu, o: 1 });
+      setPose(roles.mid, mixPose(POSE.mid, POSE.front, pu * 0.28));
+      setPose(roles.back, mixPose(POSE.back, POSE.mid, pu * 0.28));
     }
     // Drag down: the wallet follows against a rubber band (≈0.6× the finger at first, firmer as it
     // goes), the cards behind tuck in under it — they straighten, shrink and slide in behind it —
@@ -2027,14 +2032,15 @@
         const { mode, p, dy } = sg;
         sg = null;
         skinScreen.classList.remove('is-dragging');
-        if (mode === 'up') { if (-dy >= 70 || v < -0.45) changeSkin(); else springBackStack(); }
+        if (mode === 'up') { if (-dy >= 70 || v < -0.45) changeSkin(v); else springBackStack(true); }
         else if (mode === 'down') { if (v > 0.6 && p > 0.15) confirmSkin(); else springBackStack(); }   // a flick also commits
       };
       el.addEventListener('pointerup', end);
       el.addEventListener('pointercancel', end);
     });
-    function springBackStack() {
-      const BACK = { duration: 700, easing: spring(0.86, 0.45, 700) };
+    function springBackStack(elastic = false) {
+      // from a swipe up the wallet drops back with a little elastic bounce; from a drag down it settles
+      const BACK = elastic ? { duration: 1000, easing: spring(0.62, 0.48, 1000) } : { duration: 700, easing: spring(0.86, 0.45, 700) };
       tweenTo(roles.front, poseCss(POSE.front), BACK);
       tweenTo(roles.mid, poseCss(POSE.mid), BACK);
       tweenTo(roles.back, poseCss(POSE.back), BACK);
@@ -2057,50 +2063,70 @@
       };
       (off.decode ? off.decode() : Promise.resolve()).then(show, show);
     }
-    // The wallet you swipe up rises just clear of the stack, slips behind it and sinks to the bottom
-    // of the deck (fanning out to the back tilt as it goes); the stack steps forward on springs and the
-    // next skin surfaces at the back as the old one fades into the deck. Nothing leaves the screen.
+    // The wallet you swipe up carries on up (with the flick's speed) just clear of the stack, then
+    // slips behind it and sinks in under the middle card, where it's hidden. The stack steps forward
+    // on springs and, as the old wallet disappears into the deck, the next skin fans out from behind
+    // into the back slot. The two are never on screen together (so e.g. the two greens never stack),
+    // nothing cross-fades and nothing leaves the screen.
     let flyRun = 0;
     const transY = (t) => parseFloat(String(t).split(' ')[1]) || 0;
-    function changeSkin() {
+    function changeSkin(v = 0) {
       skinBusy = true;
       haptic.medium();
       const run = ++flyRun;
       const fly = roles.front, nf = roles.mid, nm = roles.back, nb = roles.spare;
       skinIdx = (skinIdx + 1) % SKINS.length;
       nb.getAnimations().forEach((a) => a.cancel());
-      nb.querySelector('img').src = cardSrc(skinIdx + 2);
       setPose(nb, SPARE);
+      const nbImg = nb.querySelector('img');
+      nbImg.src = cardSrc(skinIdx + 2);
       assignRoles({ front: nf, mid: nm, back: nb, spare: fly });
       fly.style.zIndex = 10;                    // on top until it's clear of the stack
-      const STEP = { duration: 900, easing: spring(0.8, 0.5, 900) };
+      const STEP = { duration: 950, easing: spring(0.74, 0.52, 950) };   // a soft, slightly elastic step up
       tweenTo(nf, poseCss(POSE.front), STEP);
       tweenTo(nm, poseCss(POSE.mid), { ...STEP, delay: 40 });
+      // the next skin fans out into the back slot once the old wallet has gone behind the stack — and
+      // only once its image is decoded, so a recycled card never flashes the skin it showed last time
+      let surfaced = false;
+      const surface = () => {
+        if (surfaced || run !== flyRun) return;
+        surfaced = true;
+        setPose(nb, { ...POSE.mid, s: 0.9, o: 0 });                     // starts tucked under the middle card
+        tweenTo(nb, poseCss(POSE.back), { duration: 820, easing: spring(0.78, 0.52, 820) });
+      };
 
       const cs = getComputedStyle(fly);
-      const from = { translate: cs.translate, rotate: cs.rotate, scale: cs.scale, opacity: cs.opacity };
-      const peakY = Math.min(transY(cs.translate) - 24, -228);          // bottom edge just above the fan
-      const peak = { translate: `0px ${peakY}px`, rotate: '-4deg', scale: '0.94', opacity: 1 };
+      const from = { translate: cs.translate, rotate: cs.rotate, scale: cs.scale, opacity: '1' };
+      const y0 = transY(cs.translate);
+      const peakY = Math.min(y0 - 30, -228);                         // bottom edge just above the fan
+      const speed = Math.max(Math.abs(Math.min(v, 0)), 0.9);          // px / ms, at least a brisk toss
+      const riseMs = Math.round(Math.min(Math.max((y0 - peakY) / speed * 1.6, 160), 300));
+      const peak = { translate: `0px ${peakY}px`, rotate: '-6deg', scale: '0.95', opacity: '1' };
       fly.getAnimations().forEach((a) => a.cancel());
       setPose(fly, SPARE);
-      const rise = fly.animate([from, peak], { duration: 220, easing: 'cubic-bezier(0.2, 0.8, 0.4, 1)', fill: 'forwards' });
+      const rise = fly.animate([from, peak], { duration: riseMs, easing: 'cubic-bezier(0.25, 0.8, 0.4, 1)', fill: 'forwards' });
       rise.finished.then(() => {
         if (run !== flyRun) return;
-        fly.style.zIndex = 1;                   // slip behind the whole stack (still over the BG layers, z 0/1, by DOM order)
-        const sink = fly.animate([
-          { ...peak, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' },
-          { ...poseCss({ ...POSE.back, s: 0.97, o: 1 }), offset: 0.62, easing: 'ease-out' },
-          poseCss(SPARE),
-        ], { duration: 780 });
+        fly.style.zIndex = 1;                   // behind the whole stack (still over the BG layers, z 0/1, by DOM order)
+        const under = poseCss({ ...POSE.mid, s: 0.9, o: 1 });          // fully covered by the middle card
+        fly.animate([
+          { ...peak, easing: 'cubic-bezier(0.45, 0, 0.25, 1)' },
+          { ...under, offset: 0.86 },
+          { ...poseCss(SPARE), opacity: '0' },
+        ], { duration: 820 }).finished
+          .then(() => { if (run === flyRun) fly.style.zIndex = Z.spare; }).catch(() => {});
         rise.cancel();
-        // the next skin surfaces at the back of the deck as the old one sinks under it
-        tweenTo(nb, poseCss(POSE.back), { duration: 820, delay: 200, easing: spring(0.82, 0.5, 820) });
-        sink.finished.then(() => { if (run === flyRun) fly.style.zIndex = Z.spare; }).catch(() => {});
-        skinTimers.push(setTimeout(() => haptic.light(), 300));        // it settles into the stack
+        skinTimers.push(setTimeout(() => haptic.light(), 520));        // it settles into the deck
       }).catch(() => {});
+      // the old wallet is behind the front card by ~riseMs + 420 ms: deal the next skin out then
+      skinTimers.push(setTimeout(() => {
+        (nbImg.decode ? nbImg.decode() : Promise.resolve()).then(surface, surface);
+        skinTimers.push(setTimeout(surface, 300));                     // never wait longer than this
+      }, riseMs + 420));
       crossfadeBg(skinIdx);
       preloadSkins(skinIdx + 1);
-      skinTimers.push(setTimeout(() => { skinBusy = false; }, 700));   // by now it's behind the back card
+      // the next swipe can start once this wallet is tucked under the back card (it's recycled as the spare)
+      skinTimers.push(setTimeout(() => { skinBusy = false; }, riseMs + 700));
     }
 
     // ---- drag down: confirm (49:11447 → 49:11576) → Keep this skin (49:11331) ----
