@@ -907,6 +907,10 @@
     .av__sparkle { position: absolute; display: block; }
     .av__sparkle--l { left: 7.12px; top: 405.88px; width: 154.897px; height: 154.897px; }
     .av__sparkle--s { left: 257.02px; top: 250.47px; width: 46.977px; height: 46.977px; }
+    /* accumulated spin per character change (registered so it can be animated and read mid-flight);
+       composes with the idle twinkle, which runs on the separate rotate / scale properties */
+    @property --spin { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+    .av__sparkle { transform: rotate(var(--spin)); }
     /* 61:16111 action bar: button at 16, 721.2 (343 × 56) */
     .av__bar { position: absolute; left: 0; top: 709.2px; width: 375px; padding: 12px 16px; display: flex; }
     .av__bar .nano-btn { flex: 1 1 0; }
@@ -2421,6 +2425,7 @@
       sq('.skin__confirm-skin').style.opacity = '';
       avBusy = false;
       resetAvatarRow();
+      resetStars();
     }
 
     // ---------- Avatar row: endless loop + big avatar swap (storyboard 61:19243) ----------
@@ -2565,12 +2570,24 @@
       inc.animate([{ translate: '0 300px', easing: spring(0.7, 0.52, 860) }, { translate: '0 0' }], { duration: 860, delay: 120, fill: 'backwards' });
       setGlow(i, true);
       aq('.av__ring').animate([{ scale: '1' }, { scale: '1.08', offset: 0.35 }, { scale: '1' }], { duration: 420, delay: 60, easing: 'cubic-bezier(0.3, 0.7, 0.4, 1)' });
-      // the big sparkle turns half a revolution with the change (4-point star: 180° lands on the same
-      // shape, so nothing snaps at the end). On `transform`, so it adds to the idle twinkle.
-      const star = aq('.av__sparkle--l');
-      star.getAnimations().filter((a) => a.id === 'star-spin').forEach((a) => a.cancel());
-      const spin = star.animate([{ transform: 'rotate(0deg)', easing: spring(0.78, 0.7, 900) }, { transform: 'rotate(180deg)' }], { duration: 900, delay: 60 });
-      spin.id = 'star-spin';
+      // the sparkles turn half a revolution with the change — big one clockwise, small one the other
+      // way. The angle accumulates and stays (the chrome lighting isn't symmetric, so snapping back
+      // to 0° after the turn showed as a glitch); a spin interrupted mid-way carries on from where it is.
+      spinStar(aq('.av__sparkle--l'), 180);
+      spinStar(aq('.av__sparkle--s'), -180);
+    }
+    const starTargets = new Map();
+    function spinStar(el, by) {
+      const now = el.style.getPropertyValue('--spin') ? getComputedStyle(el).getPropertyValue('--spin').trim() : '0deg';
+      const target = (starTargets.get(el) || 0) + by;
+      starTargets.set(el, target);
+      el.getAnimations().filter((a) => a.id === 'star-spin').forEach((a) => a.cancel());
+      el.style.setProperty('--spin', `${target}deg`);
+      const a = el.animate([{ '--spin': now, easing: spring(0.78, 0.7, 900) }, { '--spin': `${target}deg` }], { duration: 900, delay: 60, fill: 'backwards' });
+      a.id = 'star-spin';
+    }
+    function resetStars() {
+      avatarScreen.querySelectorAll('.av__sparkle').forEach((el) => { starTargets.delete(el); el.style.removeProperty('--spin'); });
     }
     function resetAvatarRow() {
       cancelAnimationFrame(rowRaf); rowRaf = 0; rowDrag = null;
