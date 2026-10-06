@@ -824,27 +824,15 @@
       font-weight: 500; font-size: 16px; line-height: 22px; letter-spacing: -0.15px; color: #fff; text-shadow: 0 3px 4px rgba(0,0,0,.85); }
     .skin__hint { top: 579px; opacity: 0; transition: opacity 360ms ease; }
     .skin__steps, .skin__title, .skin__sub, .skin__plain { z-index: 2; }   /* above the two BG layers (z 0/1) */
-    .skin__hint, .skin__keepgoing, .skin__cue { z-index: 4; }
+    .skin__hint, .skin__keepgoing { z-index: 4; }
     .skin__sheet { z-index: 5; }
     .skin__keep { z-index: 6; }
     .skin__hint.is-on { opacity: var(--hint-fade, 1); }
     .skin.is-dragging .skin__hint { transition: none; }
     .skin__keepgoing { top: 716.43px; opacity: 0; }         /* 49:11322 */
-    /* 49:11221–11225 drag cue */
-    .skin__cue { position: absolute; inset: 0; pointer-events: none; transition: opacity 260ms ease; }
-    .skin.is-touched .skin__cue { opacity: 0; }
-    .skin__cue-track { position: absolute; left: 175.5px; top: 590px; width: 24px; height: 113.613px; border-radius: 0 0 30px 30px;
-      background: radial-gradient(33.47px 86.998px at 12px 110.85px, rgba(255,255,255,.64) 22.3%, rgba(255,255,255,0) 100%); }
-    .skin__cue-chev { position: absolute; left: 184.27px; top: 648.91px; width: 6.464px; height: 15.768px; animation: cue-chev 1.6s ease-in-out infinite; }
-    .skin__cue-dot { position: absolute; left: 178.5px; top: 682.61px; width: 18px; height: 18px; border-radius: 50%;
-      background: linear-gradient(180deg, #fff 8.31%, rgba(255,255,255,0) 73.18%); animation: cue-slide 1.6s cubic-bezier(.45,0,.2,1) infinite; }
-    .skin__cue-hand { position: absolute; left: 164.37px; top: 668.53px; width: 86.277px; height: 86.277px; rotate: -30deg;
-      animation: cue-slide 1.6s cubic-bezier(.45,0,.2,1) infinite; }
-    @keyframes cue-slide { 0% { translate: 0 -64px; opacity: 0; } 18% { opacity: 1; } 70% { translate: 0 0; opacity: 1; } 100% { translate: 0 0; opacity: 0; } }
-    @keyframes cue-chev { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
-    /* pocket sheet — full-frame layer, parked 640px down */
-    .skin__sheet { position: absolute; inset: 0; pointer-events: none; translate: 0 640px; will-change: translate; }
-    .skin__pocket { position: absolute; left: -29.07px; top: 198px; width: 433.342px; height: 652.514px; overflow: visible;
+    /* pocket sheet (54:12093) — top edge at y 500 when risen, parked 380px down */
+    .skin__sheet { position: absolute; inset: 0; pointer-events: none; translate: 0 380px; will-change: translate; }
+    .skin__pocket { position: absolute; left: -29.07px; top: 456px; width: 433.342px; height: 652.514px; overflow: visible;
       filter: drop-shadow(0 -20px 24px rgba(0,0,0,.16)); }
     /* 49:11331 Keep this skin — white page with the light header, over everything but the card */
     .skin__keep { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
@@ -1186,13 +1174,6 @@
         <p class="skin__hint is-on" data-hint="down">Drag down to confirm</p>
         <p class="skin__hint" data-hint="up">Swipe up to change</p>
         <p class="skin__keepgoing">Keep going…</p>
-        <!-- 49:11221–11225 drag cue: glow track, chevrons, dot + hand sliding down -->
-        <div class="skin__cue" aria-hidden="true">
-          <span class="skin__cue-track"></span>
-          <svg class="skin__cue-chev" viewBox="0 0 6.464 15.7677" width="6.464" height="15.768"><g opacity=".9" fill="#fff"><path d="M3.232 4.224L0 1.792V0l3.232 2.4L6.464 0v1.792L3.232 4.224Z"/><path d="M3.232 9.996L0 7.564V5.772l3.232 2.4 3.232-2.4v1.792L3.232 9.996Z"/><path d="M3.232 15.768L0 13.336v-1.792l3.232 2.4 3.232-2.4v1.792l-3.232 2.432Z"/></g></svg>
-          <span class="skin__cue-dot"></span>
-          <img class="skin__cue-hand" src="assets/skin/hand.webp" width="86.277" height="86.277" alt="">
-        </div>
         <!-- pocket sheet (47:5985 path) — rises as the wallet is dragged down -->
         <div class="skin__sheet" aria-hidden="true">
           <svg class="skin__pocket" viewBox="0 0 433.342 652.514" width="433.342" height="652.514">
@@ -1846,9 +1827,10 @@
       dFront:  { x: -4.77,  y: 76.39,  r: 3,  s: 1,          o: 1 },     // 49:11321 dragging
       dMid:    { x: 30.1,   y: -30.29, r: 8,  s: 1,          o: .35 },   // 49:11320
       dBack:   { x: -20.83, y: -13.09, r: 18, s: 1,          o: .35 },   // 49:11319
-      confirm: { x: 0,      y: -10.23, r: 0,  s: 315.66 / CW, o: 1 },    // 49:11673 · centre 187.5 × 434.26
+      confirm: { x: -6.05,  y: 35.11,  r: 3,  s: 315.66 / CW, o: 1 },    // 54:12215 · centre 181.45 × 479.60, −3° in Figma
       keep:    { x: 0,      y: -101.5, r: 0,  s: 300 / CW,    o: 1 },    // 49:11443 · centre 187.5 × 343
     };
+    const SPARE = { ...POSE.back, y: POSE.back.y + 14, s: 0.9, o: 0 };   // hidden at the bottom of the deck
     const lerp = (a, b, t) => a + (b - a) * t;
     const clamp01 = (v) => Math.min(Math.max(v, 0), 1);
     const mixPose = (a, b, t) => ({ x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t), r: lerp(a.r, b.r, t), s: lerp(a.s, b.s, t), o: lerp(a.o, b.o, t) });
@@ -1877,7 +1859,7 @@
       assignRoles({ back: cardEls[0], mid: cardEls[1], spare: cardEls[2], front: cardEls[3] });
       [['front', 0], ['mid', 1], ['back', 2], ['spare', 3]].forEach(([r, k]) => { roles[r].querySelector('img').src = cardSrc(k); });
       setPose(roles.front, POSE.front); setPose(roles.mid, POSE.mid); setPose(roles.back, POSE.back);
-      setPose(roles.spare, { ...POSE.back, s: 0.9, o: 0 });
+      setPose(roles.spare, SPARE);
       bgEls[0].src = bgSrc(0); bgEls[0].classList.add('is-on'); bgEls[0].style.zIndex = 1;
       bgEls[1].classList.remove('is-on'); bgEls[1].style.zIndex = 0;
     }
@@ -1927,7 +1909,7 @@
         fade(el, delay, 320);
       });
       skinTimers.push(setTimeout(() => haptic.medium(), 580 + 330));   // the front wallet lands
-      [sq('.skin__hint.is-on'), sq('.skin__cue')].forEach((el) => {
+      [sq('.skin__hint.is-on')].forEach((el) => {
         el.animate([{ opacity: 0, translate: '0 8px' }, { opacity: 1, translate: '0 0' }], { duration: 700, delay: 900, easing: IOS, fill: 'backwards' });
       });
       skinTimers.push(setTimeout(() => walletIntro.pause(), 1200));   // fully covered now
@@ -1935,7 +1917,7 @@
 
     // ---- gestures on the front wallet ----
     function settleSkinAnims() {
-      [...cardEls, skinSheet, sq('.skin__keepgoing')].forEach((el) =>
+      [...cardEls.filter((el) => el !== roles.spare), skinSheet, sq('.skin__keepgoing')].forEach((el) =>
         el.getAnimations().forEach((a) => { try { a.commitStyles(); } catch (err) {} a.cancel(); }));
     }
     function dragUp(dy) {                       // finger travel up (dy < 0)
@@ -1997,7 +1979,7 @@
       tweenTo(roles.front, poseCss(POSE.front), BACK);
       tweenTo(roles.mid, poseCss(POSE.mid), BACK);
       tweenTo(roles.back, poseCss(POSE.back), BACK);
-      tweenTo(skinSheet, { translate: '0px 640px' }, BACK);
+      tweenTo(skinSheet, { translate: '0px 380px' }, BACK);
       tweenTo(sq('.skin__keepgoing'), { opacity: '0' }, { duration: 200, easing: 'ease-out' });
       skinScreen.style.setProperty('--hint-fade', '1');
     }
@@ -2016,32 +1998,50 @@
       };
       (off.decode ? off.decode() : Promise.resolve()).then(show, show);
     }
+    // The wallet you swipe up rises just clear of the stack, slips behind it and sinks to the bottom
+    // of the deck (fanning out to the back tilt as it goes); the stack steps forward on springs and the
+    // next skin surfaces at the back as the old one fades into the deck. Nothing leaves the screen.
+    let flyRun = 0;
+    const transY = (t) => parseFloat(String(t).split(' ')[1]) || 0;
     function changeSkin() {
       skinBusy = true;
       haptic.medium();
+      const run = ++flyRun;
       const fly = roles.front, nf = roles.mid, nm = roles.back, nb = roles.spare;
       skinIdx = (skinIdx + 1) % SKINS.length;
+      nb.getAnimations().forEach((a) => a.cancel());
       nb.querySelector('img').src = cardSrc(skinIdx + 2);
-      setPose(nb, { ...POSE.back, s: 0.9, o: 0 });
+      setPose(nb, SPARE);
       assignRoles({ front: nf, mid: nm, back: nb, spare: fly });
-      fly.style.zIndex = 10;                    // stays on top while it's thrown off
-      const STEP = { duration: 900, easing: spring(0.78, 0.5, 900) };
+      fly.style.zIndex = 10;                    // on top until it's clear of the stack
+      const STEP = { duration: 900, easing: spring(0.8, 0.5, 900) };
       tweenTo(nf, poseCss(POSE.front), STEP);
-      tweenTo(nm, poseCss(POSE.mid), STEP);
-      tweenTo(nb, poseCss(POSE.back), { ...STEP, delay: 90 });
-      // the old wallet is thrown off the top (fast, decelerating), fading once it's mostly gone
+      tweenTo(nm, poseCss(POSE.mid), { ...STEP, delay: 40 });
+
       const cs = getComputedStyle(fly);
+      const from = { translate: cs.translate, rotate: cs.rotate, scale: cs.scale, opacity: cs.opacity };
+      const peakY = Math.min(transY(cs.translate) - 24, -228);          // bottom edge just above the fan
+      const peak = { translate: `0px ${peakY}px`, rotate: '-4deg', scale: '0.94', opacity: 1 };
       fly.getAnimations().forEach((a) => a.cancel());
-      setPose(fly, { ...POSE.back, s: 0.9, o: 0 });
-      fly.animate([
-        { translate: cs.translate, rotate: cs.rotate, scale: cs.scale, opacity: 1 },
-        { translate: '0px -560px', rotate: '-7deg', scale: '0.92', opacity: 1, offset: 0.6 },
-        { translate: '0px -760px', rotate: '-9deg', scale: '0.9', opacity: 0 },
-      ], { duration: 560, easing: 'cubic-bezier(0.2, 0.75, 0.35, 1)' })
-        .finished.then(() => { fly.style.zIndex = Z.spare; }).catch(() => {});
+      setPose(fly, SPARE);
+      const rise = fly.animate([from, peak], { duration: 220, easing: 'cubic-bezier(0.2, 0.8, 0.4, 1)', fill: 'forwards' });
+      rise.finished.then(() => {
+        if (run !== flyRun) return;
+        fly.style.zIndex = 1;                   // slip behind the whole stack (still over the BG layers, z 0/1, by DOM order)
+        const sink = fly.animate([
+          { ...peak, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' },
+          { ...poseCss({ ...POSE.back, s: 0.97, o: 1 }), offset: 0.62, easing: 'ease-out' },
+          poseCss(SPARE),
+        ], { duration: 780 });
+        rise.cancel();
+        // the next skin surfaces at the back of the deck as the old one sinks under it
+        tweenTo(nb, poseCss(POSE.back), { duration: 820, delay: 200, easing: spring(0.82, 0.5, 820) });
+        sink.finished.then(() => { if (run === flyRun) fly.style.zIndex = Z.spare; }).catch(() => {});
+        skinTimers.push(setTimeout(() => haptic.light(), 300));        // it settles into the stack
+      }).catch(() => {});
       crossfadeBg(skinIdx);
       preloadSkins(skinIdx + 1);
-      skinTimers.push(setTimeout(() => { skinBusy = false; }, 380));
+      skinTimers.push(setTimeout(() => { skinBusy = false; }, 700));   // by now it's behind the back card
     }
 
     // ---- drag down: confirm (49:11447 → 49:11576) → Keep this skin (49:11331) ----
@@ -2056,9 +2056,6 @@
       tweenTo(roles.mid, { opacity: '0' }, out);
       tweenTo(roles.back, { opacity: '0' }, out);
       tweenTo(sq('.skin__keepgoing'), { opacity: '0' }, out);
-      tweenTo(sq('.skin__title'), { opacity: '0' }, out);
-      tweenTo(sq('.skin__sub'), { opacity: '0' }, out);
-      tweenTo(sq('.skin__plain'), { opacity: '1' }, { duration: 360, delay: 120, easing: 'ease-out' });
       skinScreen.style.setProperty('--hint-fade', '0');
       skinTimers.push(setTimeout(() => haptic.medium(), 240));        // the wallet lands in its pocket
       skinTimers.push(setTimeout(showKeep, 760));
@@ -2070,7 +2067,6 @@
       const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
       tweenTo(skinKeep, { opacity: '1' }, { duration: 520, easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)' });
       tweenTo(roles.front, poseCss(POSE.keep), { duration: 1000, easing: spring(0.86, 0.55, 1000) });
-      tweenTo(sq('.skin__plain'), { opacity: '0' }, { duration: 200, easing: 'ease-out' });
       sq('.skin__keep-copy').animate([{ opacity: 0, translate: '0 16px' }, { opacity: 1, translate: '0 0' }], { duration: 700, delay: 160, easing: IOS, fill: 'backwards' });
       sq('.skin__keep-bar').animate([{ opacity: 0, translate: '0 40px' }, { opacity: 1, translate: '0 0' }], { duration: 760, delay: 220, easing: IOS, fill: 'backwards' });
       sq('.skin__ksteps').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 420, delay: 100, easing: 'ease-out', fill: 'backwards' });
@@ -2085,12 +2081,10 @@
       skinKeep.setAttribute('aria-hidden', 'true');
       const BACK = { duration: 900, easing: spring(0.82, 0.5, 900) };
       tweenTo(skinKeep, { opacity: '0' }, { duration: 380, easing: 'ease-out' });
-      tweenTo(skinSheet, { translate: '0px 640px' }, { duration: 700, easing: spring(0.9, 0.5, 700) });
+      tweenTo(skinSheet, { translate: '0px 380px' }, { duration: 700, easing: spring(0.9, 0.5, 700) });
       tweenTo(roles.front, poseCss(POSE.front), BACK);
       tweenTo(roles.mid, poseCss(POSE.mid), { ...BACK, delay: 120 });
       tweenTo(roles.back, poseCss(POSE.back), { ...BACK, delay: 170 });
-      tweenTo(sq('.skin__title'), { opacity: '1' }, { duration: 420, delay: 160, easing: 'ease-out' });
-      tweenTo(sq('.skin__sub'), { opacity: '1' }, { duration: 420, delay: 200, easing: 'ease-out' });
       skinScreen.style.setProperty('--hint-fade', '1');
       skinTimers.push(setTimeout(() => { skinBusy = false; }, 650));
     }
