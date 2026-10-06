@@ -784,8 +784,11 @@
     .skin__card--mid   { left: 59.41px; top: 327.48px; width: 273.755px; height: 193.39px; }
     .skin__card--mid img { transform: rotate(8deg); }
     .skin__card--front { left: 50.46px; top: 329.93px; width: 273.867px; height: 193.469px; }
-    /* 45:5657 shadow stack, alpha-aware (the image has transparent rounded corners) */
-    .skin__card--front img { filter: drop-shadow(0 4px 8px rgba(4,18,11,.1)) drop-shadow(0 29px 14px rgba(4,18,11,.09)); }
+    /* 45:5657 / 47:5987 shadow stack, baked into card-front.webp from the card's alpha (Figma's
+       shadow follows the card's shape; a CSS box-shadow would draw the image's padded rectangle).
+       The image carries 70 / 40 / 140px (settled @1x) of shadow margin around the card, so it sits
+       at those offsets in the card's unscaled box (× 273.867 / 315.66). Zero runtime cost. */
+    .skin__card--front img { position: absolute; left: -60.732px; top: -34.704px; width: 395.337px; height: 349.643px; max-width: none; }
     /* front card: the drag handle (47:5987 is the same card, settled 315.66 wide at 187.5, 434.26) */
     .skin__card--front { touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
     .skin__card--front:active { cursor: grabbing; }
@@ -800,10 +803,8 @@
     .skin__confirm p { margin: 0; }
     .skin__confirm-title { font-weight: 800; font-size: 40px; line-height: 50px; letter-spacing: -0.3125px; color: #000; }
     .skin__confirm-sub { font-weight: 500; font-size: 20px; line-height: 27.5px; letter-spacing: -0.1875px; color: rgba(0,0,0,.8); }
-    /* 47:5989 bottom bar: 375 wide, 1px rgba(255,255,255,.22) border, r24 top, 20 / 24 padding.
-       Its 32.5px backdrop blur sits over the opaque white sheet, so it's visually a no-op — dropped (perf). */
-    .skin__cta { position: absolute; left: -0.4px; bottom: 0; width: 375px; display: flex; padding: 20px 16px 24px;
-      border: 1px solid rgba(255,255,255,.22); border-bottom: 0; border-radius: 24px 24px 0 0; pointer-events: auto; }
+    /* 48:6035 M-StackedActionBar: 375 wide at −0.4, 719.5; 12 / 16 padding; full-width nano button */
+    .skin__cta { position: absolute; left: -0.4px; top: 719.5px; width: 375px; display: flex; padding: 12px 16px; pointer-events: auto; }
 
     /* 45:5658 — Figma's text has two trailing spaces but centres the glyphs (matched to 187.5) */
     .skin__hint {
