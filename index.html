@@ -1,0 +1,1653 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Login · Email</title>
+  <link rel="preload" href="fonts/Noontree-ExtraBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="fonts/Noontree-Medium.otf" as="font" type="font/otf" crossorigin>
+  <style>
+    @font-face { font-family: 'Noontree'; src: url('fonts/Noontree-Regular.otf') format('opentype'); font-weight: 400; font-display: block; }
+    @font-face { font-family: 'Noontree'; src: url('fonts/Noontree-Medium.otf') format('opentype'); font-weight: 500; font-display: block; }
+    @font-face { font-family: 'Noontree'; src: url('fonts/Noontree-SemiBold.otf') format('opentype'); font-weight: 600; font-display: block; }
+    @font-face { font-family: 'Noontree'; src: url('fonts/Noontree-Bold.otf') format('opentype'); font-weight: 700; font-display: block; }
+    @font-face { font-family: 'Noontree'; src: url('fonts/Noontree-ExtraBold.otf') format('opentype'); font-weight: 800; font-display: block; }
+
+    /* Figma 1:4572 (background, exported @3x) + 4:752 (UI overlay) — both 375 × 812 */
+    :root {
+      --frame-w: 375;
+      --frame-h: 812;
+      --frame-bg: #5e2daa; /* sampled from the export's edges, shows while media loads */
+
+      /* Origin tokens used by 4:752 */
+      --text-primary: #1d2539;
+      --text-tertiary: #666d85;
+      --text-secondary: #475067;
+      --text-muted: #989fb3;
+      --text-error: #d92626;
+      --surface-primary: #ffffff;
+      --surface-muted: #eaecf0;
+      --border-subtle: #f2f3f7;
+      --caret: #0f7eff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #0b0b0d;
+      overflow: hidden;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      font-family: 'Noontree', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* The screen: always 375:812, as large as fits the viewport. Full-bleed on phones. */
+    .screen {
+      position: relative;
+      width: min(100vw, 100dvh * var(--frame-w) / var(--frame-h));
+      aspect-ratio: var(--frame-w) / var(--frame-h);
+      background: var(--frame-bg);
+      overflow: hidden;
+    }
+
+    /* ---------- Video container ---------- */
+    .screen__media,
+    .screen__still {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .screen__still { transition: opacity 240ms ease; }
+    .screen.is-playing .screen__still { opacity: 0; }
+
+
+    /* ---------- UI layer: authored at 375 × 812, scaled to the screen ---------- */
+    .ui {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 375px;
+      height: 812px;
+      transform: scale(var(--s, 1));
+      transform-origin: 0 0;
+      pointer-events: none;
+    }
+    .ui > * { pointer-events: auto; }
+
+    /* ---------- Resting (16:2601) ⇄ Edit email (16:3276) ----------
+       Everything that moves rides the keyboard's curve so the page lifts as one piece. */
+    .ui {
+      --kb-ease: cubic-bezier(0.32, 0.72, 0, 1);   /* iOS keyboard-like */
+      --kb-dur: 450ms;
+    }
+
+    /* 16:3553 overlay: lilac wash that fades in behind the lifted UI */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(226,215,244,0) 4.067%, #e2d7f4 74.486%);
+      opacity: 0;
+      transition: opacity 350ms ease;
+    }
+    .ui.is-editing .overlay { opacity: 1; }
+
+    /* Welcome to · group — rest 16:2875 (375 × 120 at y 82) → edit 16:3555 (noon nano only, ×0.867) */
+    .logo {
+      position: absolute;
+      top: 82px;
+      left: 0;
+      width: 375px;
+      height: 120px;
+    }
+    .overlay, .logo { pointer-events: none; }
+    .logo__welcome {                 /* 16:2898 */
+      position: absolute;
+      top: 0.12px;
+      left: 107.66px;      /* 23:4151 glyph start; CSS centring would include the trailing 5px tracking */
+      margin: 0;
+      font-weight: 800;
+      font-size: 16px;
+      line-height: 20px;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      color: #fff;
+      transition: opacity 180ms ease 120ms, transform var(--kb-dur) var(--kb-ease);
+    }
+    .ui.is-editing .logo__welcome {
+      opacity: 0;
+      transform: translateY(-16px);
+      transition: opacity 180ms ease, transform var(--kb-dur) var(--kb-ease);
+    }
+    /* 16:2876 Decoration · group: noon (64.74 × 17.65) over nano (150 × 55.44), drop shadow 0 4 14 */
+    .logo__mark {
+      position: absolute;
+      inset: 0;
+      filter: drop-shadow(0 4px 7px rgba(45,2,110,.54));
+      transform-origin: 187.5px 91.4px;     /* nano centre: 145.68 + 27.72 − 82 */
+      transition: transform var(--kb-dur) var(--kb-ease);
+    }
+    /* nano centre 173.40 → 128.12; Figma scales 150→130 wide (.8667) but 55.44→47.65 tall (.8594) (23:4442) */
+    .ui.is-editing .logo__mark { transform: translateY(-45.28px) scale(0.8667, 0.8594); }
+    .logo__noon, .logo__nano { position: absolute; display: block; }
+    .logo__noon { width: 64.744px; height: 17.654px; left: 155.12px; top: 40.12px; }   /* 23:4128 → 155.12, 122.12 */
+    .logo__nano { width: 150px; height: 55.442px; left: 112.5px; top: 63.68px; }       /* 23:4128 → 112.5, 145.68 */
+
+    /* Card lifts 516 → 197.23 (23:4153 → 23:4466); rest block is at 90%, edit block at 100% */
+    .main { opacity: .9; transition: transform var(--kb-dur) var(--kb-ease), opacity 200ms ease; }
+    .ui.is-editing .main { transform: translateY(-318.77px); opacity: 1; }
+
+    /* Send OTP rides up to sit under the card (bar top 389.23); JS sets --bar-dy from layout */
+    .action-bar { transition: transform var(--kb-dur) var(--kb-ease), opacity 200ms ease; }
+    .ui.is-editing .action-bar { transform: translateY(var(--bar-dy, -318px)); }
+
+    /* 16:3587 Keyboard — 375 × 342 at y 470 */
+    .keyboard {
+      position: absolute;
+      left: 0;
+      top: 470px;
+      width: 375px;
+      height: 342px;
+      display: block;
+      transform: translateY(100%);
+      visibility: hidden;
+      transition: transform var(--kb-dur) var(--kb-ease), visibility 0s linear var(--kb-dur);
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    .ui.is-editing .keyboard {
+      transform: translateY(0);
+      visibility: visible;
+      transition: transform var(--kb-dur) var(--kb-ease), visibility 0s;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ui { --kb-dur: 1ms; }
+    }
+
+    /* 23:4154 Main (card at 516) — above the dock's fade, like the frame's fill sits behind it */
+    .main {
+      position: absolute;
+      z-index: 1;
+      top: 508px;
+      left: 0;
+      width: 375px;
+      padding: 8px 16px;
+    }
+
+    /* 16:3112 Container */
+    .card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding: 24px 16px;
+      border: 1px solid #fff;
+      border-radius: 20px;
+      background: linear-gradient(180deg, #fff 20.125%, #ebe3ff 136.07%);
+    }
+    .card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow: inset 0 -4px 4px 0 #cdbdef;
+      pointer-events: none;
+    }
+
+    /* 16:3113 Header Text Container */
+    .card__header {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 100%;
+      text-align: center;
+    }
+    .card__title {        /* H28/Bold */
+      font-weight: 700;
+      font-size: 28px;
+      line-height: 36px;
+      letter-spacing: -0.25px;
+      color: var(--text-primary);
+    }
+    .card__subtitle {     /* Body/B16/Medium */
+      font-weight: 500;
+      font-size: 16px;
+      line-height: 22px;
+      letter-spacing: -0.15px;
+      color: var(--text-tertiary);
+    }
+
+    /* 16:3116 M-Input — 48px single-line field, placeholder + caret at rest */
+    .field {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      height: 48px;
+      padding: 0 11px;    /* Figma 12 with the 1px stroke drawn inside it */
+      background: #f9f9fb;                 /* surface/secondary */
+      border: 1px solid #eaecf0;           /* border/primary */
+      border-radius: 12px;
+      cursor: text;
+      transition: border-color 160ms ease, background-color 160ms ease;
+    }
+    /* Error (Figma 10:1299): red stroke */
+    .field.is-error { border-color: var(--text-error); }
+
+    /* Wrong email ID: horizontal shake, decaying */
+    .field.is-shaking { animation: field-shake 340ms cubic-bezier(.36,.07,.19,.97) both; }
+    @keyframes field-shake {
+      0%, 100% { transform: translateX(0); }
+      18%      { transform: translateX(-4px); }
+      40%      { transform: translateX(3px); }
+      62%      { transform: translateX(-2px); }
+      82%      { transform: translateX(1px); }
+    }
+
+    /* 16:3118 Content */
+    .field__body {
+      position: relative;
+      flex: 1 1 0;
+      min-width: 0;
+      height: 22px;
+    }
+
+    /* B16/SemiBold for both the placeholder (muted) and the typed value (primary) */
+    .field__input {
+      display: block;
+      width: 100%;
+      height: 22px;
+      border: 0;
+      padding: 0 1px;
+      outline: none;
+      background: transparent;
+      font: inherit;
+      font-weight: 600;
+      font-size: 16px;
+      line-height: 22px;
+      letter-spacing: -0.15px;
+      color: var(--text-primary);
+      caret-color: var(--caret);
+    }
+    .field__input::placeholder { color: var(--text-muted); opacity: 1; }
+    .field.is-floated .field__input { padding-left: 0; }   /* 16:3256: no px in the edit/typing content */
+
+
+    /* Right slot (20 × 20): clear icon while typing / in Error — the right ID looks the same as any typing */
+    .field__slot {
+      position: relative;
+      flex: none;
+      width: 20px;
+      height: 20px;
+    }
+
+    .field__clear {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      width: 20px;
+      height: 20px;
+      border: 0;
+      padding: 0;
+      background: none;
+      cursor: pointer;
+      visibility: hidden;
+    }
+    .field.has-clear .field__clear { visibility: visible; }
+    .field__clear img { display: block; }
+
+    /* 23:4153 frame (rest): 375 × 304 at y 508 — white fade fill + M-StackedActionBar + home-bar space,
+       whole frame at 90%. The card (.main) is drawn separately above this fill. */
+    .dock {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 375px;
+      height: 304px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .dock::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0) 61.439%, #fff 105.46%);
+      opacity: .9;
+      transition: opacity 300ms ease;
+    }
+    .ui > .dock { pointer-events: none; }        /* it now spans the card area; only the bar is tappable */
+    .ui > .dock .action-bar { pointer-events: auto; }
+    .ui.is-editing .dock::before { opacity: 0; }
+    .dock > * { position: relative; }
+    .action-bar { opacity: .9; }
+    .ui.is-editing .action-bar { opacity: 1; }
+    .action-bar {
+      display: flex;
+      width: 375px;
+      padding: 12px 16px;
+    }
+
+    /* nano button 1:177 — Primary/Default (Figma 26:4772), Primary/Disabled 1:180.
+       Layered in Figma's order, checked pixel-for-pixel against a 3× export:
+         fill #212121 → 2px inside stroke (gradient) → both inner shadows over fill AND stroke
+         (cast from the outer edge) → label on top. A CSS border would push the shadows 2px in
+         and draw the stroke over them, which is what made the old edges read too bright. */
+    .nano-btn {
+      position: relative;
+      flex: 1 1 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 56px;
+      padding: 16px;                 /* 14 + 2px stroke (included in layout) */
+      border: 0;
+      border-radius: 16px;
+      background: #212121;
+      font: inherit;
+      font-weight: 600;
+      font-size: 16px;
+      line-height: 24px;
+      letter-spacing: 0;
+      color: #fff;
+      cursor: pointer;
+      /* Disabled ⇄ Primary cross-fades instead of snapping (fill, label, stroke, shadows) */
+      --btn-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+      transition:
+        transform 120ms ease,
+        background-color 320ms var(--btn-ease),
+        color 320ms var(--btn-ease);
+    }
+    .nano-btn::before {              /* stroke: 2px inside, #efefef → #d2d2d2 (t = 0.927y + 0.073) */
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 2px;
+      background: linear-gradient(180deg, #efefef -7.87%, #d2d2d2 100%);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      pointer-events: none;
+      transition: opacity 320ms var(--btn-ease);
+    }
+    .nano-btn::after {               /* inner shadows, drawn over the stroke as in Figma */
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow:
+        inset 0 -9px 9px #000,
+        inset 0 4px 8px rgba(210,210,210,.4);
+      pointer-events: none;
+      transition: opacity 320ms var(--btn-ease);
+    }
+    .nano-btn__label {
+      position: relative;
+      z-index: 1;
+      transform: translateY(0.33px); /* Noontree metrics sit 1/3 px high in Chrome vs Figma */
+    }
+    .nano-btn:active { transform: scale(.98); }
+    .nano-btn:disabled {             /* Disabled = flat fill, no inner shadow, no stroke.
+                                        Kept at the Primary's 56px (Figma's variant is 52) so the
+                                        button doesn't shift when it activates on the first keystroke. */
+      background: var(--surface-muted);
+      color: var(--text-muted);
+      cursor: default;
+      transform: none;
+    }
+    .nano-btn:disabled::before,
+    .nano-btn:disabled::after { opacity: 0; }
+
+    /* M-Toast / Error (Figma 10:1305) — 270 × 50 at 53,53.
+       Motion is a 1:1 port of the reference nudge (31_Nudeg.mp4, mirrored for the top edge):
+       a dot is tossed in, lands, then morphs into the bar. Driven by WAAPI in showToast(). */
+    .toast {
+      position: absolute;
+      top: 53px;
+      left: 53px;
+      width: 270px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      visibility: hidden;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .toast.is-shown { visibility: visible; }
+
+    /* The shape that morphs: dot → rounded square → bar */
+    .toast__blob {
+      position: relative;
+      flex: none;
+      width: 270px;
+      height: 50px;
+      background: var(--text-error);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 14px;
+      filter: drop-shadow(0 12px 14px rgba(11,12,14,.1));
+      overflow: hidden;
+      will-change: width, height;
+    }
+
+    /* Content keeps its final 268px layout and is clipped by the blob while it grows */
+    .toast__content {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 268px;
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      min-width: 0;
+    }
+    .toast__icon { flex: none; display: block; }
+    .toast__title {       /* B14/SemiBold, on-surface-bold */
+      font-weight: 600;
+      font-size: 14px;
+      line-height: 20px;
+      letter-spacing: -0.1px;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ================= OTP · Code sent (Figma 29:4829) ================= */
+    .otp {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      background: #fff;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 420ms cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 420ms;
+    }
+    .ui > .otp { pointer-events: none; }
+    .ui > .otp.is-shown {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transition: opacity 320ms cubic-bezier(0.4, 0, 0.2, 1), visibility 0s;
+    }
+
+    /* 29:4831 Header — 375 × 300, clips its contents */
+    .otp__header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 375px;
+      height: 300px;
+      overflow: hidden;
+    }
+    .otp__header-bg { position: absolute; inset: 0; width: 375px; height: 300px; display: block; }
+    /* Lottie (Email-Pop.lottie, 480 × 280 comp). Placed by registering its last frame against
+       the Figma artwork on the envelope's metal body: scale .9183, origin (−36.13, 83.32). */
+    .otp__lottie {
+      position: absolute;
+      left: -36.13px;
+      top: 83.32px;
+      width: 480px;
+      height: 280px;
+      transform: scale(0.9183);
+      transform-origin: 0 0;
+    }
+    /* 29:4854 — white fade drawn ABOVE the illustration (pales the envelope's base, as in Figma) */
+    .otp__fade {
+      position: absolute;
+      left: 0;
+      top: 215.1px;
+      width: 375px;
+      height: 114px;
+      background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #fff 66.9%);
+      pointer-events: none;
+    }
+
+    /* 29:4856 Check your mail · stack — 308 wide at (33.5, 314.52) */
+    .otp__stack {
+      position: absolute;
+      left: 33.5px;
+      top: 314.52px;
+      width: 308px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 48px;
+    }
+    .otp__group { display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%; }
+    .otp__title {                    /* 36 ExtraBold, gradient fill, soft purple shadow */
+      margin: 0;
+      width: 100%;
+      font-weight: 800;
+      font-size: 36px;
+      line-height: 48px;
+      letter-spacing: -0.25px;
+      text-align: center;
+      white-space: nowrap;
+      background-image: linear-gradient(33.59568924765697deg, #000 52.835%, #7924ff 104.2%);
+      -webkit-background-clip: text;
+              background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 5px 6px rgba(61,41,163,.12));
+    }
+    .otp__sent { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 215px; }
+    .otp__subtitle {                 /* B16 Medium, tertiary */
+      margin: 0;
+      font-weight: 500;
+      font-size: 16px;
+      line-height: 22px;
+      letter-spacing: -0.15px;
+      color: #666d85;
+      white-space: nowrap;
+    }
+    .otp__chip {                     /* 29:4862 */
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border: 0;
+      border-radius: 24px;
+      background: #f2f3f7;
+      font: inherit;
+      font-weight: 500;
+      font-size: 14px;
+      line-height: 20px;
+      letter-spacing: -0.1px;
+      color: #101628;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .otp__chip img { display: block; width: 16px; height: 16px; }
+
+    .otp__code { display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%; }
+    .otp__digits { display: flex; gap: 6px; width: 100%; pointer-events: none; }
+    .otp__digit {                    /* 29:4867… 46 × 60 */
+      flex: none;
+      width: 46px;
+      height: 60px;
+      border: 1px solid #fff;
+      border-radius: 12px;
+      background: #f9f9fb;
+      box-shadow: inset 0 0 20px 0 rgba(0,0,0,.03);
+    }
+    .otp__resend-row { display: flex; align-items: center; }
+    .otp__muted { margin: 0; font-weight: 500; font-size: 14px; line-height: 20px; letter-spacing: -0.1px; color: #666d85; white-space: pre; }
+    .otp__resend {                   /* M-TextButtonNeutral A14 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 28px;
+      padding: 4px 8px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      font: inherit;
+      font-weight: 600;
+      font-size: 14px;
+      line-height: 20px;
+      color: #1d2539;
+      cursor: pointer;
+    }
+    .otp__resend:active { background: rgba(29,37,57,.06); }
+
+    /* Entrance: each piece rises 14px and fades in, staggered (delays set inline via --d) */
+    .otp [data-rise] {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    .otp.is-shown [data-rise] {
+      opacity: 1;
+      transform: none;
+      transition:
+        opacity 420ms cubic-bezier(0.22, 1, 0.36, 1) var(--d, 0ms),
+        transform 560ms cubic-bezier(0.22, 1, 0.36, 1) var(--d, 0ms);
+    }
+    /* Leaving the email screen: the drawn keyboard drops away under the incoming sheet */
+    .ui.is-leaving .keyboard {
+      transform: translateY(100%);
+      transition: transform 360ms cubic-bezier(0.4, 0, 1, 1);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .otp, .otp.is-shown [data-rise] { transition-duration: 1ms !important; transition-delay: 0ms !important; }
+    }
+
+    /* ---------- OTP → edit email (back) ----------
+       One cohesive motion: the whole sheet fades as a single layer while the keyboard and the
+       email UI rise underneath on the same keyboard curve, all starting on the same frame. */
+    .otp.is-shown.is-exiting {
+      opacity: 0;
+      transition: opacity 380ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .otp.is-exiting .numpad { transform: translateY(100%); transition: transform 380ms cubic-bezier(0.4, 0, 0.2, 1); }
+
+    /* Pre-promote everything that moves, so no frame is spent re-rasterising filters/shadows */
+    .otp, .keyboard, .card, .logo, .nano-btn, .main, .action-bar, .otp__art, .numpad { will-change: transform, opacity; }
+
+    /* ---------- OTP check → success (ref: OTP.mov) ----------
+       loading wave on the boxes → green → others fade → boxes collapse into one → tick Lottie */
+    .otp.is-typing.is-checking .numpad { transform: translateY(100%); }
+    /* loading (ref: Toss OTP) — a skeleton wave: each box's grey fill rises slowly, drops fast,
+       100 ms apart, so a light gap sweeps left → right. Driven by WAAPI in checkOtp(). */
+    .otp__wave {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: #e7e9ee;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .otp.is-loading .otp__digit { background-color: #fff; }   /* the gap reads white, as in Toss */
+    /* green arrives box by box */
+    .otp__digit.is-verified { transition-delay: calc(var(--i) * 45ms); transition-duration: 280ms; }
+    /* everything but the boxes fades away while the tick plays */
+    .otp.is-shown.is-done [data-rise]:not(.otp__digit),
+    .otp.is-done .otp__header {
+      opacity: 0;
+      transition: opacity 380ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+      pointer-events: none;
+    }
+    .otp.is-done .otp__digits { pointer-events: none; }
+    /* success Lottie — 1125 × 2436 comp shown at 375 × 812, coin centre (187.3, 406) */
+    .otp__success {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 375px;
+      height: 812px;
+      pointer-events: none;
+      z-index: 3;
+    }
+    .otp__intro {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 375px;
+      height: 812px;
+      object-fit: cover;
+      display: block;
+      background: transparent;
+      visibility: hidden;
+      pointer-events: none;
+      z-index: 4;
+    }
+    .otp__intro.is-playing { visibility: visible; }
+
+    /* ---------- M-Toast / Success (Figma 29:4956) — 242 × 48 at 66.5, 52, above the OTP sheet ---------- */
+    .toast--success { top: 52px; left: 66.5px; width: 242px; height: 48px; z-index: 6; }
+    /* M-Toast / Error on the OTP sheet (Figma 41:5323) — 270 × 50 at 52, 53 */
+    .toast--otp-error { top: 53px; left: 52px; z-index: 6; }
+    .toast--success .toast__blob { width: 242px; height: 48px; background: #0f8857; }
+    .toast--success .toast__content { width: 240px; }
+
+    /* ---------- OTP · Typing (Figma 34:5021 / 29:4900) ---------- */
+    /* Header art (rays + Lottie) shrinks to 70% about (187.885, −15.577); fade rises 80; content rises 110.52 */
+    .otp__art {
+      position: absolute;
+      inset: 0;
+      transform-origin: 187.885px -15.577px;
+      transition: transform var(--kb-dur) var(--kb-ease);
+    }
+    .otp__rays { position: absolute; left: 0; top: 0; width: 375px; height: 300px; display: block; }
+    .otp__fade, .otp__stack { transition: transform var(--kb-dur) var(--kb-ease); }
+    .otp.is-typing .otp__art { transform: scale(0.7); }
+    .otp.is-typing .otp__fade { transform: translateY(-80px); }
+    .otp.is-typing .otp__stack { transform: translateY(-110.52px); }
+
+    /* Digit boxes: active (blue), verified (green), error (red) */
+    .otp__digits { pointer-events: auto; cursor: text; }
+    .otp__digit { position: relative; overflow: hidden; transition: border-color 220ms ease, background-color 220ms ease; }
+    /* Active ring (#0f61ff, 1px, r12) — one element that slides between boxes (pitch 52px) */
+    .otp__digits { position: relative; }
+    .otp__ring {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 46px;
+      height: 60px;
+      border: 1px solid #0f61ff;
+      border-radius: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateX(var(--ring-x, 0px));
+      transition:
+        transform 300ms cubic-bezier(0.32, 0.72, 0, 1),
+        opacity 180ms ease;
+      will-change: transform;
+    }
+    .otp__ring.is-on { opacity: 1; }
+    .otp__digit.is-verified { border-color: #0f8857; background: #f6fefb; }
+    .otp__digit.is-error { border-color: #d92626; background: #fff5f5; }   /* Figma 41:5305 red/700 + red/50 */
+    .otp__num {                      /* 30 Bold, #101628, centred, 5px from the top */
+      position: absolute;
+      left: 50%;
+      top: 5px;
+      transform: translateX(-50%);
+      z-index: 1;                    /* above the loading wave */
+      font-weight: 700;
+      font-size: 30px;
+      line-height: 48px;
+      letter-spacing: -0.25px;
+      color: #101628;
+      white-space: nowrap;
+    }
+    .otp__num.is-new { animation: digit-in 260ms cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+    @keyframes digit-in {
+      from { opacity: 0; transform: translateX(-50%) translateY(6px) scale(0.6); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    }
+    .otp__digits.is-shaking { animation: field-shake 340ms cubic-bezier(.36,.07,.19,.97) both; }
+    .otp__digit.is-verified { animation: digit-ok 420ms cubic-bezier(0.34, 1.4, 0.64, 1) both; animation-delay: calc(var(--i) * 40ms); }
+    @keyframes digit-ok { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
+
+    /* Number pad (Figma 34:5069) — 375 × 318 at y 494, slides with the keyboard curve */
+    .numpad {
+      position: absolute;
+      left: 0;
+      top: 494px;
+      width: 375px;
+      height: 318px;
+      transform: translateY(100%);
+      transition: transform var(--kb-dur) var(--kb-ease);
+      z-index: 1;
+    }
+    .otp.is-typing .numpad { transform: translateY(0); }
+    .numpad__img { position: absolute; inset: 0; width: 375px; height: 318px; display: block; pointer-events: none; }
+    .numpad__key {
+      position: absolute;
+      width: 116.55px;
+      height: 50px;
+      border: 0;
+      padding: 0;
+      border-radius: 8.5px;
+      background: transparent;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background-color 90ms ease;
+    }
+    .numpad__key:active, .numpad__key.is-pressed { background: rgba(0,0,0,.12); transition-duration: 0ms; }
+
+    /* 4:789 Home bar — pill removed; its 24px stays as bottom safe-area spacing */
+    .home-bar {
+      width: 100%;
+      height: 24px;
+    }
+  </style>
+</head>
+<body>
+  <main class="screen" id="screen" aria-label="Welcome to noon nano">
+    <!--
+      VIDEO CONTAINER
+      Drop your video in assets/ and set VIDEO_SRC below (or open ?video=assets/your.mp4).
+      Export it at 375:812 (e.g. 1125 × 2436) so it lines up 1:1 with the frame;
+      other ratios are centre-cropped by object-fit: cover.
+    -->
+    <video
+      class="screen__media"
+      id="screenVideo"
+      poster="assets/screen@3x.png"
+      muted
+      loop
+      playsinline
+      autoplay
+      preload="auto"
+      aria-hidden="true"
+    ></video>
+
+    <!-- Static frame from Figma; sits on top until the video starts playing. -->
+    <img
+      class="screen__still"
+      src="assets/screen@3x.png"
+      srcset="assets/screen@1x.png 375w, assets/screen@3x.png 1125w"
+      sizes="(max-width: 375px) 100vw, 375px"
+      width="375"
+      height="812"
+      alt=""
+      decoding="async"
+    >
+
+    <!-- UI components (Figma section 24:4761: rest 23:3854 ⇄ edit 23:4163) -->
+    <div class="ui" id="ui">
+      <div class="overlay" aria-hidden="true"></div>
+
+      <div class="logo" aria-hidden="true">
+        <p class="logo__welcome">Welcome to</p>
+        <div class="logo__mark">
+          <img class="logo__noon" src="assets/logo/noon.svg" width="64.744" height="17.654" alt="">
+          <img class="logo__nano" src="assets/logo/nano.svg" width="150" height="55.442" alt="">
+        </div>
+      </div>
+
+      <form class="main" id="emailForm" novalidate>
+        <div class="card">
+          <div class="card__header">
+            <h1 class="card__title">Let’s get started</h1>
+            <p class="card__subtitle">Get started with your email ID</p>
+          </div>
+
+          <div class="field" id="emailField">
+            <div class="field__body">
+              <input
+                class="field__input"
+                id="email"
+                name="email"
+                aria-label="Email ID"
+                placeholder="enter your email"
+                type="email"
+                inputmode="email"
+                autocomplete="email"
+                autocapitalize="off"
+                spellcheck="false"
+                required
+              >
+            </div>
+            <div class="field__slot">
+              <button class="field__clear" id="emailClear" type="button" aria-label="Clear email" tabindex="-1">
+                <img src="assets/icons/clear.svg" width="20" height="20" alt="">
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <div class="dock">
+        <div class="action-bar">
+          <button class="nano-btn" id="continueBtn" type="submit" form="emailForm" disabled><span class="nano-btn__label">Send OTP</span></button>
+        </div>
+        <div class="home-bar" aria-hidden="true"></div>
+      </div>
+
+      <img class="keyboard" id="keyboard" src="assets/keyboard@3x.png" width="375" height="342" alt="" aria-hidden="true">
+
+      <div class="toast" id="errorToast" role="alert" aria-live="assertive">
+        <div class="toast__blob">
+          <div class="toast__content">
+            <img class="toast__icon" src="assets/icons/warning-triangle-filled.svg" width="24" height="24" alt="">
+            <p class="toast__title">Profile hasn’t be setup by parent</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- OTP · Code sent (Figma 29:4829) — shown after the right email ID is sent -->
+      <section class="otp" id="otpScreen" aria-label="Check your mail" aria-hidden="true">
+        <div class="otp__header">
+          <img class="otp__header-bg" src="assets/otp-header-gradient@3x.png" width="375" height="300" alt="">
+          <div class="otp__art">
+            <img class="otp__rays" src="assets/otp-header-rays@3x.png" width="375" height="300" alt="">
+            <div class="otp__lottie" id="otpLottie" aria-hidden="true"></div>
+          </div>
+          <div class="otp__fade"></div>
+        </div>
+        <div class="otp__stack">
+          <div class="otp__group">
+            <h2 class="otp__title" data-rise style="--d: 300ms">Check your mail</h2>
+            <div class="otp__sent">
+              <p class="otp__subtitle" data-rise style="--d: 380ms">We have sent a 6-digit code to</p>
+              <button class="otp__chip" id="otpEmailChip" type="button" data-rise style="--d: 440ms" aria-label="Edit email">
+                <span id="otpEmail">kiaankhalid@gmail.com</span>
+                <img src="assets/icons/edit.svg" width="16" height="16" alt="">
+              </button>
+            </div>
+          </div>
+          <div class="otp__code">
+            <div class="otp__digits" id="otpDigits" role="button" aria-label="Enter the 6-digit code">
+              <div class="otp__digit" data-rise style="--d: 520ms; --i: 0"><span class="otp__num"></span></div>
+              <div class="otp__digit" data-rise style="--d: 560ms; --i: 1"><span class="otp__num"></span></div>
+              <div class="otp__digit" data-rise style="--d: 600ms; --i: 2"><span class="otp__num"></span></div>
+              <div class="otp__digit" data-rise style="--d: 640ms; --i: 3"><span class="otp__num"></span></div>
+              <div class="otp__digit" data-rise style="--d: 680ms; --i: 4"><span class="otp__num"></span></div>
+              <div class="otp__digit" data-rise style="--d: 720ms; --i: 5"><span class="otp__num"></span></div>
+              <div class="otp__ring" id="otpRing" aria-hidden="true"></div>
+            </div>
+            <div class="otp__resend-row" data-rise style="--d: 800ms">
+              <p class="otp__muted">Didn’t get it? </p>
+              <button class="otp__resend" type="button">Resend</button>
+            </div>
+          </div>
+        </div>
+        <div class="otp__success" id="otpSuccess" aria-hidden="true"></div>
+        <!-- plays the moment the tick Lottie ends (Wallet Intro, 750 × 1624 = 375 × 812 @2x, 2 s, opens on white) -->
+        <video class="otp__intro" id="walletIntro" src="assets/wallet-intro.mp4" muted playsinline preload="auto" aria-hidden="true"></video>
+        <div class="numpad" id="numpad" aria-label="Number pad">
+          <img class="numpad__img" src="assets/numpad@3x.png" width="375" height="318" alt="">
+          <button class="numpad__key" type="button" data-key="1" style="left: 6.67px; top: 24px" aria-label="1"></button>
+          <button class="numpad__key" type="button" data-key="2" style="left: 129.22px; top: 24px" aria-label="2"></button>
+          <button class="numpad__key" type="button" data-key="3" style="left: 251.78px; top: 24px" aria-label="3"></button>
+          <button class="numpad__key" type="button" data-key="4" style="left: 6.67px; top: 80px" aria-label="4"></button>
+          <button class="numpad__key" type="button" data-key="5" style="left: 129.22px; top: 80px" aria-label="5"></button>
+          <button class="numpad__key" type="button" data-key="6" style="left: 251.78px; top: 80px" aria-label="6"></button>
+          <button class="numpad__key" type="button" data-key="7" style="left: 6.67px; top: 136px" aria-label="7"></button>
+          <button class="numpad__key" type="button" data-key="8" style="left: 129.22px; top: 136px" aria-label="8"></button>
+          <button class="numpad__key" type="button" data-key="9" style="left: 251.78px; top: 136px" aria-label="9"></button>
+          <button class="numpad__key" type="button" data-key="0" style="left: 129.22px; top: 192px" aria-label="0"></button>
+          <button class="numpad__key" type="button" data-key="back" style="left: 251.78px; top: 192px" aria-label="Delete"></button>
+        </div>
+      </section>
+
+      <div class="toast toast--otp-error" id="otpErrorToast" role="alert" aria-live="assertive">
+        <div class="toast__blob">
+          <div class="toast__content">
+            <img class="toast__icon" src="assets/icons/warning-triangle-filled.svg" width="24" height="24" alt="">
+            <p class="toast__title">Wrong OTP, please check it again</p>
+          </div>
+        </div>
+      </div>
+      <div class="toast toast--success" id="successToast" role="status" aria-live="polite">
+        <div class="toast__blob">
+          <div class="toast__content">
+            <img class="toast__icon" src="assets/icons/verified-filled.svg" width="24" height="24" alt="">
+            <p class="toast__title">OTP Verified, you’re through!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="vendor/lottie.min.js"></script>
+  <script>
+    // ---------- Haptics ----------
+    // iOS Safari has no Vibration API, but since iOS 17.4 toggling an <input type=checkbox switch>
+    // plays the system haptic — so a hidden switch is clicked through its label. Android / Chrome
+    // use navigator.vibrate. Desktop: silent. Patterns follow iOS feedback generators:
+    //   light   — a tap / key press (selection)
+    //   success — two quick taps (notification · success)
+    //   error   — three quick taps (notification · error)
+    const haptic = (() => {
+      const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      let label = null;
+      function iosTick() {
+        if (!label) {
+          label = document.createElement('label');
+          label.setAttribute('aria-hidden', 'true');
+          label.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none';
+          const sw = document.createElement('input');
+          sw.type = 'checkbox';
+          sw.setAttribute('switch', '');
+          sw.tabIndex = -1;
+          label.appendChild(sw);
+          document.body.appendChild(label);
+        }
+        const active = document.activeElement;           // never let the switch steal focus
+        label.click();
+        if (active && document.activeElement !== active) active.focus({ preventScroll: true });
+      }
+      function play(iosTicks, gap, androidPattern) {
+        if (isIOS) {
+          iosTick();
+          for (let i = 1; i < iosTicks; i++) setTimeout(iosTick, i * gap);
+        } else if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) {
+          try { navigator.vibrate(androidPattern); } catch (e) {}
+        }
+      }
+      return {
+        light: () => play(1, 0, 10),
+        success: () => play(2, 110, [14, 70, 14]),
+        error: () => play(3, 85, [22, 50, 22, 50, 22]),
+      };
+    })();
+
+    // Set this to your video file when it's ready, e.g. 'assets/screen.mp4'.
+    const VIDEO_SRC = '';
+
+    const screen = document.getElementById('screen');
+    const video = document.getElementById('screenVideo');
+    const src = new URLSearchParams(location.search).get('video') || VIDEO_SRC;
+
+    if (src) {
+      video.addEventListener('playing', () => screen.classList.add('is-playing'), { once: true });
+      // A bad path keeps the still in place rather than showing an empty box.
+      video.addEventListener('error', () => screen.classList.remove('is-playing'));
+      video.src = src;
+      const play = () => video.play().catch(() => { /* autoplay blocked: the still stays visible */ });
+      play();
+      // Browsers hold autoplay in background tabs; start once the tab is shown.
+      document.addEventListener('visibilitychange', () => { if (!document.hidden && video.paused) play(); });
+    }
+
+    // Keep the 375 × 812 UI layer locked to the screen box at any size.
+    const ui = document.getElementById('ui');
+    new ResizeObserver(([entry]) => {
+      ui.style.setProperty('--s', entry.contentRect.width / 375);
+    }).observe(screen);
+
+    // Email field: Resting → Active → Typing → Filled / Error, button Disabled ↔ Primary.
+    const form = document.getElementById('emailForm');
+    const field = document.getElementById('emailField');
+    const input = document.getElementById('email');
+    const clear = document.getElementById('emailClear');
+    const cta = document.getElementById('continueBtn');
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    // The only email ID this prototype accepts; every other complete address is wrong.
+    const ACCEPTED_EMAIL = 'sdutta@noon.com';
+    let rejected = false;  // a complete, wrong email ID is in the field (red until it changes)
+    let incomplete = false; // Send OTP was pressed with text that isn't an email yet
+
+    const currentValue = () => input.value.trim().toLowerCase();
+    // The tick pops the moment the field holds the right email ID — no Continue needed.
+    const isAccepted = () => currentValue() === ACCEPTED_EMAIL;
+    const isWrongId = () => EMAIL_RE.test(currentValue()) && !isAccepted();
+
+
+    function render() {
+      const value = input.value.trim();
+      const focused = document.activeElement === input;
+      const accepted = isAccepted();
+      const error = !accepted && (rejected || incomplete);   // only ever set by pressing Send OTP
+      field.classList.toggle('is-floated', focused || value !== '');
+      field.classList.toggle('is-error', error);
+      field.classList.toggle('has-clear', (focused && value !== '') || error);
+      input.setAttribute('aria-invalid', String(error));
+      const wasDisabled = cta.disabled;
+      cta.disabled = value === '';   // Send OTP is active as soon as anything is typed
+      // On activation the colours cross-fade (CSS) and the button settles in with a soft spring
+      if (wasDisabled && !cta.disabled && !reduceMotion.matches) {
+        cta.animate([{ transform: 'scale(0.98)' }, { transform: 'scale(1)' }], { duration: 520, easing: DROP_SPRING });
+      }
+      placeActionBar();
+    }
+
+    // Wrong email ID: turn red, shake, buzz (where supported), drop the error toast.
+    function rejectId() {
+      if (rejected || !isWrongId()) return;
+      rejected = true;
+      render();
+      shakeField();
+      errorToast.show(null);                          // the pill's exit is driven below, in sync
+      clearTimeout(emailResetTimer);
+      emailResetTimer = setTimeout(autoClearEmail, TOAST_HOLD_MS);   // pill leaves → field resets
+      haptic.error();
+    }
+
+    // As the error pill exits, the field resets for a fresh try (same as the OTP boxes): the red
+    // fades back to normal and the wrong ID fades out, leaving an empty field with the caret ready.
+    // If the ID was already being edited, only the pill leaves — the edit is kept.
+    let emailResetTimer = 0, emailFade = null;
+    function autoClearEmail() {
+      errorToast.hide();
+      if (!rejected) return;
+      rejected = false; incomplete = false;
+      field.classList.remove('is-error');            // red → normal (CSS transition), with the text fade
+      emailFade = input.animate([{ opacity: 1 }, { opacity: 0 }],
+        { duration: reduceMotion.matches ? 1 : 220, easing: 'ease-out', fill: 'forwards' });
+      emailFade.finished.then(() => {
+        if (!emailFade) return;                       // typing took over mid-fade
+        input.value = '';
+        cancelEmailFade();
+        render();
+      }).catch(() => {});
+    }
+    function cancelEmailFade() { if (emailFade) { const a = emailFade; emailFade = null; a.cancel(); } }
+
+    field.addEventListener('pointerdown', (e) => {
+      if (!clear.contains(e.target)) haptic.light();      // tap into the email field
+      if (e.target !== input && !clear.contains(e.target)) { e.preventDefault(); input.focus(); }
+    });
+    clear.addEventListener('pointerdown', (e) => e.preventDefault()); // keep focus in the input
+    clear.addEventListener('click', () => {
+      haptic.light();
+      input.value = ''; rejected = false; incomplete = false;
+      input.focus(); render();
+    });
+    // Edit-email state: tapping into the field lifts the page and brings the keyboard up.
+    const keyboardImg = document.getElementById('keyboard');
+    const actionBar = document.querySelector('.action-bar');
+    const dock = document.querySelector('.dock');
+    const EDIT_BAR_TOP = 389.23;       // 23:4473 M-StackedActionBar top in the edit frame
+    function placeActionBar() {        // bar height changes with the button state (52 ↔ 56)
+      ui.style.setProperty('--bar-dy', `${EDIT_BAR_TOP - (dock.offsetTop + actionBar.offsetTop)}px`);
+    }
+    function setEditing(on) {
+      placeActionBar();
+      ui.classList.toggle('is-editing', on);
+    }
+    // The drawn keyboard is visual: touching it must not steal focus from the field.
+    keyboardImg.addEventListener('pointerdown', (e) => e.preventDefault());
+
+    input.addEventListener('focus', () => { setEditing(true); render(); });
+    // Typing never flags anything — the email is only checked when Send OTP is pressed.
+    // Editing after a rejection clears the red; the right ID also sends any error toast away.
+    input.addEventListener('input', () => {
+      cancelEmailFade();                 // typing during the reset fade keeps what's typed
+      rejected = false;
+      incomplete = false;
+      if (isAccepted()) hideToast();
+      render();
+    });
+    input.addEventListener('blur', () => {
+      if (ui.classList.contains('is-leaving')) return;   // handing over to the OTP screen
+      setEditing(false);
+      render();
+    });
+
+    function shakeField() {
+      field.classList.remove('is-shaking');
+      void field.offsetWidth; // restart the animation on repeat presses
+      field.classList.add('is-shaking');
+    }
+    field.addEventListener('animationend', () => field.classList.remove('is-shaking'));
+
+    /* ---------- Top pills (all M-Toasts): an elastic dot drops in, then springs into the pill ----------
+         Entry    0→600  dot (0.66 h) drops from off-screen on a bouncy spring (ζ 0.52, ~12px past
+                         its rest) and squashes on landing (stretch while falling, squash on impact)
+                260→900  it springs out into the pill — width overshoots ~20px and wobbles back,
+                         height follows on its own spring
+                430→900  the text fades in and pops from 80 % on a spring
+         Hold   0.8 s on screen once fully formed (user request)
+         Exit     0→440  a small anticipation dip + squash, then it stretches and shoots up off the
+                         screen, accelerating (keeps the pill shape — no morph back into the dot)    */
+    const ENTRY_MS = 900;
+    const EXIT_MS = 440;
+    const OFFSCREEN_Y = -100;            // dot fully above the screen (toast centre sits at y 78)
+    const EXIT_Y = -140;                 // full pill (top 53, 50 tall, 26px shadow) clear of the top
+    // Sampled damped spring (ζ 0.72, response 0.42 s): peaks at 1.038, settled by 600 ms
+    const DROP_SPRING = 'linear(0, 0.039, 0.133, 0.257, 0.391, 0.523, 0.642, 0.746, 0.832, 0.9, 0.951, ' +
+      '0.988, 1.013, 1.028, 1.036, 1.038, 1.037, 1.034, 1.029, 1.024, 1.019, 1.014, 1.01, 1.007, 1.004, ' +
+      '1.002, 1.001, 1, 0.999, 0.999, 1)';
+    const TOAST_HOLD_MS = ENTRY_MS + 800;   // entry start → exit start: 0.8 s fully on screen
+    // Sampled damped spring → CSS linear(). ζ < 1 overshoots (elastic); response = period in s.
+    function spring(zeta, response, durMs, steps = 48) {
+      const w = (2 * Math.PI) / response, wd = w * Math.sqrt(1 - zeta * zeta);
+      const pts = [];
+      for (let i = 0; i <= steps; i++) {
+        const t = ((i / steps) * durMs) / 1000;
+        const x = i === steps ? 1
+          : 1 - Math.exp(-zeta * w * t) * (Math.cos(wd * t) + ((zeta * w) / wd) * Math.sin(wd * t));
+        pts.push(+x.toFixed(4));
+      }
+      return `linear(${pts.join(', ')})`;
+    }
+    // first time a spring reaches its rest value (ms) — when the dropping dot "lands"
+    function springImpact(zeta, response) {
+      const w = (2 * Math.PI) / response, wd = w * Math.sqrt(1 - zeta * zeta);
+      return (1000 * (Math.PI - Math.atan(Math.sqrt(1 - zeta * zeta) / zeta))) / wd;
+    }
+    const DROP_Z = 0.52, DROP_R = 0.45, DROP_MS = 600;
+    const TOAST_FALL = spring(DROP_Z, DROP_R, DROP_MS);
+    const TOAST_IMPACT = springImpact(DROP_Z, DROP_R);           // ≈ 150 ms
+    const TOAST_WIDTH = spring(0.6, 0.5, 640);                    // ~9.5 % overshoot
+    const TOAST_HEIGHT = spring(0.6, 0.45, 560);
+    const TOAST_POP = spring(0.55, 0.4, 470);
+    const EASE_OUT_CUBIC = 'cubic-bezier(0.33, 1, 0.68, 1)';
+    const EXIT_EASE = 'cubic-bezier(0.4, 0, 0.7, 0.2)'; // leaves straight away, accelerating out
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+
+    const px = (n) => `${n}px`;
+    // keyframes from [ms, value, easing-to-next] triples
+    const track = (prop, dur, points, fmt = px) => points.map(([ms, v, easing]) => ({
+      offset: ms / dur, [prop]: fmt(v), ...(easing ? { easing } : {}),
+    }));
+
+    // One drop-in pill toast (M-Toast). Error and Success share the motion, each with its own size.
+    function makeDropToast(el, W, H, R) {
+      const blob = el.querySelector('.toast__blob');
+      const content = el.querySelector('.toast__content');
+      const t = { state: 'hidden', anims: [], timer: 0 };
+      const run = (node, frames, duration, opts) => {
+        const a = node.animate(frames, { duration, fill: 'both', ...opts }); t.anims.push(a); return a;
+      };
+      const clear = () => { t.anims.forEach((a) => a.cancel()); t.anims = []; };
+      const unstyle = () => [el, blob, content].forEach((n) => n.removeAttribute('style'));
+
+      // hold: ms until it leaves on its own; null = stays until hide() is called
+      t.show = function show(hold = TOAST_HOLD_MS) {
+        clearTimeout(t.timer);
+        if (t.state === 'entering' || t.state === 'shown') {
+          if (hold != null) t.timer = setTimeout(t.hide, hold - ENTRY_MS);   // already up: hold longer
+          return;
+        }
+        clear(); unstyle();
+        el.classList.add('is-shown');
+        t.state = 'entering';
+        if (reduceMotion.matches) {
+          run(el, [{ opacity: 0 }, { opacity: 1 }], 200);
+        } else {
+          const dot = 0.66 * H;
+          const ty = (v) => `translateY(${v}px)`;
+          const hit = TOAST_IMPACT, SQ = 'cubic-bezier(0.45, 0, 0.55, 1)';
+          // 1 — the dot falls on a bouncy spring…
+          run(el, [{ transform: ty(OFFSCREEN_Y), easing: TOAST_FALL }, { transform: ty(0) }], DROP_MS);
+          // …stretching as it falls, squashing as it lands, then jiggling back round
+          run(blob, track('scale', DROP_MS, [
+            [0, '0.9 1.12', SQ], [hit - 30, '0.9 1.12', SQ], [hit + 40, '1.22 0.8', SQ],
+            [hit + 130, '0.94 1.07', SQ], [hit + 210, '1.03 0.98', SQ], [hit + 290, '1 1'], [DROP_MS, '1 1'],
+          ], (v) => v), DROP_MS);
+          // 2 — it springs out into the pill (width overshoots and wobbles back)
+          run(blob, [{ width: px(dot), easing: TOAST_WIDTH }, { width: px(W) }], 640, { delay: 260 });
+          run(blob, [{ height: px(dot), easing: TOAST_HEIGHT }, { height: px(H) }], 560, { delay: 260 });
+          run(blob, [{ borderRadius: px(dot / 2) }, { borderRadius: px(R) }], 300, { delay: 260, easing: EASE_OUT_CUBIC });
+          // 3 — the text pops in
+          run(content, [{ opacity: 0 }, { opacity: 1 }], 200, { delay: 430, easing: EASE_OUT_CUBIC });
+          run(content, [
+            { transform: 'translate(-50%, -50%) scale(0.8)', easing: TOAST_POP },
+            { transform: 'translate(-50%, -50%) scale(1)' },
+          ], 470, { delay: 430 });
+        }
+        Promise.all(t.anims.map((a) => a.finished))
+          .then(() => { if (t.state === 'entering') t.state = 'shown'; }).catch(() => {});
+        if (hold != null) t.timer = setTimeout(t.hide, hold);
+      };
+
+      t.hide = function hide() {
+        clearTimeout(t.timer);
+        if (t.state === 'hidden' || t.state === 'exiting') return;
+        if (t.state === 'entering') t.anims.forEach((a) => { try { a.commitStyles(); } catch (e) {} });
+        clear();
+        t.state = 'exiting';
+        if (reduceMotion.matches) run(el, [{ opacity: 1 }, { opacity: 0 }], 160);
+        else {
+          // anticipation: a small dip + squash, then it stretches and shoots up, accelerating
+          const from = getComputedStyle(el).transform;
+          run(el, [
+            { transform: from === 'none' ? 'translateY(0px)' : from, easing: EASE_OUT_CUBIC },
+            { transform: 'translateY(7px)', offset: 0.27, easing: EXIT_EASE },
+            { transform: `translateY(${EXIT_Y}px)` },
+          ], EXIT_MS);
+          run(blob, [
+            { scale: '1 1', easing: EASE_OUT_CUBIC },
+            { scale: '1.05 0.9', offset: 0.27, easing: 'cubic-bezier(0.3, 0, 0.4, 1)' },   // stretch reads while still on screen
+            { scale: '0.93 1.12' },
+          ], EXIT_MS);
+        }
+        const exiting = t.anims.slice();
+        Promise.all(exiting.map((a) => a.finished)).then(() => {
+          if (t.state !== 'exiting') return;
+          clear(); unstyle();
+          el.classList.remove('is-shown');
+          t.state = 'hidden';
+        }).catch(() => {});
+      };
+      return t;
+    }
+
+    const errorToast = makeDropToast(document.getElementById('errorToast'), 270, 50, 14);   // Figma 10:1305
+    const successToast = makeDropToast(document.getElementById('successToast'), 242, 48, 14); // Figma 29:4956
+    const otpErrorToast = makeDropToast(document.getElementById('otpErrorToast'), 270, 50, 14); // Figma 41:5323
+    const showToast = () => errorToast.show();
+    const hideToast = () => errorToast.hide();
+
+    // Send OTP (button or return key): the right ID goes through; anything else is flagged
+    // in place, keeping the field focused so it can be fixed straight away.
+    // Pressing the button must not blur the field first, or the page would drop mid-tap.
+    cta.addEventListener('pointerdown', (e) => { if (document.activeElement === input) e.preventDefault(); });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (cta.disabled) return;
+      if (isAccepted()) {            // right ID → transition to "Check your mail"
+        haptic.light();
+        showOtpScreen();
+        return;
+      }
+      if (isWrongId()) {             // complete but wrong: red + shake + toast (again on every press)
+        rejected = false;
+        rejectId();
+      } else {                       // not an email yet: red + shake, no toast
+        incomplete = true;
+        render();
+        shakeField();
+        haptic.error();
+      }
+    });
+
+    // ---------- OTP · Code sent (Figma 29:4829) ----------
+    const otpScreen = document.getElementById('otpScreen');
+    const otpEmail = document.getElementById('otpEmail');
+    let otpAnim = null;
+    function ensureOtpLottie() {
+      if (otpAnim || !window.lottie) return otpAnim;
+      otpAnim = lottie.loadAnimation({
+        container: document.getElementById('otpLottie'),
+        renderer: 'svg',
+        loop: false,
+        autoplay: false,
+        path: 'assets/lottie/email-pop.json',
+      });
+      return otpAnim;
+    }
+    ensureOtpLottie();   // preload so it's ready the moment the right ID is sent
+
+    const OTP_LAND_MS = 1360;            // entrance finishes: Resend row delay 800 + rise 560
+    let otpAutoTimer = 0;
+    function showOtpScreen() {
+      clearTimeout(emailResetTimer);                     // the email error reset is moot now
+      backTimers.forEach(clearTimeout); backTimers = [];   // a back-transition still in flight
+      otpScreen.classList.remove('is-exiting');
+      hideToast();
+      resetOtp();
+      otpEmail.textContent = input.value.trim();
+      ui.classList.add('is-leaving');           // drawn keyboard drops under the incoming sheet
+      input.blur();                             // closes the phone's own keyboard too
+      otpScreen.setAttribute('aria-hidden', 'false');
+      void otpScreen.offsetWidth;               // make sure the entrance transitions run
+      otpScreen.classList.add('is-shown');
+      const anim = ensureOtpLottie();
+      if (anim) {
+        const start = () => {
+          if (reduceMotion.matches) anim.goToAndStop(anim.totalFrames - 1, true);
+          else setTimeout(() => anim.goToAndPlay(0, true), 120);
+        };
+        if (anim.isLoaded) start(); else anim.addEventListener('DOMLoaded', start, { once: true });
+      }
+      // Once the page has landed (last item, the Resend row, settles at 800 + 560 ms),
+      // wait 0.2 s and bring the number pad up on its own.
+      clearTimeout(otpAutoTimer);
+      otpAutoTimer = setTimeout(() => {
+        if (otpScreen.classList.contains('is-shown') && !otpScreen.classList.contains('is-exiting')
+            && !otpScreen.classList.contains('is-typing')) setOtpTyping(true);
+      }, (reduceMotion.matches ? 0 : OTP_LAND_MS) + 200);
+    }
+
+    // ---------- OTP · Typing (Figma 34:5021) → verified (29:4900) ----------
+    const OTP_CODE = '111111';          // the only code this prototype accepts
+    const otpDigits = document.getElementById('otpDigits');
+    const digitEls = [...otpDigits.querySelectorAll('.otp__digit')];
+    const otpRing = document.getElementById('otpRing');
+    const DIGIT_PITCH = 52;             // 46px box + 6px gap
+    const numpad = document.getElementById('numpad');
+    let otp = '';
+    let otpBusy = false;                // checking / verified — ignore keys
+    let otpError = false;               // wrong code on show (Figma 41:5263) — next key starts over
+
+    function renderOtp(newIndex = -1) {
+      const typing = otpScreen.classList.contains('is-typing');
+      digitEls.forEach((el, i) => {
+        const num = el.firstElementChild;
+        num.textContent = otp[i] || '';
+        num.classList.toggle('is-new', i === newIndex);
+      });
+      // Figma: the blue ring sits on the box holding the latest digit (hidden while empty) —
+      // one ring that slides box to box as digits are typed or deleted
+      otpRing.style.setProperty('--ring-x', `${Math.max(otp.length - 1, 0) * DIGIT_PITCH}px`);
+      // hidden until the first digit is typed, then it fades in on that box and slides along
+      otpRing.classList.toggle('is-on', typing && !otpBusy && !otpError && otp.length > 0);
+    }
+    function setOtpTyping(on) {
+      otpScreen.classList.toggle('is-typing', on);
+      renderOtp();
+    }
+    function otpKey(k) {
+      if (otpBusy) return;
+      if (otpError) clearOtpError();               // any key starts a fresh code (back just clears)
+      if (clearFade.length) cancelClearFade();
+      digitEls.forEach((el) => el.classList.remove('is-error'));
+      if (k === 'back') { otp = otp.slice(0, -1); renderOtp(); return; }
+      if (otp.length >= 6) return;
+      otp += k;
+      renderOtp(otp.length - 1);
+      if (otp.length === 6) checkOtp();
+    }
+    // ---- check → loading → success / error (refs: OTP.mov, Toss OTP on 60fps.design) ----
+    const LOADING_MS = 1500;            // skeleton wave across the boxes while "verifying"
+    const WAVE_MS = 1000, WAVE_STAGGER = 100;
+    const COINX = 187.3, COINY = 406;   // success Lottie coin centre (Main Control 562,1218 ÷ 3)
+    const waveEls = digitEls.map((el) => {
+      const w = document.createElement('i');
+      w.className = 'otp__wave';
+      el.appendChild(w);                // after .otp__num, which stays firstElementChild
+      return w;
+    });
+    let otpSeqTimers = [];
+    let successAnim = null;
+    const seq = (ms, fn) => otpSeqTimers.push(setTimeout(fn, ms));
+    function ensureSuccessLottie() {
+      if (successAnim || !window.lottie) return successAnim;
+      successAnim = lottie.loadAnimation({
+        container: document.getElementById('otpSuccess'),
+        renderer: 'svg', loop: false, autoplay: false,
+        path: 'assets/lottie/success-tick.json',
+      });
+      // tick ends on a blank white frame → the Wallet Intro video (which opens on white) takes over
+      successAnim.addEventListener('complete', () => {
+        if (otpScreen.classList.contains('is-done')) playWalletIntro();
+      });
+      return successAnim;
+    }
+    const walletIntro = document.getElementById('walletIntro');
+    function playWalletIntro() {
+      walletIntro.currentTime = 0;
+      // reveal on the first decoded frame, so nothing flashes if it's still buffering
+      walletIntro.addEventListener('playing', () => walletIntro.classList.add('is-playing'), { once: true });
+      walletIntro.play().catch(() => walletIntro.classList.add('is-playing'));
+    }
+    function stopWalletIntro() {
+      walletIntro.pause();
+      walletIntro.classList.remove('is-playing');
+      try { walletIntro.currentTime = 0; } catch (e) {}
+    }
+
+    // Toss loading: every box's grey fill rises slowly and drops fast, 100 ms apart,
+    // so a light gap keeps sweeping left → right across the code
+    function startWave() {
+      waveEls.forEach((w, i) => {
+        w.animate([
+          { opacity: 0, easing: 'cubic-bezier(0.45, 0, 0.55, 1)' },
+          { opacity: 1, offset: 0.72, easing: 'cubic-bezier(0.5, 0, 0.75, 0)' },
+          { opacity: 0 },
+        ], { duration: WAVE_MS, delay: i * WAVE_STAGGER, iterations: Infinity, fill: 'backwards' });
+      });
+    }
+    function stopWave() {            // ease out of wherever each box is in its cycle
+      waveEls.forEach((w) => {
+        const from = getComputedStyle(w).opacity;
+        w.getAnimations().forEach((a) => a.cancel());
+        if (+from > 0.01) w.animate([{ opacity: from }, { opacity: 0 }], { duration: 220, easing: 'ease-out' });
+      });
+    }
+
+    function checkOtp() {
+      otpBusy = true;
+      renderOtp();                                   // ring fades
+      otpScreen.classList.add('is-checking', 'is-loading');   // pad slides down
+      ensureSuccessLottie();
+      if (!reduceMotion.matches) startWave();
+      seq(LOADING_MS, () => {
+        otpScreen.classList.remove('is-loading');
+        stopWave();
+        if (otp === OTP_CODE) playOtpSuccess();
+        else showOtpError();
+      });
+    }
+
+    // Wrong code (Figma 41:5263): red boxes (red/700 stroke, red/50 fill) keep the digits, a shake,
+    // the "Wrong OTP" toast drops in and the pad comes back up. No ring — the next key clears it all.
+    function showOtpError() {
+      otpBusy = false;
+      otpError = true;
+      digitEls.forEach((el) => el.classList.add('is-error'));
+      otpDigits.classList.remove('is-shaking'); void otpDigits.offsetWidth; otpDigits.classList.add('is-shaking');
+      haptic.error();
+      otpScreen.classList.remove('is-checking');     // pad back up
+      otpErrorToast.show(null);                       // the pill's exit is driven below, in sync
+      renderOtp();
+      seq(TOAST_HOLD_MS, autoClearOtpError);          // pill leaves → boxes go back to empty
+    }
+    // As the error pill exits, the boxes reset for a fresh try: red fades back to normal and the
+    // digits fade out with it (a key pressed meanwhile cancels the fade and starts the new code)
+    let clearFade = [];
+    function autoClearOtpError() {
+      if (!otpError) return;
+      clearOtpError();                                // wipes the code, drops the red, pill exits
+      clearFade = digitEls.map((el) => el.firstElementChild.animate([{ opacity: 1 }, { opacity: 0 }],
+        { duration: reduceMotion.matches ? 1 : 220, easing: 'ease-out', fill: 'forwards' }));
+      seq(reduceMotion.matches ? 0 : 220, () => { cancelClearFade(); renderOtp(); });
+    }
+    function cancelClearFade() { clearFade.forEach((a) => a.cancel()); clearFade = []; }
+    function clearOtpError() {
+      otpError = false;
+      otp = '';
+      digitEls.forEach((el) => el.classList.remove('is-error'));
+      otpErrorToast.hide();
+    }
+
+    // Success (Figma 39:5121 + ref OTP.mov): boxes go green and the "OTP Verified" pill drops in →
+    // as the pill leaves, the rest of the page fades and the boxes glide together into one stack on
+    // the coin centre (last box on top) → the stack rounds off and shrinks while the gold coin grows
+    // out of it → tick. Each stage starts before the previous one lands, so it reads as one motion.
+    const SUCCESS_PILL_MS = TOAST_HOLD_MS;   // pill entry + 0.8 s on screen, then it exits
+    function playOtpSuccess() {
+      const reduce = reduceMotion.matches;
+      const T = (ms) => (reduce ? 1 : ms);
+      digitEls.forEach((el) => el.classList.add('is-verified'));   // 1 — green, staggered (CSS)
+      successToast.show(null);                                       //     + the success pill drops in
+      haptic.success();
+
+      seq(reduce ? 0 : SUCCESS_PILL_MS, () => {                      // 2 — pill exits, everything else fades
+        successToast.hide();
+        otpScreen.classList.add('is-done');
+      });
+
+      // 3 — …and the boxes glide into one stack as it goes (a slight deck fan, the last box on top)
+      const GLIDE = 460, GLIDE_EASE = 'cubic-bezier(0.55, 0, 0.15, 1)';
+      seq(reduce ? 0 : SUCCESS_PILL_MS + 120, () => {
+        const s = ui.getBoundingClientRect().width / 375;            // .ui scale
+        const uiR = ui.getBoundingClientRect();
+        digitEls.forEach((el, i) => {
+          const r = el.getBoundingClientRect();
+          const cx = (r.left - uiR.left) / s + r.width / s / 2;
+          const cy = (r.top - uiR.top) / s + r.height / s / 2;
+          const dx = COINX - cx + (i - 5) * 2;
+          const dy = COINY - cy;
+          el.dataset.dx = dx; el.dataset.dy = dy; el.dataset.fan = (i - 5) * 2;
+          el.animate([{ transform: 'translate(0, 0)' }, { transform: `translate(${dx}px, ${dy}px)` }],
+            { duration: T(GLIDE), easing: GLIDE_EASE, fill: 'forwards' });
+          // the digits that end up under the stack fade on the way; the top one stays until the coin
+          if (i < 5) el.firstElementChild.animate([{ opacity: 1 }, { opacity: 0 }],
+            { duration: T(220), delay: T(140), easing: 'ease-out', fill: 'forwards' });
+        });
+
+        // 4 — the stack rounds into a disc and shrinks, overlapping the end of the glide
+        seq(reduce ? 0 : GLIDE - 90, () => {
+          digitEls.forEach((el) => {
+            // shrink inside the same transform; the deck fan closes so the discs end dead centre
+            const t = `translate(${el.dataset.dx}px, ${el.dataset.dy}px)`;
+            const c = `translate(${el.dataset.dx - el.dataset.fan}px, ${el.dataset.dy}px)`;
+            el.animate([
+              { transform: `${t} scale(1, 1)`, borderRadius: '12px', opacity: 1 },
+              { transform: `${c} scale(0.7, 0.54)`, borderRadius: '50%', opacity: 1, offset: 0.55 },
+              { transform: `${c} scale(0.42, 0.32)`, borderRadius: '50%', opacity: 0 },
+            ], { duration: T(340), easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' });
+          });
+          digitEls[5].firstElementChild.animate([{ opacity: 1 }, { opacity: 0 }],
+            { duration: T(140), easing: 'ease-out', fill: 'forwards' });
+
+          // 5 — the coin grows out of the stack (Lottie frame 12 = the coin's first pixel)
+          seq(reduce ? 0 : 90, () => {
+            const anim = ensureSuccessLottie();
+            if (!anim) return;
+            const go = () => {
+              const end = anim.animationData.op;          // comp out-point (131) — totalFrames shrinks after playSegments
+              if (reduce) { anim.goToAndStop(end - 1, true); playWalletIntro(); }
+              else anim.playSegments([12, end], true);    // play through to the last frame
+            };
+            if (anim.isLoaded) go(); else anim.addEventListener('DOMLoaded', go, { once: true });
+          });
+        });
+      });
+    }
+
+    function resetOtp() {
+      clearTimeout(otpAutoTimer);
+      otpSeqTimers.forEach(clearTimeout); otpSeqTimers = [];
+      otp = ''; otpBusy = false; otpError = false;
+      stopWalletIntro();
+      otpErrorToast.hide();
+      digitEls.forEach((el) => {
+        el.classList.remove('is-verified', 'is-error', 'is-active');
+        el.getAnimations().forEach((a) => a.cancel());
+        el.firstElementChild.getAnimations().forEach((a) => a.cancel());
+      });
+      waveEls.forEach((w) => w.getAnimations().forEach((a) => a.cancel()));
+      otpScreen.classList.remove('is-typing', 'is-checking', 'is-loading', 'is-done');
+      if (successAnim) { successAnim.resetSegments(true); successAnim.goToAndStop(0, true); }
+      successToast.hide();
+      renderOtp();
+    }
+
+    otpDigits.addEventListener('animationend', (e) => { if (e.target === otpDigits) otpDigits.classList.remove('is-shaking'); });
+
+    // Tap the boxes → number pad up; tap the header / empty space → pad down (not while checking)
+    otpDigits.addEventListener('click', () => {
+      if (otpScreen.classList.contains('is-shown') && !otpBusy) { haptic.light(); setOtpTyping(true); }
+    });
+    document.querySelector('.otp__resend').addEventListener('click', () => haptic.light());
+    otpScreen.addEventListener('pointerdown', (e) => {
+      if (!otpScreen.classList.contains('is-typing') || otpBusy) return;
+      if (numpad.contains(e.target) || otpDigits.contains(e.target) || e.target.closest('button')) return;
+      setOtpTyping(false);
+    });
+    numpad.addEventListener('pointerdown', (e) => {
+      const key = e.target.closest('.numpad__key');
+      if (!key) return;
+      e.preventDefault();
+      if (!otpBusy) haptic.light();                  // each key press
+      otpKey(key.dataset.key);
+    });
+    // Physical keyboard on desktop
+    document.addEventListener('keydown', (e) => {
+      if (!otpScreen.classList.contains('is-shown') || otpScreen.classList.contains('is-exiting')) return;
+      if (/^[0-9]$/.test(e.key)) { if (!otpBusy && !otpScreen.classList.contains('is-typing')) setOtpTyping(true); otpKey(e.key); }
+      else if (e.key === 'Backspace') otpKey('back');
+      else if (e.key === 'Escape' && !otpBusy) setOtpTyping(false);
+    });
+
+    // Tapping the email chip goes back to the edit-email state (card up, keyboard up, caret ready).
+    // One motion, one curve: the sheet fades (380 ms) while the keyboard and the email UI rise
+    // together on the keyboard curve — everything starts on the same frame, nothing is staggered.
+    const KB_EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
+    let backTimers = [];
+    document.getElementById('otpEmailChip').addEventListener('click', () => {
+      if (!otpScreen.classList.contains('is-shown') || otpScreen.classList.contains('is-exiting')) return;
+      haptic.light();
+      backTimers.forEach(clearTimeout); backTimers = [];
+      clearTimeout(otpAutoTimer);                   // don't auto-open the pad while leaving
+      successToast.hide();
+      otpErrorToast.hide();
+
+      setEditing(true);
+      input.focus({ preventScroll: true });       // inside the tap, so phones raise their keyboard
+      render();
+
+      requestAnimationFrame(() => {                 // start every motion on the same frame
+        otpScreen.classList.add('is-exiting');     // sheet fades as one layer
+        ui.classList.remove('is-leaving');          // drawn keyboard rises on the keyboard curve
+        if (!reduceMotion.matches) {
+          const rise = (el, y) => el.animate(
+            [{ transform: `translateY(${y}px)` }, { transform: 'translateY(0)' }],
+            { duration: 450, easing: KB_EASE, fill: 'backwards' });
+          rise(document.querySelector('.logo'), 8);
+          rise(document.querySelector('.card'), 12);
+          rise(cta, 12);
+        }
+      });
+
+      backTimers.push(setTimeout(() => {            // once invisible, tidy up quietly
+        otpScreen.classList.remove('is-shown', 'is-exiting');
+        otpScreen.setAttribute('aria-hidden', 'true');
+        resetOtp();
+        if (otpAnim) otpAnim.goToAndStop(0, true);
+      }, reduceMotion.matches ? 0 : 460));
+    });
+
+    render();
+  </script>
+</body>
+</html>
