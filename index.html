@@ -1015,18 +1015,20 @@
         label.remove();
         if (active && active !== document.body && document.activeElement !== active) active.focus({ preventScroll: true });
       }
-      function play(iosTicks, gap, androidPattern) {
+      // iOS has one fixed-strength tick, so "stronger" = a tight burst of ticks (30 ms apart reads as
+      // one firmer bump); Android gets longer pulses. Offsets in ms.
+      function play(iosOffsets, androidPattern) {
         if (isIOS) {
-          iosTick();
-          for (let i = 1; i < iosTicks; i++) setTimeout(iosTick, i * gap);
+          for (const ms of iosOffsets) { if (ms === 0) iosTick(); else setTimeout(iosTick, ms); }
         } else if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) {
           try { navigator.vibrate(androidPattern); } catch (e) {}
         }
       }
       return {
-        light: () => play(1, 0, 10),
-        success: () => play(2, 110, [14, 70, 14]),
-        error: () => play(3, 85, [22, 50, 22, 50, 22]),
+        light: () => play([0, 30], 24),                                   // taps, key presses
+        medium: () => play([0, 30, 60], 40),                              // things landing / appearing
+        success: () => play([0, 30, 130, 160], [30, 60, 42]),             // two firm bumps
+        error: () => play([0, 30, 100, 130, 200, 230], [45, 40, 45, 40, 45]),   // three firm bumps
       };
     })();
 
@@ -1085,6 +1087,7 @@
       const dock = document.querySelector('.dock');
       const btn = document.querySelector('.nano-btn');
       ui.classList.remove('is-pre-intro');
+      setTimeout(() => haptic.medium(), reduceMotion.matches ? 0 : 380);   // as the card + logo land
       if (reduceMotion.matches) return;
       // Subtle elastic (user request): the rise overshoots ~3–4px past its spot and settles;
       // the scale pops just past 100% on its own, slightly quicker spring so the two don't sync
@@ -1222,6 +1225,7 @@
     field.addEventListener('touchend', (e) => {
       if (clear.contains(e.target) || document.activeElement === input) return;
       e.preventDefault();
+      haptic.light();
       input.focus({ preventScroll: true });
     }, { passive: false });
     clear.addEventListener('pointerdown', (e) => e.preventDefault()); // keep focus in the input
@@ -1550,7 +1554,10 @@
     const otpTick = document.getElementById('otpTick');
     function playTick() {
       otpTick.currentTime = 0;
-      otpTick.addEventListener('playing', () => otpTick.classList.add('is-playing'), { once: true });
+      otpTick.addEventListener('playing', () => {
+        otpTick.classList.add('is-playing');
+        setTimeout(() => haptic.medium(), 160);       // as the coin pops out (frame ~10)
+      }, { once: true });
       otpTick.play().catch(() => playWalletIntro());     // can't play → straight to the wallet intro
     }
     function stopTick() {
