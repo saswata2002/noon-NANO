@@ -174,7 +174,7 @@
     .main { transition: transform var(--kb-dur) var(--kb-ease); }
     .ui.is-editing .main { transform: translateY(var(--bar-dy, -322.77px)); }
 
-    /* Intro: the card and the Send OTP dock wait off-stage until the Splash video reaches 4.6 s,
+    /* Intro: the card and the Send OTP dock wait off-stage until the Splash video reaches 3.97 s,
        then rise in (JS, WAAPI on the individual translate/scale props so the edit-state transform
        is untouched). Hidden and untappable until then. */
     .ui.is-pre-intro .card,
@@ -1166,7 +1166,7 @@
 <body>
   <main class="screen" id="screen" aria-label="Welcome to noon nano">
     <!--
-      VIDEO CONTAINER — Splash (750 × 1624 = 375 × 812 @2x, 5.5 s). It plays once and holds on its
+      VIDEO CONTAINER — Splash_01 (750 × 1624 = 375 × 812 @2x, 4.6 s). It plays once and holds on its
       final scene (the kids + gift box), which is the intro background the UI sits on. The poster
       is the video's own first frame, so nothing jumps while it loads. Override with ?video=….
     -->
@@ -1617,12 +1617,13 @@
       ui.style.setProperty('--s', entry.contentRect.width / 375);
     }).observe(screen);
 
-    // ---------- Intro: card + Send OTP enter at 4.6 s of the Splash (the kids crouch by the open box) ----------
+    // ---------- Intro: card + Send OTP enter at 3.97 s of the Splash (the kids crouch by the open box) ----------
     // Timed off the video's own clock (requestVideoFrameCallback → mediaTime), so a slow load
     // can't put them out of sync. The card springs up 56px from 96% with a subtle elastic overshoot
     // while it fades in; the Send OTP dock follows 110 ms later on the same springs.
     // If the video can't play (error / autoplay blocked / stalled), they come in anyway.
-    const INTRO_UI_AT = 4.6;             // seconds into the Splash: frame 276 @60fps — the kids crouched by the open box (user ref)
+    const INTRO_UI_AT = 3.97;            // seconds into Splash_01 (4.6 s): frame 238 @60fps — the kids crouch as the camera pulls back
+                                         // from the box, the same beat the old 5.5 s Splash hit at 4.6 s; 0.63 s of the shot plays under the reveal
     let introDone = false;
     function enterIntroUI() {
       if (introDone) return;
