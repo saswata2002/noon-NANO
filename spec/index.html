@@ -326,7 +326,19 @@ body.is-scrubbing, body.is-scrubbing * { cursor: grabbing !important; user-selec
   .row__lab { gap: 8px; }
   .foot { padding-left: 16px; }
 }
-@media (max-width: 560px) { .copy { display: none; } .top { gap: 8px; } }
+/* tablets / phones: the timeline fits its box (no 940px minimum) — the ruler picks its step for the width */
+@media (max-width: 960px) { .tl { min-width: 0; } }
+@media (max-width: 560px) {
+  .copy { display: none; } .top { gap: 8px; }
+  :root { --lab: 132px; }
+  .tl__start { margin-left: 12px; padding: 0 10px 0 8px; } .tl__start small { display: none; }
+  .row__lab { margin-left: 12px; padding-left: 6px; gap: 6px; }
+  .row__lab b { flex: none; }
+  .row__trk, .tl__scale, .grp span { margin-left: 6px; }
+  .lane { left: calc(var(--lab) + 6px); }
+  .grp b { padding-left: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .foot { padding-left: 12px; }
+}
 </style>
 </head>
 <body>
@@ -1032,18 +1044,30 @@ window.SPEC = (() => {
     out.forEach((r) => { if (r.parts && r.parts.length < 2) delete r.parts; });
     return out;
   }
+  /* the ruler adapts to the lane's width: the label step is the smallest round value that keeps labels
+     ≥ 64 px apart (minor ticks only where they get ≥ 8 px); the scene's end is always labelled and any
+     label that would collide with it is dropped. Rebuilt whenever the lane resizes. */
+  let LAST = 0, scaleW = 0;
+  const STEPS = [100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000, 15000, 30000, 60000];
+  function renderScale() {
+    const el = $('scale'), w = el.clientWidth || 600; scaleW = w;
+    const pxPerMs = w / END, gap = (ms) => ms * pxPerMs;
+    const major = STEPS.find((st) => gap(st) >= 64) || STEPS[STEPS.length - 1];
+    const minor = [major / 5, major / 4, major / 2].find((st) => gap(st) >= 8);   // undefined → no minor ticks
+    let s = `<span class="tick tick--zero" style="left:0">0</span>`;
+    if (minor) for (let t = minor; t < END; t += minor) if (Math.round(t) % major) s += `<span class="tick tick--minor" style="left:${pct(t)}">.</span>`;
+    for (let t = major; t < END; t += major) if (gap(Math.abs(t - LAST)) >= 56 && gap(END - t) >= 20) s += `<span class="tick" style="left:${pct(t)};color:var(--ink-3)">${fmtS(t)}</span>`;
+    s += `<span class="tick" style="left:${pct(LAST)}">${fmtS(LAST)}</span>`;
+    el.innerHTML = s;
+  }
+  new ResizeObserver(() => { const w = $('scale').clientWidth; if (w && Math.abs(w - scaleW) > 1) renderScale(); }).observe($('scale'));
   function renderTimeline() {
     const S0 = SCENES[sc];
     if (S0.overview) { const o = overview(v); rows = o.rows; beats = o.beats; } else { rows = mergeRows(S0.rows(v)); beats = []; }
     const last = sceneEnd(rows);
     const unit = last > 6000 ? 1000 : last > 2400 ? 500 : 100;
     END = Math.ceil((last + Math.max(60, last * 0.05)) / unit) * unit;
-    let s = `<span class="tick tick--zero" style="left:0">0</span>`;
-    const minor = unit === 1000 ? 500 : 100, major = unit === 1000 ? 1000 : 500;
-    for (let t = minor; t < END; t += minor) s += `<span class="tick tick--minor" style="left:${pct(t)}">.</span>`;
-    for (let t = major; t < END; t += major) if (Math.abs(t - last) > END * 0.04) s += `<span class="tick" style="left:${pct(t)};color:var(--ink-3)">${fmtS(t)}</span>`;
-    s += `<span class="tick" style="left:${pct(last)}">${fmtS(last)}</span>`;
-    $('scale').innerHTML = s;
+    LAST = last; renderScale();
     $('trigger').textContent = `· ${S0.trig}`;
     $('rows').innerHTML = rows.map((r, i) => r.grp
       ? `<div class="grp"><b>${r.grp}</b><span>@ ${fmtMs(r.at)}</span></div>`
