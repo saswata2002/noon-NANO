@@ -3222,9 +3222,9 @@
     //     Selected page has the identical one) and its mirrored grid fades in at the bottom.
     // 2 · present (220 ms): the picked wallet rises into the middle of the blank page on a soft spring
     //     and rests a beat. Nothing of the home page is rendered yet.
-    // 3 · settle (≈880 ms): the card glides up into the home header (one spring) while the header's
-    //     background grows out from behind it and the white page lifts off; the marketplace sheet rises
-    //     as one piece with it; then the chrome (switcher, nav), the copy and the props fade up in
+    // 3 · settle (≈880 ms): the card glides up into the home header (one spring) while the full
+    //     header image drops in from the top as one piece (no mask) and the white page lifts off; the
+    //     marketplace sheet rises from below; then the chrome (switcher, nav), the copy and the props fade up in
     //     small groups. No pops, no slaps — only the card has any overshoot.
     const homeScreen = document.getElementById('homeScreen');
     const hq = (sel) => homeScreen.querySelector(sel);
@@ -3233,7 +3233,6 @@
     const SEL_DY = 140, SEL_S = 320 / 272;               // Selected Wallet card (28, 293, 320 × 226.06) vs home (52, 170, 272)
     const SEL_POSE = `translate(0px, ${SEL_DY}px) scale(${SEL_S})`;
     // the header's reveal starts as the card's own rect in the Selected pose (wallet coordinates)
-    const WBG_FROM = 'inset(294.05px 27px 56.9px 28px round 24px)', WBG_TO = 'inset(0px 0px 0px 0px round 0px 0px 24px 24px)';
     var homeTimers = [];                                   // var: hideHome() can run (via hideInterests) before this line
     const homePre = [];
     function preloadHome() {
@@ -3294,7 +3293,8 @@
     function homeBuild(rm) {
       const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';     // iOS-style ease-out for everything that just arrives
       const FADE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
-      const GLIDE = spring(0.9, 0.52, 760);              // card + header + sheet: one calm spring, ~1 % overshoot
+      const GLIDE = spring(0.9, 0.52, 760);              // card + sheet: one calm spring, ~1 % overshoot
+      const DROP = 'cubic-bezier(0.16, 1, 0.3, 1)';      // the header's drop: fast in, long soft settle (ease-out expo)
       homeScreen.classList.remove('is-sel');            // home layers render from here, each held at its start by fill: backwards
       hq('.hm__page').style.opacity = '1';              // the lilac page waits under the white one, which lifts off
       const selBg = hq('.hm__selbg');
@@ -3316,11 +3316,11 @@
         go(el, [{ translate: `0 ${dy}px` }, { translate: '0 0' }], dur, delay, EASE);
         go(el, [{ opacity: 0 }, { opacity: 1 }], 280, delay, FADE);
       };
-      // the card and the header move as one: card glides up, background grows out from behind it
+      // the card glides up into the header while the header itself comes down from the top
       go(hmCard, [{ transform: SEL_POSE }, { transform: 'translate(0px, 0px) scale(1)' }], 760, 0, GLIDE);
-      go(hq('.hm__wbg'), [{ clipPath: WBG_FROM }, { clipPath: WBG_TO }], 760, 0, GLIDE);
-      go(hq('.hm__wbg-img'), [{ scale: '1.08' }, { scale: '1' }], 760, 0, GLIDE);
-      go(hq('.hm__wbg-ov'), [{ opacity: 0 }, { opacity: 1 }], 360, 60, FADE);
+      // the full header image drops in from above the screen as one piece (ref: 03_HomePage Loading — the
+      // banner slides down from the top on a strong ease-out, ~0.4 s); no mask, nothing grows out of the card
+      go(hq('.hm__wbg'), [{ translate: '0 -577px' }, { translate: '0 0' }], 720, 40, DROP);
       // the marketplace sheet (with the quest card below it) rises as one piece on the same spring
       [hq('.hm__market'), hq('.hm__quest')].forEach((el) => {
         go(el, [{ translate: '0 200px' }, { translate: '0 0' }], 760, 60, GLIDE);
