@@ -86,6 +86,9 @@
       object-fit: cover;
       display: block;
     }
+    /* the idle loop sits over the intro, hidden until its first frame is up (then an instant swap) */
+    .screen__loop { opacity: 0; }
+    .screen__loop.is-on { opacity: 1; }
 
 
 
@@ -1166,9 +1169,11 @@
 <body>
   <main class="screen" id="screen" aria-label="Welcome to noon nano">
     <!--
-      VIDEO CONTAINER — Splash_01 (750 × 1624 = 375 × 812 @2x, 4.6 s). It plays once and holds on its
-      final scene (the kids + gift box), which is the intro background the UI sits on. The poster
-      is the video's own first frame, so nothing jumps while it loads. Override with ?video=….
+      VIDEO CONTAINER — Splash_01 (750 × 1624 = 375 × 812 @2x, 4.6 s) plays once; the moment it
+      ends, Splash_Loop_01 (3.15 s, the same final scene: the kids + gift box) takes over on top and
+      loops for good — its first frame matches the intro's last, so the swap doesn't show. The intro's
+      poster is its own first frame; the loop's poster is the final scene, which also stands in if
+      autoplay is blocked. Override the intro with ?video=… (no loop then).
     -->
     <video
       class="screen__media"
@@ -1177,6 +1182,16 @@
       muted
       playsinline
       autoplay
+      preload="auto"
+      aria-hidden="true"
+    ></video>
+    <video
+      class="screen__media screen__loop"
+      id="screenLoop"
+      poster="assets/splash-loop-poster.jpg"
+      muted
+      playsinline
+      loop
       preload="auto"
       aria-hidden="true"
     ></video>
@@ -1588,10 +1603,44 @@
       // A bad path keeps the still in place rather than showing an empty box.
       video.addEventListener('error', () => screen.classList.remove('is-playing'));
       video.src = src;
-      const play = () => video.play().catch(() => enterIntroUI());   // autoplay blocked: poster + UI
+      // autoplay blocked: the UI comes in over the final scene (the loop's poster), not the blank first frame
+      const play = () => video.play().catch(() => { enterIntroUI(); if (typeof startLoop === 'function' && src === VIDEO_SRC) startLoop(); });
       play();
       // Browsers hold autoplay in background tabs; start once the tab is shown (not after it's ended).
       document.addEventListener('visibilitychange', () => { if (!document.hidden && video.paused && !video.ended) play(); });
+    }
+
+    // ---------- Idle loop: Splash_Loop_01 takes over the moment the intro ends, and loops for good ----------
+    // Its first frame is the intro's last (≈2 frames of motion apart), so the swap is invisible: the
+    // intro holds its last frame until the loop has actually painted its first, then the loop is shown.
+    // It's primed (play → pause at 0) while the intro runs so the first frame decodes in time.
+    const LOOP_SRC = 'assets/splash-loop.mp4';
+    const loopVideo = document.getElementById('screenLoop');
+    let loopOn = false;
+    function startLoop() {
+      if (loopOn) return;
+      loopOn = true;
+      loopVideo.currentTime = 0;
+      // first painted frame, or 'playing', or 300 ms — whichever comes first. Showing a beat early is
+      // safe: until it plays, the loop shows frame 0 (or its poster, which IS frame 0)
+      const show = () => { if (!loopVideo.classList.contains('is-on')) loopVideo.classList.add('is-on'); };
+      if ('requestVideoFrameCallback' in loopVideo) loopVideo.requestVideoFrameCallback(show);
+      loopVideo.addEventListener('playing', show, { once: true });
+      setTimeout(show, 300);
+      // can't autoplay (Low Power Mode / blocked): its poster — the same final scene — stands in
+      loopVideo.play().catch(() => loopVideo.classList.add('is-on'));
+    }
+    if (src === VIDEO_SRC) {
+      loopVideo.src = LOOP_SRC;
+      video.addEventListener('playing', () => setTimeout(() => {
+        if (loopOn) return;
+        const p = loopVideo.play();
+        if (p) p.then(() => { if (!loopOn) { loopVideo.pause(); loopVideo.currentTime = 0; } }).catch(() => {});
+      }, 1200), { once: true });
+      video.addEventListener('ended', startLoop);
+      video.addEventListener('error', startLoop);
+      // the loop never stops: resume it when the tab comes back (browsers pause background video)
+      document.addEventListener('visibilitychange', () => { if (!document.hidden && loopOn && loopVideo.paused) loopVideo.play().catch(() => {}); });
     }
 
     // Phones: size the frame in px from the window, and never while a field is focused — Safari's
