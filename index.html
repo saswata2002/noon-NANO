@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-variant="1">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-visual">
@@ -16,6 +16,8 @@
   <title>Login · Email</title>
   <link rel="preload" href="fonts/Noontree-ExtraBold.otf" as="font" type="font/otf" crossorigin>
   <link rel="preload" href="fonts/Noontree-Medium.otf" as="font" type="font/otf" crossorigin>
+  <!-- prototype tool chrome (Spec Sheet button) — not the app's font -->
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&display=swap" rel="stylesheet" />
   <style>
     @font-face { font-family: 'Noontree'; src: url('fonts/Noontree-Regular.otf') format('opentype'); font-weight: 400; font-display: block; }
     @font-face { font-family: 'Noontree'; src: url('fonts/Noontree-Medium.otf') format('opentype'); font-weight: 500; font-display: block; }
@@ -1212,6 +1214,44 @@
       width: 100%;
       height: 24px;
     }
+    /* ── Variant switcher — prototype tool beside the phone (not part of the app UI) ──
+       Styled with the internal-tools kit (Lightweight UI), the same as the spec sheet's cards: a flat white
+       card with a hairline and smoothed (near-square) corners, 36px segments, Geist figures; the chosen
+       option is ink. One version here, so it holds just Reset + Spec Sheet. The phone frame scales with the
+       window height, so the bar sits half the frame's live width left of centre. */
+    .vswitch {
+      --vs-ink: #18191d; --vs-muted: #666879; --vs-line: #ededec;
+      position: fixed; top: 50%; left: calc(50% - min(50vw, 100dvh * 375 / 1624) - 28px); transform: translate(-100%, -50%); z-index: 1000;
+      display: flex; flex-direction: column; gap: 4px; padding: 6px;
+      background: #fff; border: 1px solid var(--vs-line); border-radius: 16px; corner-shape: superellipse(4);
+      box-shadow: 0 1px 2px rgb(0 0 0 / .04);
+    }
+    .vswitch__b {
+      width: 36px; height: 36px; border-radius: 10px; corner-shape: superellipse(4); display: grid; place-items: center; border: 0; padding: 0;
+      background: transparent; color: var(--vs-muted); font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500; font-size: 14px; line-height: 1; font-variant-numeric: tabular-nums;
+      cursor: pointer; transition: background-color 160ms cubic-bezier(.23, 1, .32, 1), color 160ms cubic-bezier(.23, 1, .32, 1), transform 160ms cubic-bezier(.23, 1, .32, 1);
+      -webkit-tap-highlight-color: transparent;
+    }
+    @media (hover: hover) and (pointer: fine) { .vswitch__b:hover { background: color-mix(in oklab, var(--vs-ink) 4%, transparent); color: var(--vs-ink); } }
+    .vswitch__b:active { transform: scale(.97); }
+    .vswitch__b[aria-pressed="true"] { background: var(--vs-ink); color: #fff; }
+    .vswitch__b:focus-visible { outline: 2px solid var(--vs-ink); outline-offset: 2px; }
+    @supports not (corner-shape: round) { .vswitch { border-radius: 2.4px; } .vswitch__b { border-radius: 1.5px; } }   /* no superellipse (Safari, Firefox): the plain-rounding equivalent */
+    @media (max-width: 520px) { .vswitch { display: none; } }   /* phone-sized screens: no room beside the frame */
+    .vswitch__reset, .vswitch__spec { color: var(--vs-ink); }
+    .vswitch__reset svg, .vswitch__spec svg { width: 18px; height: 18px; }
+    .vswitch__reset svg { transition: transform .45s cubic-bezier(.2, .9, .3, 1); }
+    .vswitch__reset:hover svg { transform: rotate(-35deg); }
+    .vswitch__reset.is-spinning svg { transform: rotate(-360deg); transition-duration: .5s; }
+    .vswitch__spec { position: relative; }
+    .vswitch__spec::after {
+      content: attr(data-tip); position: absolute; right: calc(100% + 12px); top: 50%; transform: translate(4px, -50%);
+      padding: 6px 8px; border-radius: 8px; corner-shape: superellipse(4); background: var(--vs-ink); color: #fff;
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; font-weight: 500; white-space: nowrap;
+      box-shadow: 0 4px 12px -4px rgb(0 0 0 / .4); opacity: 0; pointer-events: none; transition: opacity 125ms cubic-bezier(.23, 1, .32, 1), transform 125ms cubic-bezier(.23, 1, .32, 1);
+    }
+    .vswitch__spec:hover::after, .vswitch__spec:focus-visible::after { opacity: 1; transform: translate(0, -50%); }
   </style>
 </head>
 <body>
@@ -1562,6 +1602,12 @@
       </section>
     </div>
   </main>
+
+  <!-- prototype tool (outside the phone): restart the flow · open the animation spec -->
+  <nav class="vswitch" id="vswitch" aria-label="Prototype tools">
+    <button class="vswitch__b vswitch__reset" id="vreset" title="Reset the flow" aria-label="Reset the flow — start again"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.5 10a6.5 6.5 0 1 0 1.9-4.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.8 2.8v3.4h3.4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="vswitch__b vswitch__spec" id="vspec" data-tip="Spec Sheet" aria-label="Spec Sheet — animation spec for the full flow"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 5h5M3 10h9M3 15h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="10" y="3.5" width="7" height="3" rx="1.5" fill="currentColor"/><rect x="14" y="13.5" width="3" height="3" rx="1.5" fill="currentColor"/></svg></button>
+  </nav>
 
   <script src="vendor/lottie.min.js"></script>
   <script>
@@ -3749,6 +3795,18 @@
     });
 
     render();
+  </script>
+  <script>
+    // prototype tool bar (Spec Sheet entry point) — one version, so no iteration numbers
+    (() => {
+      const nav = document.getElementById('vswitch'); if (!nav) return;
+      const PATHS = { 1: '/' };
+      const here = document.documentElement.dataset.variant || '1';
+      const reset = document.getElementById('vreset');
+      if (reset) reset.addEventListener('click', () => { reset.classList.add('is-spinning'); setTimeout(() => location.replace(PATHS[here]), 260); });
+      const spec = document.getElementById('vspec');
+      if (spec) spec.addEventListener('click', () => { location.href = `/spec/?v=${here}`; });
+    })();
   </script>
 </body>
 </html>
