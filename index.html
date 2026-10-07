@@ -2406,34 +2406,43 @@
       preloadSkins();
       startHintCycle();
       if (reduceMotion.matches) { haptic.medium(); return; }
+      // One continuous hand-off, started while the intro is still exiting (its wallets fly off and its title
+      // blurs away): the skin page dissolves in over it instead of after it, so the purple never flashes to
+      // white and the dark backdrop never snaps in. Own timings throughout (pp: false) — the global 200 ms fade
+      // made a full-screen backdrop pop.
       const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
-      const SOFT = spring(0.86, 0.55, 1000);
-      const CARD = spring(0.74, 0.6, 1200);
       const FADE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
-      const fade = (el, delay, dur = 420) => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: dur, delay, easing: FADE, fill: 'backwards' });
+      const SOFT = spring(0.88, 0.6, 1000);           // text: settles without a visible bounce
+      const CARD = spring(0.8, 0.58, 1100);           // wallets: a soft ~2 % overshoot as they land
+      const run = (el, kf, duration, delay, easing) => el.animate(kf, { duration, delay, easing, fill: 'backwards', pp: false });
       const bg = bgEls[0];
-      bg.animate([{ scale: '1.1' }, { scale: '1' }], { duration: 1100, easing: IOS, fill: 'backwards' });
-      fade(bg, 0, 520);
-      sq('.skin__steps').animate([{ translate: '0 -10px', easing: SOFT }, { translate: '0 0' }], { duration: 1000, delay: 240, fill: 'backwards' });
-      fade(sq('.skin__steps'), 240);
-      const lift = (el, delay, dy, from, keep = '') => {
-        el.animate([{ translate: `0 ${dy}px`, scale: from, easing: SOFT }, { translate: '0 0', scale: '1' }], { duration: 1000, delay, fill: 'backwards' });
-        el.animate([{ opacity: 0, filter: `blur(8px) ${keep}` }, { opacity: 1, filter: `blur(0px) ${keep}` }],
-          { duration: 560, delay, easing: FADE, fill: 'backwards' });
+      run(bg, [{ opacity: 0 }, { opacity: 1 }], 640, 0, FADE);                 // the dissolve
+      run(bg, [{ scale: '1.08' }, { scale: '1' }], 1400, 0, IOS);               // a slow push-in under it
+      const steps = sq('.skin__steps');
+      run(steps, [{ translate: '0 -8px' }, { translate: '0 0' }], 1000, 180, SOFT);
+      run(steps, [{ opacity: 0 }, { opacity: 1 }], 500, 180, FADE);
+      // the title takes over from the intro's blurred-out "Introducing nano wallet"
+      const lift = (el, delay, dy, keep = '') => {
+        run(el, [{ translate: `0 ${dy}px` }, { translate: '0 0' }], 1000, delay, SOFT);
+        run(el, [{ opacity: 0, filter: `blur(10px) ${keep}` }, { opacity: 1, filter: `blur(0px) ${keep}` }], 700, delay, FADE);
       };
-      lift(sq('.skin__title'), 300, 18, '0.95', 'drop-shadow(0 1px 7px rgba(0,0,0,.15))');
-      lift(sq('.skin__sub'), 380, 12, '1');
-      // cards spring up back → front and fan out to their tilt (transform composes over the pose)
-      [[roles.back, 420, -10], [roles.mid, 420 + PP.STAGGER, -6], [roles.front, 420 + 2 * PP.STAGGER, 0]].forEach(([el, delay, rot]) => {
-        el.animate([{ transform: `translateY(90px) scale(0.86) rotate(${rot}deg)`, easing: CARD }, { transform: 'none' }],
-          { duration: 1200, delay, fill: 'backwards' });
-        fade(el, delay, 320);
+      lift(sq('.skin__title'), 220, 14, 'drop-shadow(0 1px 7px rgba(0,0,0,.15))');
+      lift(sq('.skin__sub'), 300, 10);
+      // the front wallet rises in alone; once it's nearly opaque the two behind it fan out from under it —
+      // they start tucked exactly beneath it (their pose offset + tilt cancelled), so no half-faded card is
+      // ever seen through another (fading all three at once read as a muddy see-through stack)
+      const FRONT_AT = 360;
+      run(roles.front, [{ transform: 'translateY(64px) scale(0.9)' }, { transform: 'none' }], 1100, FRONT_AT, CARD);
+      run(roles.front, [{ opacity: 0 }, { opacity: 1 }], 300, FRONT_AT, FADE);
+      const FAN = spring(0.78, 0.5, 900);
+      [[roles.mid, POSE.mid, FRONT_AT + 260], [roles.back, POSE.back, FRONT_AT + 320]].forEach(([el, ps, delay]) => {
+        run(el, [{ transform: `rotate(${-ps.r}deg) translate(${-ps.x}px, ${-ps.y}px)` }, { transform: 'none' }], 900, delay, FAN);
+        run(el, [{ opacity: 0 }, { opacity: 1 }], 160, delay, FADE);
       });
-      skinTimers.push(setTimeout(() => haptic.medium(), 580 + 330));   // the front wallet lands
-      [sq('.skin__hint.is-on')].forEach((el) => {
-        el.animate([{ opacity: 0, translate: '0 8px' }, { opacity: 1, translate: '0 0' }], { duration: 700, delay: 900, easing: IOS, fill: 'backwards' });
-      });
-      skinTimers.push(setTimeout(() => walletIntro.pause(), 1200));   // fully covered now
+      skinTimers.push(setTimeout(() => haptic.medium(), FRONT_AT + 380));       // the front wallet lands
+      const hint = sq('.skin__hint.is-on');
+      if (hint) run(hint, [{ opacity: 0, translate: '0 8px' }, { opacity: 1, translate: '0 0' }], 700, 1000, IOS);
+      skinTimers.push(setTimeout(() => walletIntro.pause(), 900));    // fully covered now (it may still be playing its exit)
     }
 
     // ---- gestures on the front wallet ----
@@ -3431,6 +3440,20 @@
       skinKeep.setAttribute('aria-hidden', 'true');
       hintEls.forEach((h, k) => h.classList.toggle('is-on', k === 0));
     }
+    // hand over at 1.5 s of the 2 s intro — its wallets are flying off and its title is blurring out, so the skin
+    // page dissolves in over that exit (on the video's own clock); 'ended' stays as the fallback
+    const SKIN_AT = 1.5;
+    walletIntro.addEventListener('playing', () => {
+      if (!('requestVideoFrameCallback' in walletIntro)) {
+        skinTimers.push(setTimeout(() => { if (otpScreen.classList.contains('is-done')) revealSkin(); }, Math.max(0, (SKIN_AT - walletIntro.currentTime) * 1000)));
+        return;
+      }
+      const tick = (now, meta) => {
+        if (!otpScreen.classList.contains('is-done') || skinScreen.classList.contains('is-shown')) return;
+        if (meta.mediaTime >= SKIN_AT) revealSkin(); else walletIntro.requestVideoFrameCallback(tick);
+      };
+      walletIntro.requestVideoFrameCallback(tick);
+    });
     walletIntro.addEventListener('ended', () => {
       if (otpScreen.classList.contains('is-done')) revealSkin();
     });
