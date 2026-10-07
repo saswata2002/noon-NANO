@@ -3288,19 +3288,22 @@
       ], { duration: 700, delay: POP_AT, easing: spring(0.74, 0.44, 700), fill: 'backwards', pp: false });
 
       // --- 3 · settle into the home page ---
-      homeTimers.push(setTimeout(() => homeBuild(rm), rm ? 620 : 880));
+      homeTimers.push(setTimeout(() => homeBuild(rm), rm ? 620 : 840));
     }
     function homeBuild(rm) {
       const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';     // iOS-style ease-out for everything that just arrives
       const FADE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
-      const GLIDE = spring(0.9, 0.52, 760);              // card + sheet: one calm spring, ~1 % overshoot
-      const DROP = 'cubic-bezier(0.16, 1, 0.3, 1)';      // the header's drop: fast in, long soft settle (ease-out expo)
+      // ONE curve for the three big moves (card up, header down, sheet up) so they read as a single motion
+      // closing around the card — ease-out quint: quick start, long soft settle, no overshoot
+      const CLOSE = 'cubic-bezier(0.22, 1, 0.36, 1)', CLOSE_MS = 820;
       homeScreen.classList.remove('is-sel');            // home layers render from here, each held at its start by fill: backwards
       hq('.hm__page').style.opacity = '1';              // the lilac page waits under the white one, which lifts off
       const selBg = hq('.hm__selbg');
       selBg.getAnimations().forEach((a) => a.cancel());
       selBg.style.opacity = '0';
-      selBg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, delay: rm ? 0 : 140, easing: FADE, fill: 'backwards', pp: false });
+      // the blank page is covered from both ends by the header and the sheet; what's left of it lifts off
+      // late and slowly, so it never flashes to the lilac page underneath
+      selBg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: rm ? 300 : 460, delay: rm ? 0 : 220, easing: FADE, fill: 'backwards', pp: false });
       intScreen.classList.remove('is-shown');           // fully covered from here
       intScreen.setAttribute('aria-hidden', 'true');
       hmCard.style.transform = '';
@@ -3316,25 +3319,21 @@
         go(el, [{ translate: `0 ${dy}px` }, { translate: '0 0' }], dur, delay, EASE);
         go(el, [{ opacity: 0 }, { opacity: 1 }], 280, delay, FADE);
       };
-      // the card glides up into the header while the header itself comes down from the top
-      go(hmCard, [{ transform: SEL_POSE }, { transform: 'translate(0px, 0px) scale(1)' }], 760, 0, GLIDE);
-      // the full header image drops in from above the screen as one piece (ref: 03_HomePage Loading — the
-      // banner slides down from the top on a strong ease-out, ~0.4 s); no mask, nothing grows out of the card
-      go(hq('.hm__wbg'), [{ translate: '0 -577px' }, { translate: '0 0' }], 720, 40, DROP);
-      // the marketplace sheet (with the quest card below it) rises as one piece on the same spring
-      [hq('.hm__market'), hq('.hm__quest')].forEach((el) => {
-        go(el, [{ translate: '0 200px' }, { translate: '0 0' }], 760, 60, GLIDE);
-        go(el, [{ opacity: 0 }, { opacity: 1 }], 240, 60, FADE);
-      });
-      // chrome, then copy, then props — small groups, a few px each
-      rise(hq('.hm__switcher'), -10, 180);
-      rise(hq('.hm__nav'), 24, 200);
-      rise(hq('.hm__ask'), 10, 220);
-      rise(hq('.hm__ready'), 10, 260);
-      rise(hq('.hm__topup'), 10, 300);
+      // the card glides up into the header while the full header image comes down from above the screen as one
+      // piece (ref: 03_HomePage Loading — no mask, no zoom), and the sheet slides up from the bottom edge
+      go(hmCard, [{ transform: SEL_POSE }, { transform: 'translate(0px, 0px) scale(1)' }], CLOSE_MS, 0, CLOSE);
+      go(hq('.hm__wbg'), [{ translate: '0 -577px' }, { translate: '0 0' }], CLOSE_MS, 0, CLOSE);
+      // solid, from just below the screen (sheet top 470 + 342 = 812) — a sheet, not a fade; quest rides with it
+      [hq('.hm__market'), hq('.hm__quest')].forEach((el) => go(el, [{ translate: '0 342px' }, { translate: '0 0' }], CLOSE_MS, 60, CLOSE));
+      // then what lives in the frame settles in as it lands: chrome, copy, props — a few px each, small groups
+      rise(hq('.hm__switcher'), -10, 260);
+      rise(hq('.hm__nav'), 24, 300);
+      rise(hq('.hm__ask'), 10, 300);
+      rise(hq('.hm__ready'), 10, 340);
+      rise(hq('.hm__topup'), 10, 380);
       [hq('.hm__tag'), hq('.hm__cactus--l'), hq('.hm__cactus--r')].forEach((el, i) => {
-        go(el, [{ scale: '0.92' }, { scale: '1' }], 560, 320 + i * 30, EASE);
-        go(el, [{ opacity: 0 }, { opacity: 1 }], 280, 320 + i * 30, FADE);
+        go(el, [{ scale: '0.94' }, { scale: '1' }], 600, 400 + i * 30, EASE);
+        go(el, [{ opacity: 0 }, { opacity: 1 }], 300, 400 + i * 30, FADE);
       });
       // marketplace cards load like the PLP products: skeletons shimmer while the sheet rises and settles,
       // then the cards land (column 45 ms / row 140 ms apart) and each skeleton fades out underneath
