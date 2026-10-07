@@ -1057,6 +1057,30 @@
     .hm__switcher img { width: 401px; height: 92px; }
     .hm__market, .hm__quest, .hm__game, .hm__bell { position: absolute; z-index: 3; }
     .hm__market { left: -24px; top: 470.22px; width: 423px; height: 551px; }
+    .hm__sheet { position: absolute; left: 0; top: 0; width: 423px; height: 551px; }
+    /* 76:21685 cards 165 × 190, r24, at (16 | 193.5, 568 | 770) — placed in the sheet's own box (origin −24, 470.22) */
+    .hm__mk { position: absolute; width: 165px; height: 190px; }
+    .hm__mkcard { position: absolute; inset: 0; width: 165px; height: 190px; }
+    /* loading: the PLP skeleton (noon Home build) — #f6f5fa tile, one 195px white band skewed −17°, 450 px/s,
+       period 1.867 s, all tiles in phase; the cards wait at opacity 0 until they land */
+    .hm__skel { position: absolute; inset: 0; border-radius: 24px; overflow: hidden; background: #eeebf6; opacity: 0; }   /* the PLP's #f6f5fa all but vanished on this #fcfbfe sheet — one step deeper, same lilac-grey */
+    .hm__skel::after {
+      content: ''; position: absolute; left: 0; top: 0; width: 195px; height: 100%;
+      background: linear-gradient(90deg,
+        rgba(255,255,255,0) 0px, rgba(255,255,255,.22) 20px, rgba(255,255,255,.45) 40px,
+        rgba(255,255,255,.7) 60px, rgba(255,255,255,.9) 75px, rgba(255,255,255,.7) 87px,
+        rgba(255,255,255,.78) 95px, rgba(255,255,255,.67) 107px, rgba(255,255,255,.56) 123px,
+        rgba(255,255,255,.3) 137px, rgba(255,255,255,.22) 155px, rgba(255,255,255,.12) 175px,
+        rgba(255,255,255,0) 195px);
+      transform-origin: 0 0; transform: translateX(-200px) skewX(-17deg); will-change: transform;
+    }
+    .hm.is-loading .hm__skel { opacity: 1; }
+    .hm.is-loading .hm__mkcard { opacity: 0; }
+    .hm.is-loading .hm__skel::after { animation: hmShimmer 1.867s linear var(--shimmer-at, 0s) infinite both; }
+    @keyframes hmShimmer {
+      from { transform: translateX(-200px) skewX(-17deg); }
+      to   { transform: translateX(640px)  skewX(-17deg); }
+    }
     .hm__quest { left: 0; top: 998px; width: 375px; height: 622px; }
     .hm__game { left: 0; top: 1614px; width: 375px; height: 622px; }
     .hm__bell { left: 301.06px; top: 919.72px; width: 93px; height: 91px; z-index: 4; }
@@ -1486,7 +1510,15 @@
               <img class="hm__cactus hm__cactus--l" src="assets/home/cactusL.webp" width="187" height="135" alt="">
             </div>
             <div class="hm__switcher"><img src="assets/home/switcher.webp" width="401" height="92" alt="noon nano, noon, supermall, noon Food, Minutes"></div>
-            <img class="hm__market" src="assets/home/market.webp" width="423" height="551" alt="Marketplaces: noon, Food, Minutes, supermall">
+            <!-- marketplace sheet (cards hidden in Figma for this render) + the 4 cards as their own layers,
+                 each over a skeleton tile that shimmers while the home page loads -->
+            <div class="hm__market" role="group" aria-label="Marketplaces: noon, Food, Minutes, supermall">
+              <img class="hm__sheet" src="assets/home/market-sheet.webp" width="423" height="551" alt="">
+              <div class="hm__mk" style="left:40px;top:97.78px"><span class="hm__skel"></span><img class="hm__mkcard" src="assets/home/mk-noon.webp" width="165" height="190" alt="noon — 20M+ Products"></div>
+              <div class="hm__mk" style="left:217.5px;top:97.78px" data-col="1"><span class="hm__skel"></span><img class="hm__mkcard" src="assets/home/mk-food.webp" width="165" height="190" alt="Food — 10K+ Restaurants"></div>
+              <div class="hm__mk" style="left:40px;top:299.78px" data-row="1"><span class="hm__skel"></span><img class="hm__mkcard" src="assets/home/mk-minutes.webp" width="165" height="190" alt="Minutes — get it in 15 mins"></div>
+              <div class="hm__mk" style="left:217.5px;top:299.78px" data-row="1" data-col="1"><span class="hm__skel"></span><img class="hm__mkcard" src="assets/home/mk-supermall.webp" width="165" height="190" alt="supermall — get it in 1 hr"></div>
+            </div>
             <img class="hm__quest" src="assets/home/quest.webp" width="375" height="622" alt="Customise your profile — win 5 dirhams">
             <img class="hm__game" src="assets/home/game.webp" width="375" height="622" alt="nano Arcade — play daily and win rewards">
             <img class="hm__bell" src="assets/home/bell.webp" width="93" height="91" alt="">
@@ -3164,7 +3196,8 @@
     function preloadHome() {
       const sk = wrapSkin(skinIdx);
       [`assets/home/cards/${sk}.webp`, sk === 'lego' ? 'assets/home/wbg-lego.webp' : bgSrc(skinIdx), 'assets/home/sel-bg.webp',
-        'assets/home/title.webp', 'assets/home/switcher.webp', 'assets/home/market.webp', 'assets/home/quest.webp', 'assets/home/nav.webp',
+        'assets/home/title.webp', 'assets/home/switcher.webp', 'assets/home/market-sheet.webp', 'assets/home/mk-noon.webp', 'assets/home/mk-food.webp',
+        'assets/home/mk-minutes.webp', 'assets/home/mk-supermall.webp', 'assets/home/quest.webp', 'assets/home/nav.webp',
         'assets/home/tag.webp', 'assets/home/cactusL.webp', 'assets/home/cactusR.webp'].forEach((src) => {
         const im = new Image(); im.decoding = 'async'; im.src = src; homePre.push(im); im.decode && im.decode().catch(() => {});
       });
@@ -3259,7 +3292,33 @@
         go(el, [{ scale: '0.92' }, { scale: '1' }], 560, 320 + i * 30, EASE);
         go(el, [{ opacity: 0 }, { opacity: 1 }], 280, 320 + i * 30, FADE);
       });
+      // marketplace cards load like the PLP products: skeletons shimmer while the sheet rises and settles,
+      // then the cards land (column 45 ms / row 140 ms apart) and each skeleton fades out underneath
+      homeScreen.style.setProperty('--shimmer-at', '0.3s');      // first sweep once the sheet is up
+      homeScreen.classList.add('is-loading');
+      homeTimers.push(setTimeout(revealMarketCards, 1100));
       homeTimers.push(setTimeout(homeDone, 900));
+    }
+    // PLP card reveal (noon Home build, ref_02): opacity 1 − (1 − t/180)^2.8, rise 17.5 px · (1 − t/260)^2.5
+    const curve = (f, n = 24) => `linear(${Array.from({ length: n + 1 }, (_, i) => f(i / n).toFixed(4)).join(', ')})`;
+    const CARD_FADE = curve((t) => 1 - Math.pow(1 - t, 2.8));
+    const CARD_RISE = curve((t) => 1 - Math.pow(1 - t, 2.5));
+    function revealMarketCards() {
+      const slots = [...homeScreen.querySelectorAll('.hm__mk')];
+      const done = slots.map((slot) => {
+        const d = (+slot.dataset.col || 0) * 45 + (+slot.dataset.row || 0) * 140;
+        const card = slot.querySelector('.hm__mkcard'), skel = slot.querySelector('.hm__skel');
+        const o = { delay: d, fill: 'both', pp: false };
+        card.animate([{ translate: '0 17.5px' }, { translate: '0 0' }], { ...o, duration: 260, easing: CARD_RISE });
+        const f = card.animate([{ opacity: 0 }, { opacity: 1 }], { ...o, duration: 180, easing: CARD_FADE });
+        const k = skel.animate([{ opacity: 1 }, { opacity: 0 }], { ...o, duration: 353, easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)' });
+        return Promise.all([f.finished, k.finished]);
+      });
+      // loaded: back to the resting CSS (cards shown, skeletons gone) and stop the shimmer
+      Promise.all(done).then(() => {
+        homeScreen.classList.remove('is-loading');
+        slots.forEach((slot) => slot.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel())));
+      }).catch(() => {});
     }
     function homeDone() {
       homeScreen.classList.remove('is-locked');
@@ -3272,7 +3331,7 @@
       (homeTimers || []).forEach(clearTimeout); homeTimers = [];
       const hs = document.getElementById('homeScreen');
       hs.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
-      hs.classList.remove('is-shown', 'is-sel', 'is-locked');
+      hs.classList.remove('is-shown', 'is-sel', 'is-locked', 'is-loading');
       hs.setAttribute('aria-hidden', 'true');
       hs.querySelector('.hm__page').style.opacity = '';
       hs.querySelector('.hm__selbg').style.opacity = '';
