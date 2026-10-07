@@ -394,6 +394,7 @@ window.SpecKit = (() => {
     snap:    { name: 'snap',    gen: 'UIImpactFeedbackGenerator', style: 'medium', intensity: 0.8, vibe: '12ms', call: 'Haptics.snap()' },
     edge:    { name: 'edge',    gen: 'UIImpactFeedbackGenerator', style: 'rigid', intensity: 0.6, vibe: '10ms', call: 'Haptics.edge()' },
     success: { name: 'success', gen: 'UINotificationFeedbackGenerator', style: 'success', vibe: '[10, 40, 16]', call: 'Haptics.success()' },
+    error:   { name: 'error',   gen: 'UINotificationFeedbackGenerator', style: 'error', vibe: '[45, 40, 45, 40, 45]', call: 'Haptics.error()' },
   };
   const H = (k, layer, sel, at, note, extra = {}) => ({ icon: 'haptic', prop: 'Haptic', layer, sel, delay: Array.isArray(at) ? (at[0] || 0) : at, dur: 10, from: '—', to: '—',
     ease: { kind: 'haptic', ...HAP[k] }, marks: Array.isArray(at) ? at : [at], note, ...extra });
@@ -469,6 +470,7 @@ window.SPEC = (() => {
   /* ═══ timeline constants (from the code) ══════════════════════════════════ */
   const SPLASH_MS = 4600, INTRO_AT = 3970, LOOP_MS = 3150, TICK_MS = 2300, WINTRO_MS = 2000;
   const EMAIL_CHECK = 1300, OTP_LAND = 1360, PAD_AT = EMAIL_CHECK + OTP_LAND + 200;
+  const TOAST_HOLD = 1700;   // ENTRY_MS 900 + 0.8 s on screen
   const LOADING = 1500, PILL_HOLD = 1700, GLIDE_AT = LOADING + PILL_HOLD + 60, DISC_AT = GLIDE_AT + 220, TICK_AT = DISC_AT + 60;
   const FRONT_AT = 360;
   const BUILD = 840, CARDS = BUILD + 1100;
@@ -476,7 +478,7 @@ window.SPEC = (() => {
   /* ═══ scenes ═════════════════════════════════════════════════════════════ */
   const SCENES = [
     { id: 0, name: 'Overview', trig: 'the full journey, played end to end', overview: true,
-      summary: 'Splash → login → email → OTP → wallet skin → keep → avatar → interests → selected wallet → home' },
+      summary: 'Splash → login → email (incomplete · wrong · right) → OTP (wrong · right) → wallet skin → keep → avatar → interests → home reveal' },
 
     { id: 1, name: 'Splash → login', trig: 'Open the app', rows: () => [
       { icon: 'flag', prop: 'Video', layer: 'Splash (Splash_01)', sel: '#screenVideo', delay: 0, dur: SPLASH_MS, from: '0s', to: '4.6s', ease: C('lin'),
@@ -511,7 +513,28 @@ window.SPEC = (() => {
       op({ layer: '“Email ID *” Label', sel: '.field__label', delay: 0, from: '1', to: '0', note: 'The resting label leaves; the field reads “enter your email” (B16 SemiBold) while focused.' }),
     ] },
 
-    { id: 3, name: 'Send OTP', trig: 'Type sdutta@noon.com, tap Continue', rows: () => [
+    { id: 3, name: 'Incomplete email', trig: 'Tap Continue with an incomplete email (“sdutta”)', rows: () => [
+      H('error', 'Email Field', '#emailField', 0, 'Three firm bumps.'),
+      { icon: 'opacity', prop: 'Border colour', layer: 'Email Field', sel: '#emailField', delay: 0, dur: FD, from: 'neutral', to: 'red', ease: C('out'), note: 'The field turns red (text-error). No pill — it isn’t an email yet. It stays red until the next keystroke.' },
+      { icon: 'move', prop: 'Shake', layer: 'Email Field', sel: '#emailField', delay: 0, dur: 340, from: '0px', to: '−4 · 3 · −2 · 1 · 0px', ease: { kind: 'custom', label: 'Shake', tag: 'field-shake', info: [['Path', '0 → −4 → 3 → −2 → 1 → 0 px'], ['Stops', '18 · 40 · 62 · 82 %'], ['Curve', 'cubic-bezier(.36, .07, .19, .97)']], code: '@keyframes field-shake · 340ms cubic-bezier(.36,.07,.19,.97)', plot: { span: 0.34, f: (t) => { const u = t / 0.34, k = [[0, 0], [0.18, -4], [0.4, 3], [0.62, -2], [0.82, 1], [1, 0]]; for (let i = 1; i < k.length; i++) if (u <= k[i][0]) { const [a, x] = k[i - 1], [b, y] = k[i]; return (x + (y - x) * (u - a) / (b - a)) / 4; } return 0; } } }, note: 'A short decaying shake (CSS keyframes, restarted on every press).' },
+    ] },
+
+    { id: 4, name: 'Wrong email', trig: 'Tap Continue with any other complete email', rows: () => [
+      H('error', 'Email Field', '#emailField', 0, 'Three firm bumps.'),
+      { icon: 'opacity', prop: 'Border colour', layer: 'Email Field', sel: '#emailField', delay: 0, dur: FD, from: 'neutral', to: 'red', ease: C('out'), note: 'Red, with the same shake as an incomplete email (on every press).' },
+      { icon: 'move', prop: 'Shake', layer: 'Email Field', sel: '#emailField', delay: 0, dur: 340, from: '0px', to: '−4 · 3 · −2 · 1 · 0px', ease: C('io') },
+      { grp: '“Profile hasn’t be setup by parent”', at: 0 },
+      mv({ layer: 'Error Pill', sel: '#errorToast', delay: 0, from: '−100px', to: '0px', note: 'A drop toast: a dot falls in from above on a bouncy spring, stretching as it falls and squashing as it lands…' }),
+      { icon: 'scale', prop: 'Squash', layer: 'Error Pill', sel: '#errorToast .toast__blob', delay: 0, dur: PP, from: '90×112%', to: '100%', ease: { kind: 'custom', label: 'Squash & stretch', tag: 'drop', info: [['Fall', '0.9 × 1.12'], ['Land', '1.22 × 0.8'], ['Jiggle', '0.94 × 1.07 → 1.03 × 0.98 → 1']], code: 'scale keyframes: [0.9 1.12] → impact −30 [0.9 1.12] → +40 [1.22 0.8] → +130 [0.94 1.07] → +210 [1.03 0.98] → +290 [1 1]', plot: { span: PP / 1000, f: (t) => 1 - Math.exp(-7 * t) * Math.cos(18 * t) } }, note: '…then jiggles back round (timed on the PP Move).' },
+      { icon: 'size', prop: 'Width', layer: 'Error Pill', sel: '#errorToast .toast__blob', delay: 0 + 260, dur: PP, from: '33px', to: '270px', ease: S('pp'), note: '…springs out into the 270 × 50 pill (height 33 → 50, radius 16.5 → 14)…' },
+      op({ layer: 'Pill Text', sel: '#errorToast .toast__content', delay: 0 + 430, note: '…and the text pops in (scale 80 → 100 %).' }),
+      { grp: 'Field resets', at: TOAST_HOLD, note: `TOAST_HOLD_MS ${TOAST_HOLD} ms after the press (entry 900 + 0.8 s on screen).` },
+      mv({ layer: 'Error Pill', sel: '#errorToast', delay: TOAST_HOLD, from: '0px', to: '−140px', note: 'Exits on its own after the hold (0.8 s fully on screen): a small dip (+7 px) and squash, then it stretches and shoots up.' }),
+      op({ layer: 'Email Text', sel: '#email', delay: TOAST_HOLD, from: '1', to: '0', note: 'The typed address fades out and is cleared; Continue goes back to Disabled.' }),
+      { icon: 'opacity', prop: 'Border colour', layer: 'Email Field', sel: '#emailField', delay: TOAST_HOLD, dur: FD, from: 'red', to: 'neutral', ease: C('out'), note: 'Red → normal with the text fade. Typing during the reset keeps what’s typed.' },
+    ] },
+
+    { id: 5, name: 'Send OTP', trig: 'Type sdutta@noon.com, tap Continue', rows: () => [
       H('tap', 'Continue Button', '#continueBtn', 0, 'A light tap when the right email is sent.'),
       sc({ layer: 'Continue Button', sel: '#continueBtn', delay: 0, from: '98%', to: '100%', note: 'Press release.' }),
       { grp: 'Checking the email', at: 0 },
@@ -538,7 +561,26 @@ window.SPEC = (() => {
       mv({ layer: 'OTP Content', sel: '.otp__stack', delay: PAD_AT, from: '0px', to: '−110.52px' }),
     ] },
 
-    { id: 4, name: 'Verify code', trig: 'Type the 6th digit (111111)', rows: () => [
+    { id: 6, name: 'Wrong code', trig: 'Type the 6th digit of a wrong code (222222)', rows: () => [
+      mv({ layer: 'Number Pad', sel: '#numpad', delay: 0, from: '0px', to: '318px', note: 'Same check as a right code: the pad slides away and the boxes run the loading wave.' }),
+      { icon: 'opacity', prop: 'Opacity', layer: 'Loading Wave', sel: '.otp__wave', delay: 0, dur: 1000, from: '0', to: '1 → 0', ease: C('io'), stagger: { n: 6, step: 100, order: 'left → right' }, repeat: true },
+      op({ layer: 'Loading Wave', sel: '.otp__wave', delay: LOADING, from: 'current', to: '0' }),
+      { grp: 'Wrong code', at: LOADING, note: `LOADING_MS ${LOADING}.` },
+      H('error', 'Code Boxes', '.otp__digits', LOADING, 'Three firm bumps.'),
+      { icon: 'opacity', prop: 'Red', layer: 'Code Boxes', sel: '.otp__digit', delay: LOADING, dur: FD, from: '0', to: '1', ease: C('out'), note: 'Red boxes (red/700 stroke, red/50 fill) keep the digits.' },
+      { icon: 'move', prop: 'Shake', layer: 'Code Row', sel: '.otp__digits', delay: LOADING, dur: 340, from: '0px', to: '−4 · 3 · −2 · 1 · 0px', ease: C('io'), note: 'The same field shake (CSS keyframes).' },
+      mv({ layer: 'Number Pad', sel: '#numpad', delay: LOADING, from: '318px', to: '0px', note: 'The pad comes back up for another try.' }),
+      mv({ layer: '“Wrong OTP” Pill', sel: '#otpErrorToast', delay: LOADING, from: '−100px', to: '0px', note: 'A drop toast: a dot falls in from above on a bouncy spring, stretching as it falls and squashing as it lands…' }),
+      { icon: 'scale', prop: 'Squash', layer: '“Wrong OTP” Pill', sel: '#otpErrorToast .toast__blob', delay: LOADING, dur: PP, from: '90×112%', to: '100%', ease: { kind: 'custom', label: 'Squash & stretch', tag: 'drop', info: [['Fall', '0.9 × 1.12'], ['Land', '1.22 × 0.8'], ['Jiggle', '0.94 × 1.07 → 1.03 × 0.98 → 1']], code: 'scale keyframes: [0.9 1.12] → impact −30 [0.9 1.12] → +40 [1.22 0.8] → +130 [0.94 1.07] → +210 [1.03 0.98] → +290 [1 1]', plot: { span: PP / 1000, f: (t) => 1 - Math.exp(-7 * t) * Math.cos(18 * t) } }, note: '…then jiggles back round (timed on the PP Move).' },
+      { icon: 'size', prop: 'Width', layer: '“Wrong OTP” Pill', sel: '#otpErrorToast .toast__blob', delay: LOADING + 260, dur: PP, from: '33px', to: '270px', ease: S('pp'), note: '…springs out into the 270 × 50 pill (height 33 → 50, radius 16.5 → 14)…' },
+      op({ layer: 'Pill Text', sel: '#otpErrorToast .toast__content', delay: LOADING + 430, note: '…and the text pops in (scale 80 → 100 %).' }),
+      { grp: 'Boxes clear', at: LOADING + TOAST_HOLD, note: 'The pill leaves on its own; any key typed before that starts a fresh code at once.' },
+      mv({ layer: '“Wrong OTP” Pill', sel: '#otpErrorToast', delay: LOADING + TOAST_HOLD, from: '0px', to: '−140px', note: 'Exits on its own after the hold (0.8 s fully on screen): a small dip (+7 px) and squash, then it stretches and shoots up.' }),
+      op({ layer: 'Digits', sel: '.otp__num', delay: LOADING + TOAST_HOLD, from: '1', to: '0', note: 'The digits fade, then the boxes are empty again.' }),
+      { icon: 'opacity', prop: 'Red', layer: 'Code Boxes', sel: '.otp__digit', delay: LOADING + TOAST_HOLD, dur: FD, from: '1', to: '0', ease: C('out') },
+    ] },
+
+    { id: 7, name: 'Verify code', trig: 'Type the 6th digit (111111)', rows: () => [
       mv({ layer: 'Number Pad', sel: '#numpad', delay: 0, from: '0px', to: '318px', note: 'The pad slides away the moment the code is complete.' }),
       { icon: 'opacity', prop: 'Opacity', layer: 'Loading Wave', sel: '.otp__wave', delay: 0, dur: 1000, from: '0', to: '1 → 0', ease: { kind: 'custom', label: 'Wave', tag: 'rise slow, drop fast', info: [['Peak', '72 % of the cycle'], ['Rise', 'cubic-bezier(0.45, 0, 0.55, 1)'], ['Drop', 'cubic-bezier(0.5, 0, 0.75, 0)']], code: '[{ opacity: 0 }, { opacity: 1, offset: 0.72 }, { opacity: 0 }] · 1000 ms · ∞', plot: { span: 1, f: (t) => (t < 0.72 ? (t / 0.72) : 1 - (t - 0.72) / 0.28) } }, stagger: { n: 6, step: 100, order: 'left → right' }, repeat: true,
         note: 'Each box’s grey fill rises slowly and drops fast, 100 ms apart, so a light gap sweeps across the code while it “verifies” (Toss-style).' },
@@ -559,7 +601,7 @@ window.SPEC = (() => {
       H('snap', 'Tick', '#otpTick', TICK_AT + 160, 'A medium impact as the coin pops out (tick frame ~10).'),
     ] },
 
-    { id: 5, name: 'Pick your wallet skin', trig: 'Wallet Intro reaches 1.5 s (its wallets fly off)', rows: () => [
+    { id: 8, name: 'Pick your wallet skin', trig: 'Wallet Intro reaches 1.5 s (its wallets fly off)', rows: () => [
       { icon: 'opacity', prop: 'Opacity', layer: 'Skin Backdrop', sel: '.skin__bg.is-on', delay: 0, dur: 640, from: '0', to: '1', ease: C('ease'), note: 'Dissolves in over the intro’s exit (timed off the video clock, 0.5 s before it ends), so the purple never flashes to white.' },
       { icon: 'scale', prop: 'Scale', layer: 'Skin Backdrop', sel: '.skin__bg.is-on', delay: 0, dur: 1400, from: '108%', to: '100%', ease: C('ios'), note: 'A slow push-in under the dissolve.' },
       { icon: 'move', prop: 'Move Y', layer: 'Step Dots', sel: '.skin__steps', delay: 180, dur: 1000, from: '−8px', to: '0px', ease: S('soft') },
@@ -576,7 +618,7 @@ window.SPEC = (() => {
       { icon: 'opacity', prop: 'Opacity', layer: 'Swipe Hint', sel: '.skin__hint.is-on', delay: 1000, dur: 700, from: '0', to: '1', ease: C('ios'), note: 'Rises 8 px; then the two hints (swipe up / drag down) alternate every 2.6 s.' },
     ] },
 
-    { id: 6, name: 'Change skin', trig: 'Swipe the wallet up', rows: () => [
+    { id: 9, name: 'Change skin', trig: 'Swipe the wallet up', rows: () => [
       H('snap', 'Front Wallet', '.wcard', 0, 'A medium impact as the swipe commits.'),
       { icon: 'move', prop: 'Move Y', layer: 'Thrown Wallet', sel: '.wcard', delay: 0, dur: PP, from: '0px', to: '−200px', ease: S('pp'), note: 'Thrown up (−3°, 95 %) on a rubber band — while dragging it follows ~0.85× the finger, getting heavier, max ~160 px.' },
       { icon: 'move', prop: 'Step forward', layer: 'Middle → Front', sel: '.wcard', delay: 0, dur: PP, from: '8°', to: '0°', ease: S('pp'), note: 'The stack steps forward: as if the cards behind push the next one up.' },
@@ -587,7 +629,7 @@ window.SPEC = (() => {
       { icon: 'opacity', prop: 'Opacity', layer: 'Next Skin (back)', sel: '.wcard', delay: 417, dur: PP, from: '0', to: '1', ease: S('pp'), note: 'The next skin appears at the back only once the old one is hidden (no two of the same skin ever stack).' },
     ] },
 
-    { id: 7, name: 'Keep this skin', trig: 'Drag the wallet down past 80 %', rows: () => [
+    { id: 10, name: 'Keep this skin', trig: 'Drag the wallet down past 80 %', rows: () => [
       H('snap', 'Front Wallet', '.wcard', 0, 'A medium impact at the commit point (COMMIT_AT 0.8 of 220 px).'),
       { icon: 'scale', prop: 'Scale', layer: 'Back Wallets', sel: '.wcard[data-role="mid"], .wcard[data-role="back"]', delay: 0, dur: PP, from: '100%', to: '86%', ease: S('pp'), note: 'The cards behind shrink and hide behind the wallet being confirmed.' },
       { icon: 'opacity', prop: 'Opacity', layer: 'Back Wallets', sel: '.wcard[data-role="mid"], .wcard[data-role="back"]', delay: 0, dur: PP, from: '1', to: '0', ease: S('pp') },
@@ -600,7 +642,7 @@ window.SPEC = (() => {
       H('tap', 'Keep Page', '.skin__keep', 380, 'A light tap as the page lands.'),
     ] },
 
-    { id: 8, name: 'Pick a different skin', trig: 'Tap “Pick a different skin”', rows: () => [
+    { id: 11, name: 'Pick a different skin', trig: 'Tap “Pick a different skin”', rows: () => [
       H('tap', 'Pick a different skin', '.skin__different', 0, 'A light tap on press.'),
       mv({ layer: 'Keep Buttons', sel: '.skin__keep-bar', delay: 0, from: '0px', to: '24px', note: 'The Keep content eases away: buttons down, copy down, header up.' }),
       mv({ layer: 'Keep Copy', sel: '.skin__keep-copy', delay: 30, from: '0px', to: '12px' }),
@@ -612,7 +654,7 @@ window.SPEC = (() => {
       H('tap', 'Stack', '.wcard', 600, 'A light tap when the wallet is home.'),
     ] },
 
-    { id: 9, name: 'Choose an avatar', trig: 'Tap “Confirm skin”', rows: () => [
+    { id: 12, name: 'Choose an avatar', trig: 'Tap “Confirm skin”', rows: () => [
       H('success', 'Confirm skin', '.skin__confirm-skin', 0, 'Success notification on confirm.'),
       mv({ layer: 'Confirmed Wallet', sel: '.wcard[data-role="front"]', delay: 0, from: '−101.5px', to: '−128px', note: 'The wallet lifts away, shrinking to 86 % and blurring (6 px) out.' }),
       mv({ layer: 'Keep Header', sel: '.skin__keep-head', delay: 0, from: '0px', to: '−10px' }),
@@ -630,7 +672,7 @@ window.SPEC = (() => {
       H('tap', 'Big Avatar', '.av__big-img', 700, 'A light tap as the avatar lands.'),
     ] },
 
-    { id: 10, name: 'Change avatar', trig: 'Swipe the row / tap the next avatar', rows: () => [
+    { id: 13, name: 'Change avatar', trig: 'Swipe the row / tap the next avatar', rows: () => [
       { icon: 'move', prop: 'Move X', layer: 'Avatar Row', sel: '.av__row', delay: 0, dur: rowLand, from: '0', to: '1 slot', ease: S('row', { x0: -1 }), driver: 'frame', note: 'An endless ring (10 elements, piecewise slot curve). Follows the finger, then springs to the nearest avatar with the flick’s momentum (×0.09 s, 1–2 avatars). Shaking the phone (3 jolts > 14 m/s²) also changes it.' },
       { icon: 'move', prop: 'Move Y', layer: 'Big Avatar (out)', sel: '.av__big-img', delay: 0, dur: 380, from: '0px', to: '340px', ease: C('sink'), note: 'The old character sinks out through the bottom of its circle.' },
       { icon: 'move', prop: 'Move Y', layer: 'Big Avatar (in)', sel: '.av__big-img', delay: 130, dur: 760, from: '300px', to: '0px', ease: S('avIn'), note: 'The new one rises in on a soft spring.' },
@@ -641,7 +683,7 @@ window.SPEC = (() => {
       H('tap', 'Avatar Row', '.av__row', 0, 'A light tap on release when the avatar changed.', { approx: true }),
     ] },
 
-    { id: 11, name: 'Your interests', trig: 'Tap Continue on the avatar page', rows: () => [
+    { id: 14, name: 'Your interests', trig: 'Tap Continue on the avatar page', rows: () => [
       H('success', 'Continue', '.av__cta', 0, 'Success notification.'),
       mv({ layer: 'Avatar Title', sel: '.av__title-in', delay: 0, from: '0px', to: '−12px', note: 'The avatar page clears: title lifts into a blur, the character sinks out, the row collapses into the centre (70 %), ring and sparkles shrink away.' }),
       mv({ layer: 'Big Avatar', sel: '.av__big-img', delay: 0, from: '0px', to: '340px' }),
@@ -655,7 +697,7 @@ window.SPEC = (() => {
       mv({ layer: 'Skip for now', sel: '.int__skip', delay: 560, from: '8px', to: '0px' }),
     ] },
 
-    { id: 12, name: 'Pick interests', trig: 'Tap three interests', rows: () => [
+    { id: 15, name: 'Pick interests', trig: 'Tap three interests', rows: () => [
       sc({ layer: 'Interest Chip', sel: '.ich.is-on', delay: 0, from: '96.5%', to: '100%', stagger: { n: 3, step: 250, order: 'each tap' }, note: 'A small springy bump (96.5 → 102 → 100 %).' }),
       { icon: 'move', prop: 'Hop', layer: 'Chip Icon', sel: '.ich.is-on .ich__ico', delay: 0, dur: PP, from: '0px', to: '−7px → 0px', ease: S('pp'), stagger: { n: 3, step: 250, order: 'each tap' }, note: 'The icon hops 7 px with an −8° tilt when picked; settles from 94 % when dropped.' },
       op({ layer: 'Selected State', sel: '.ich.is-on .ich__sel', delay: 0, stagger: { n: 3, step: 250, order: 'each tap' }, note: 'White + iridescent image + #d6e9ff stroke; the label turns to the purple→blue gradient (CSS cross-fade).' }),
@@ -664,7 +706,7 @@ window.SPEC = (() => {
       sc({ layer: 'Continue Button', sel: '.int__cta', delay: 500, from: '96%', to: '100%', note: 'Disabled → Primary: fill, label, stroke and shadows cross-fade (CSS) with a soft spring (96 → 101.5 → 100 %).' }),
     ] },
 
-    { id: 13, name: 'Selected wallet → Home', trig: 'Tap Continue on the interests page', rows: () => [
+    { id: 16, name: 'Selected wallet → Home', trig: 'Tap Continue on the interests page', rows: () => [
       H('success', 'Continue', '.int__cta', 0, 'Success notification.'),
       { grp: '1 · Clear', at: 0, note: 'Everything on the interests page leaves together; the grid header stays (the Selected Wallet page has the identical one).' },
       { icon: 'opacity', prop: 'Opacity', layer: 'Interests Content', sel: '.int__title, .int__sub, .int__bar, .int__skip', delay: 0, dur: 220, from: '1', to: '0', ease: C('exit') },
@@ -692,13 +734,6 @@ window.SPEC = (() => {
       { icon: 'opacity', prop: 'Opacity', layer: 'Marketplace Cards', sel: '.hm__mkcard', delay: CARDS, dur: 180, from: '0', to: '1', ease: C('plpF'), stagger: { n: 4, step: 45, order: 'col 45 ms · row 140 ms' } },
       { icon: 'opacity', prop: 'Opacity', layer: 'Card Skeletons', sel: '.hm__skel', delay: CARDS, dur: 353, from: '1', to: '0', ease: C('ease'), stagger: { n: 4, step: 45, order: 'col 45 ms · row 140 ms' }, note: 'Each skeleton fades out underneath its card.' },
     ] },
-
-    { id: 14, name: 'Switcher collapse', trig: 'Scroll the home page down', rows: () => [
-      { icon: 'size', prop: 'Height', layer: 'Switcher Tiles', sel: '.hm__tile', delay: 0, dur: 300, from: '76px', to: '35px', ease: C('hdr'), driver: 'frame', note: 'Port of the 3D Bot Homepage header (noon app): collapses on the first frame the page scrolls down (scrollTop > 2), expands only back at the very top — same 300 ms, mirrored. Radius 15 → 12; the header box 137 → 96 px. Stays pinned throughout.' },
-      { icon: 'opacity', prop: 'Opacity', layer: 'Tile Art', sel: '.hm__tbig', delay: 0, dur: 100, from: '1', to: '0', ease: C('lin'), driver: 'frame', note: 'Scales with the tile (×0.46) while it fades. Expand: back in 120–260 ms.' },
-      { icon: 'opacity', prop: 'Opacity', layer: 'Wordmarks', sel: '.hm__tmini', delay: 130, dur: 110, from: '0', to: '1', ease: C('lin'), driver: 'frame', note: 'One-line marks: nano (yellow, on purple), noon, supermall, FOOD, the MINUTES badge. Expand: out 0–90 ms.' },
-      { icon: 'opacity', prop: 'Opacity', layer: 'Header Bar', sel: '.hm__hdrbg', delay: 0, dur: 300, from: '0', to: '1', ease: C('hdr'), driver: 'frame', note: 'A lilac bar (#e8deff → #f3eeff) behind the pills so the page scrolls under them.' },
-    ] },
   ];
 
   /* ═══ media — the videos, driven from the playhead in the preview ══════════
@@ -716,25 +751,25 @@ window.SPEC = (() => {
     if (id === 0) {
       overview(v); const o = OV;
       // the tick plays from the disc until the Wallet Intro takes over, 1.5 s before the skin page
-      return [...SPLASH(o[1]), { ...TICK(o[4] + TICK_AT)[0], until: o[5] - 1500 }, ...WINTRO(o[5] - 1500)];
+      return [...SPLASH(o[1]), { ...TICK(o[7] + TICK_AT)[0], until: o[8] - 1500 }, ...WINTRO(o[8] - 1500)];
     }
     if (id === 1) return SPLASH(0);
-    if (id === 2 || id === 3) return LOOP_BEHIND;
-    if (id === 4) return TICK(TICK_AT);
-    if (id === 5) return WINTRO(-1500);
+    if (id >= 2 && id <= 5) return LOOP_BEHIND;     // the login screens
+    if (id === 7) return TICK(TICK_AT);
+    if (id === 8) return WINTRO(-1500);
     return [];
   }
 
   /* ═══ the journey (Overview) ════════════════════════════════════════════ */
-  const ORDER = [1, 2, 3, 4, 5, 6, 7, 8, 7, 9, 10, 11, 12, 13, 14];
+  const ORDER = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 10, 12, 13, 14, 15, 16];
   function overview(v) {
     const end = (id) => sceneEnd(SCENES[id].rows(v));
-    const GAP = { 2: 700, 3: 900, 4: 700, 5: 400, 6: 900, 7: 900, 8: 900, 9: 900, 10: 900, 11: 800, 12: 900, 13: 900, 14: 1200 };
+    const GAP = { 2: 700, 3: 700, 4: 900, 5: 900, 6: 700, 7: 700, 9: 900, 10: 900, 11: 900, 12: 900, 13: 900, 14: 800, 15: 900, 16: 900 };
     const at = [], rows = [];
     let t = 0;
     ORDER.forEach((id, k) => {
       // the skin page follows the real video chain: tick from the disc (2.3 s) → Wallet Intro → 1.5 s into it
-      if (id === 5) t = at[k - 1] + TICK_AT + TICK_MS + 1500;
+      if (id === 8) t = at[k - 1] + TICK_AT + TICK_MS + 1500;
       else if (k) t += GAP[id] || 800;
       at.push(t);
       rows.push({ icon: 'flag', prop: `${id}`, layer: SCENES[id].name, sel: null, delay: t, dur: end(id), scene: id, from: '', to: '', ease: { kind: 'scene' }, note: `${SCENES[id].trig}.` });
@@ -742,10 +777,12 @@ window.SPEC = (() => {
     });
     const beats = ORDER.map((id, k) => ({ at: at[k], fire: (d, w) => FIRE[id](d, w) }));
     OV = {}; ORDER.forEach((id, k) => { if (OV[id] == null) OV[id] = at[k]; });   // where each scene first starts (for the media)
-    // the first five digits are typed just before Verify (its Start is the 6th), 120 ms apart
-    for (let k = 0; k < 5; k++) beats.push({ at: at[3] - 700 + k * 120, fire: (d, w) => w.otpKey('1') });
+    // the first five digits are typed just before each code scene (its Start is the 6th), 120 ms apart
+    const kOf = (id) => ORDER.indexOf(id);
+    for (let k = 0; k < 5; k++) beats.push({ at: at[kOf(6)] - 700 + k * 120, fire: (d, w) => w.otpKey('2') });
+    for (let k = 0; k < 5; k++) beats.push({ at: at[kOf(7)] - 700 + k * 120, fire: (d, w) => w.otpKey('1') });
     // the tick → Wallet Intro videos between Verify and the skin page: the intro still just before
-    beats.push({ at: at[4] - 300, fire: (d) => introStill(d) });
+    beats.push({ at: at[kOf(8)] - 300, fire: (d) => introStill(d) });
     return { rows, beats };
   }
 
@@ -774,6 +811,7 @@ window.SPEC = (() => {
     async typed(d, w, e) { await ST.editing(d, w, e); typeEmail(d, w); await e.advanceTo(e.vt + 600, 48); },
     async otp(d, w, e) { await ST.typed(d, w, e); d.getElementById('emailForm').requestSubmit();
       await e.stepUntil(() => d.getElementById('otpScreen').classList.contains('is-typing') && quiet(d.querySelectorAll('#numpad, .otp__stack')), 9000); },
+    async otp5wrong(d, w, e) { await ST.otp(d, w, e); for (let k = 0; k < 5; k++) { w.otpKey('2'); await e.advanceTo(e.vt + 150, 48); } await e.advanceTo(e.vt + 400, 48); },
     async otp5(d, w, e) { await ST.otp(d, w, e); for (let k = 0; k < 5; k++) { w.otpKey('1'); await e.advanceTo(e.vt + 150, 48); } await e.advanceTo(e.vt + 400, 48); },
     async intro(d, w, e) { await ST.splash(d, w, e); d.getElementById('ui').classList.remove('is-pre-intro'); d.getElementById('otpScreen').classList.add('is-shown', 'is-done'); introStill(d); await e.advanceTo(e.vt + 300, 48); },
     async picker(d, w, e) { await ST.intro(d, w, e); w.revealSkin(); await e.stepUntil(() => quiet(d.querySelectorAll('.wcard, .skin__bg, .skin__title, .skin__hint'))); await e.advanceTo(e.vt + 600, 48); },
@@ -788,23 +826,25 @@ window.SPEC = (() => {
       await e.stepUntil(() => { const h = d.getElementById('homeScreen'); return h.classList.contains('is-shown') && !h.classList.contains('is-loading') && !h.classList.contains('is-locked'); }, 9000);
       await e.advanceTo(e.vt + 400, 48); },
   };
-  const PREP = { 0: 'splash', 1: 'splash', 2: 'login', 3: 'typed', 4: 'otp5', 5: 'intro', 6: 'picker', 7: 'picker', 8: 'keep', 9: 'keep', 10: 'avatar', 11: 'avatar', 12: 'interests', 13: 'picked', 14: 'home' };
+  const PREP = { 0: 'splash', 1: 'splash', 2: 'login', 3: 'editing', 4: 'editing', 5: 'typed', 6: 'otp5wrong', 7: 'otp5', 8: 'intro', 9: 'picker', 10: 'picker', 11: 'keep', 12: 'keep', 13: 'avatar', 14: 'avatar', 15: 'interests', 16: 'picked' };
   const FIRE = {
     // the splash plays from Start; the login comes in at 3.97 s of it (the real trigger is the video clock)
     1: (d, w) => w.setTimeout(() => { d.getElementById('ui').classList.remove('is-pre-intro'); w.eval('introDone = false'); w.enterIntroUI(); }, INTRO_AT),
     2: (d, w) => focusEmail(d, w),
-    3: (d, w) => { typeEmail(d, w); d.getElementById('emailForm').requestSubmit(); },
-    4: (d, w) => w.otpKey('1'),                    // the 6th digit (the first five are typed before Start)
-    5: (d, w) => w.revealSkin(),
-    6: (d, w) => w.changeSkin(0),
-    7: (d, w) => w.confirmSkin(),
-    8: (d) => d.querySelector('.skin__different').click(),
-    9: (d) => d.querySelector('.skin__confirm-skin').click(),
-    10: (d, w) => w.selectAvatar(w.eval('rowTarget') + 1),
-    11: (d) => d.querySelector('.av__cta').click(),
-    12: (d, w) => ['art', 'gaming', 'fashion'].forEach((k, i) => w.setTimeout(() => d.querySelector(`.ich[data-k="${k}"]`).click(), i * 250)),
-    13: (d) => d.querySelector('.int__cta').click(),
-    14: (d, w) => { const s = d.querySelector('.hm__scroll'); s.scrollTop = 420; s.dispatchEvent(new w.Event('scroll')); },
+    3: (d, w) => { const i = d.getElementById('email'); i.value = 'sdutta'; i.dispatchEvent(new w.Event('input', { bubbles: true })); d.getElementById('emailForm').requestSubmit(); },
+    4: (d, w) => { const i = d.getElementById('email'); i.value = 'sdutta@gmail.com'; i.dispatchEvent(new w.Event('input', { bubbles: true })); d.getElementById('emailForm').requestSubmit(); },
+    5: (d, w) => { typeEmail(d, w); d.getElementById('emailForm').requestSubmit(); },
+    6: (d, w) => w.otpKey('2'),                    // the 6th digit of a wrong code
+    7: (d, w) => w.otpKey('1'),                    // the 6th digit (the first five are typed before Start)
+    8: (d, w) => w.revealSkin(),
+    9: (d, w) => w.changeSkin(0),
+    10: (d, w) => w.confirmSkin(),
+    11: (d) => d.querySelector('.skin__different').click(),
+    12: (d) => d.querySelector('.skin__confirm-skin').click(),
+    13: (d, w) => w.selectAvatar(w.eval('rowTarget') + 1),
+    14: (d) => d.querySelector('.av__cta').click(),
+    15: (d, w) => ['art', 'gaming', 'fashion'].forEach((k, i) => w.setTimeout(() => d.querySelector(`.ich[data-k="${k}"]`).click(), i * 250)),
+    16: (d) => d.querySelector('.int__cta').click(),
   };
 
   return {
@@ -1245,7 +1285,7 @@ window.SPEC = (() => {
     const mo = new w.MutationObserver((list) => { moBuf.push(...list); });   // records delivered between captures must not be lost
     // attributes the replay follows: style / class / hidden, plus the ones apps animate or swap directly —
     // SVG path / shape geometry (a rAF morph of `d`), and image / video sources (a picked skin, a poster)
-    const XATTR = ['d', 'points', 'transform', 'src', 'srcset', 'poster', 'href', 'opacity', 'fill', 'stroke-dashoffset'];
+    const XATTR = ['d', 'points', 'transform', 'src', 'srcset', 'poster', 'href', 'opacity', 'fill', 'stroke-dashoffset', 'disabled', 'aria-pressed', 'aria-hidden'];   // + state attributes CSS styles on
     mo.observe(d, { subtree: true, attributes: true, attributeFilter: ['style', 'class', 'hidden', ...XATTR], attributeOldValue: true, childList: true, characterData: true });
     const propCache = new WeakMap(), active = new Set();
     function capture(t) {
