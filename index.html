@@ -1247,7 +1247,9 @@
       transition: width .42s cubic-bezier(.22,1,.36,1), height .42s cubic-bezier(.22,1,.36,1), background-color .3s; }
     .nt__pager i.is-read { background: rgba(255,255,255,.62); }   /* "chrome beads for read cards" */
     .nt__pager i.is-on { width: 22px; height: 8px; background: #fff; }
-    .nt__foot p { margin: 0; font-weight: 500; font-size: 12px; line-height: normal; color: rgba(255,255,255,.8); white-space: nowrap; }
+    .nt__foot p { margin: 0; font-weight: 500; font-size: 12px; line-height: normal; color: rgba(255,255,255,.8); white-space: nowrap;
+      transition: opacity .26s cubic-bezier(.4,0,.2,1), translate .26s cubic-bezier(.4,0,.2,1); }
+    .nt__foot p.is-gone { opacity: 0; translate: 0 4px; }   /* the hint goes once you've swiped a card (the pager stays put) */
     .nt__line { position: absolute; left: -143.91px; top: 530.97px; width: 412.749px; height: 418.441px; display: flex; align-items: center;
       justify-content: center; pointer-events: none; opacity: 0; }
     .nt__line > span { position: relative; flex: none; width: 336.846px; height: 328.247px; rotate: 72.91deg; }
@@ -3745,7 +3747,7 @@
     }
     hq('.hm__tile--nano').addEventListener('pointerup', (e) => {
       const t = performance.now();
-      if (t - bellTap.t < 320 && Math.hypot(e.clientX - bellTap.x, e.clientY - bellTap.y) < 24) { bellTap.t = 0; ntRead = 0; ringBell(); }
+      if (t - bellTap.t < 320 && Math.hypot(e.clientX - bellTap.x, e.clientY - bellTap.y) < 24) { bellTap.t = 0; ntRead = 0; ntHintGone = false; document.querySelector('#notifSheet .nt__foot p').classList.remove('is-gone'); ringBell(); }
       else bellTap = { t, x: e.clientX, y: e.clientY };
     });
 
@@ -3773,6 +3775,7 @@
       { tone: 'amber', icon: ICONS.clock, badge: 'Reminder', title: 'Make your bed everyday', sub: 'Due today · 6 Sep', art: 'bed' },
     ];
     var ntRead = 0;                                            // updates read so far (front card = NOTIFS[ntRead])
+    var ntHintGone = false;                                    // the swipe hint, once a card has been swiped
     const ntUnread = () => NOTIFS.length - ntRead;
     const SLOTS = [
       { ty: 0, sx: 1, sy: 1, veil: 0, tint: '#f2f2fa' },
@@ -3984,6 +3987,7 @@
         { duration: dur, easing: 'cubic-bezier(.25,.6,.35,1)', pp: false }).finished.then(() => c0.remove()).catch(() => c0.remove());
       ntRead++;
       paintPager();
+      if (!ntHintGone) { ntHintGone = true; nq('.nt__foot p').classList.add('is-gone'); }
       // the stack steps up a slot: the next card un-veils into the front, the one after takes slot 1, a new one
       // fades into slot 2 from behind
       ntCards().forEach((c, k) => {
@@ -4019,7 +4023,8 @@
         const nt = document.getElementById('notifSheet');
         nt.classList.remove('is-open'); nt.setAttribute('aria-hidden', 'true');
         nt.querySelectorAll(NT_PARTS).forEach((el) => { el.getAnimations().forEach((x) => x.cancel()); el.removeAttribute('style'); });
-        document.getElementById('ntStack').textContent = ''; ntRead = 0; ntDrag = null;
+        document.getElementById('ntStack').textContent = ''; ntRead = 0; ntDrag = null; ntHintGone = false;
+        nt.querySelector('.nt__foot p').classList.remove('is-gone');
         clearTimeout(ntCloseT); document.getElementById('ntStack').removeAttribute('style');
         hs.querySelector('.hm__notif').getAnimations().forEach((x) => x.cancel());
         if (ntAnim) ntAnim.goToAndStop(0, true);
