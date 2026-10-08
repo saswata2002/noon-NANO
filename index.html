@@ -3757,7 +3757,7 @@
     // base while the next card already starts lifting forward; past 110 px or on a flick it is thrown off-screen
     // (marked read) and the stack steps up a slot on a spring; short of that it springs back with a little give.
     var ntAnim = null, ntOpen = false;   // var: hideHome() can run before this line
-    const NT_PARTS = '.nt__scrim, .nt__head, .nt__card, .nt__veil, .nt__foot, .nt__line, .nt__ph > span';   // never the Lottie's own SVG
+    const NT_PARTS = '.nt__scrim, .nt__head, .nt__card, .nt__veil, .nt__foot, .nt__pager, .nt__line, .nt__ph > span';   // never the Lottie's own SVG
     const ntEl = document.getElementById('notifSheet'), nq = (sel) => ntEl.querySelector(sel), ntStack = document.getElementById('ntStack');
     // Figma has the first update only (Approved); the other three are placeholders built from the Tasks section.
     const CHECK = '<img src="assets/home/notif/verified.svg" alt="">';
@@ -3840,7 +3840,7 @@
       const OUT = 'cubic-bezier(0.22, 1, 0.36, 1)';
       haptic.light();
       ntEl.querySelectorAll(NT_PARTS).forEach((el) => { el.getAnimations().forEach((x) => x.cancel()); });
-      ['.nt__scrim', '.nt__head', '.nt__foot', '.nt__line'].forEach((q) => nq(q).removeAttribute('style'));
+      ['.nt__scrim', '.nt__head', '.nt__foot', '.nt__pager', '.nt__line'].forEach((q) => nq(q).removeAttribute('style'));
       clearTimeout(ntCloseT);
       ntStack.getAnimations().forEach((q) => q.cancel()); ntStack.removeAttribute('style');
       buildStack();
@@ -3900,7 +3900,7 @@
         if (ntOpen) return;
         ntEl.classList.remove('is-open'); ntEl.setAttribute('aria-hidden', 'true');
         ntEl.querySelectorAll(NT_PARTS).forEach((el) => { el.getAnimations().forEach((x) => x.cancel()); });
-        ['.nt__scrim', '.nt__head', '.nt__foot', '.nt__line'].forEach((q) => nq(q).removeAttribute('style'));
+        ['.nt__scrim', '.nt__head', '.nt__foot', '.nt__pager', '.nt__line'].forEach((q) => nq(q).removeAttribute('style'));
         ntStack.getAnimations().forEach((x) => x.cancel()); ntStack.removeAttribute('style');
         ntStack.textContent = '';
         if (ntAnim) ntAnim.goToAndStop(0, true);
@@ -3984,7 +3984,12 @@
       c0.animate([{ transform: from, opacity: 1 }, { transform: endT, opacity: 1, offset: .7 }, { transform: endT, opacity: 0 }],
         { duration: dur, easing: 'cubic-bezier(.25,.6,.35,1)', pp: false }).finished.then(() => c0.remove()).catch(() => c0.remove());
       ntRead++;
-      paintPager();
+      const last = !ntUnread();
+      if (last) {
+        // the last card: the pager keeps its state (no flick to "all read") and fades out as the card leaves the frame
+        nq('.nt__pager').animate([{ opacity: 1, scale: '1' }, { opacity: 0, scale: '.9' }],
+          { duration: 220, delay: Math.round(dur * 0.2), easing: 'cubic-bezier(.4, 0, .2, 1)', fill: 'forwards', pp: false });
+      } else paintPager();
       if (!ntHintGone) { ntHintGone = true; nq('.nt__foot p').classList.add('is-gone'); }
       // the stack steps up a slot: the next card un-veils into the front, the one after takes slot 1, a new one
       // fades into slot 2 from behind
