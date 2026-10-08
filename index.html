@@ -1995,8 +1995,21 @@
         success: () => play([[0, 'success'], [150, 'heavy', 0.9]], [0, 28, 56, 150, 178, 206], [45, 60, 70]),   // two firm bumps
         error: () => play([[0, 'error'], [220, 'heavy', 1]], [0, 28, 56, 110, 138, 166, 220, 248, 276], [60, 40, 60, 40, 70]),
         get lastAt() { return lastAt; },
+        get tapOnly() { return isIOS && !bridge(); },         // iOS Safari: plays only from a real tap / touchend
       };
     })();
+    // Gesture results (a throw, a commit, a spring-back) are decided on pointerup or mid-drag. iOS Safari only plays
+    // a haptic from a touchend, so there the pulse waits for the finger to lift; everywhere else it plays at once.
+    let gestHap = null, touchesDown = 0;
+    function gestureHaptic(kind) {
+      if (haptic.tapOnly && touchesDown) { gestHap = kind; return; }
+      gestHap = null; haptic[kind]();
+    }
+    document.addEventListener('touchstart', (e) => { touchesDown = e.touches.length; }, { capture: true, passive: true });
+    ['touchend', 'touchcancel'].forEach((t) => document.addEventListener(t, (e) => {
+      touchesDown = e.touches.length;
+      if (gestHap && !touchesDown) { const k = gestHap; gestHap = null; haptic[k](); }
+    }, { capture: true, passive: true }));
     // Every tap on something tappable answers with a light pulse — unless its own handler already played a
     // haptic for that tap (checked right after the handlers run, still inside the tap). Text fields are left
     // alone: a haptic there must never disturb the keyboard.
@@ -2865,9 +2878,14 @@
         if (!sg.mode) { if (Math.abs(dy) < 6) return; sg.mode = dy < 0 ? 'up' : 'down'; }
         sg.dy = dy;
         sg.samples.push([e.timeStamp, dy]); if (sg.samples.length > 6) sg.samples.shift();
-        if (sg.mode === 'up') dragUp(dy);
-        else {
+        if (sg.mode === 'up') {
+          dragUp(dy);
+          const over = -dy >= 70;                 // a detent where letting go would change the skin
+          if (over !== sg.detent) { sg.detent = over; haptic.selection(); }
+        } else {
           sg.p = dragDown(dy);
+          const over = sg.p >= 0.5;               // a detent halfway to the commit
+          if (over !== sg.detent) { sg.detent = over; haptic.selection(); }
           if (sg.p >= COMMIT_AT) {                // 80 % down: hand over to the confirm transition
             try { el.releasePointerCapture(sg.id); } catch (err) {}
             sg = null;
@@ -2883,8 +2901,8 @@
         const { mode, p, dy } = sg;
         sg = null;
         skinScreen.classList.remove('is-dragging');
-        if (mode === 'up') { if (-dy >= 70 || v < -0.45) changeSkin(v); else springBackStack(true); }
-        else if (mode === 'down') springBackStack();          // only reaching 80 % commits
+        if (mode === 'up') { if (-dy >= 70 || v < -0.45) changeSkin(v); else { springBackStack(true); gestureHaptic('selection'); } }
+        else if (mode === 'down') { springBackStack(); gestureHaptic('selection'); }   // only reaching 80 % commits
       };
       el.addEventListener('pointerup', end);
       el.addEventListener('pointercancel', end);
@@ -2923,7 +2941,7 @@
     const transY = (t) => parseFloat(String(t).split(' ')[1]) || 0;
     function changeSkin(v = 0) {
       skinBusy = true;
-      haptic.medium();
+      gestureHaptic('medium');
       const run = ++flyRun;
       const fly = roles.front, nf = roles.mid, nm = roles.back, nb = roles.spare;
       skinIdx = (skinIdx + 1) % SKINS.length;
@@ -2995,7 +3013,7 @@
     function confirmSkin() {
       skinBusy = true;
       skinPhase = 'keep';
-      haptic.medium();
+      gestureHaptic('heavy');                    // committed by the drag — a firm landing
       const IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
       tweenTo(roles.mid, { ...poseCss({ ...POSE.front, s: 0.86 }), opacity: '0' }, { duration: 300, easing: 'ease-out' });
       tweenTo(roles.back, { ...poseCss({ ...POSE.front, s: 0.86 }), opacity: '0' }, { duration: 300, easing: 'ease-out' });
@@ -3245,7 +3263,14 @@
       }
     });
     let rowPos = AV_DEFAULT, rowVel = 0, rowTarget = AV_DEFAULT, rowRaf = 0, rowDrag = null, avSel = AV_DEFAULT, avPendingTick = false;
+    let rowTickAt = Math.round(AV_DEFAULT), rowTickT = 0;
     function renderRow() {
+      const r = Math.round(rowPos);
+      if (r !== rowTickAt) {                     // a detent per avatar while dragging or gliding
+        rowTickAt = r;
+        const now = performance.now();
+        if ((rowDrag || rowRaf) && now - rowTickT > 45) { rowTickT = now; haptic.selection(); }
+      }
       for (const it of rowItems) {
         let s0 = ((((it.i - rowPos) % AV_N) + AV_N + 2.5) % AV_N) - 2.5;   // −2.5 … 2.5
         const s = it.c === 0 ? s0 : (s0 < 0 ? s0 + AV_N : s0 - AV_N);
@@ -3417,7 +3442,7 @@
       const by = offsets[Math.floor(Math.random() * offsets.length)];
       rowVel = 0;
       selectAvatar(Math.round(rowPos) + by);
-      if (navigator.vibrate) navigator.vibrate(18);        // Android; iOS gives haptics only for taps
+      haptic.medium();                                     // native iOS + Android (iOS Safari plays haptics only for taps)
     }
     function resetAvatarRow() {
       cancelAnimationFrame(rowRaf); rowRaf = 0; rowDrag = null;
@@ -3460,7 +3485,8 @@
       const on = !chip.classList.contains('is-on');
       chip.classList.toggle('is-on', on);
       chip.setAttribute('aria-pressed', String(on));
-      haptic.light();
+      const n = chipEls.filter((c) => c.classList.contains('is-on')).length;
+      if (on && n === INT_MIN) haptic.medium(); else haptic.light();   // the pick that turns Continue on lands firmer
       if (!reduceMotion.matches) {
         // the chip gives a small springy bump; the icon hops (and tilts) when picked, settles when dropped
         chip.animate([{ scale: '0.965' }, { scale: on ? '1.02' : '1', offset: 0.4 }, { scale: '1' }], { duration: 420, easing: 'cubic-bezier(0.3, 0.7, 0.4, 1)' });
@@ -3776,7 +3802,9 @@
     }
     function aimHdr(to) {
       if (to === hdr.to) return;
+      const was = hdr.to;
       hdr.to = to;
+      if (was != null && homeScreen.classList.contains('is-shown')) haptic.selection();   // the switcher snaps shut / open
       if (reduceMotion.matches) { hdr.p = to; hdr.v = 0; paintHdr(); return; }
       if (!hdr.sraf) { hdr.t = 0; hdr.sraf = requestAnimationFrame(stepHdr); }
     }
@@ -4081,17 +4109,7 @@
     }
 
     // ---------- swipe ----------
-    // Throws / spring-backs are decided on pointerup, which iOS Safari may not count as a tap; their haptic is
-    // queued and played from the touchend that follows (or after 40 ms for mouse / keyboard).
-    let gestHap = null, gestT = 0;
-    function gestureHaptic(kind) {
-      gestHap = kind; clearTimeout(gestT);
-      gestT = setTimeout(() => { if (gestHap) { const k = gestHap; gestHap = null; haptic[k](); } }, 40);
-    }
-    document.addEventListener('touchend', () => {
-      if (!gestHap) return;
-      clearTimeout(gestT); const k = gestHap; gestHap = null; haptic[k]();
-    }, { capture: true, passive: true });
+    // (throw / spring-back haptics go through gestureHaptic — played on the touchend that follows on iOS Safari)
     var ntDrag = null;
     const THROW_PX = 110, FLICK = 0.55;                        // px, px/ms
     const SETTLE = spring(0.92, 0.5, 760), BACK = spring(0.55, 0.42, 720);   // the stack steps up softly, no overshoot

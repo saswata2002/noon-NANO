@@ -684,7 +684,8 @@ window.SPEC = (() => {
     ] },
 
     { id: 13, name: 'Change skin', trig: 'Swipe the wallet up', rows: () => [
-      H('snap', 'Front Wallet', '.wcard', 0, 'A medium impact as the swipe commits.'),
+      H('tick', 'Front Wallet', '.wcard', 0, 'While dragging: a tick as the finger crosses 70 px up — the point where letting go changes the skin (again if it drops back under). A short swipe that springs back ticks on release.', { approx: true }),
+      H('snap', 'Front Wallet', '.wcard', 0, 'A medium impact as the swipe commits (iOS Safari: on the touchend, it only plays haptics from a lift).'),
       { icon: 'move', prop: 'Move Y', layer: 'Thrown Wallet', sel: '.wcard', delay: 0, dur: PP, from: '0px', to: '−200px', ease: S('pp'), note: 'Thrown up (−3°, 95 %) on a rubber band — while dragging it follows ~0.85× the finger, getting heavier, max ~160 px.' },
       { icon: 'move', prop: 'Step forward', layer: 'Middle → Front', sel: '.wcard', delay: 0, dur: PP, from: '8°', to: '0°', ease: S('pp'), note: 'The stack steps forward: as if the cards behind push the next one up.' },
       { icon: 'move', prop: 'Step forward', layer: 'Back → Middle', sel: '.wcard', delay: 30, dur: PP, from: '18°', to: '8°', ease: S('pp') },
@@ -695,7 +696,8 @@ window.SPEC = (() => {
     ] },
 
     { id: 14, name: 'Keep this skin', trig: 'Drag the wallet down past 80 %', rows: () => [
-      H('snap', 'Front Wallet', '.wcard', 0, 'A medium impact at the commit point (COMMIT_AT 0.8 of 220 px).'),
+      H('tick', 'Front Wallet', '.wcard', 0, 'While dragging: a tick at 50 % of the 220 px travel (halfway to the commit). Let go short of 80 % → it settles back with a tick.', { approx: true }),
+      H('strong', 'Front Wallet', '.wcard', 0, 'A strong impact at the commit point (COMMIT_AT 0.8 of 220 px) — on iOS Safari it plays as the finger lifts.'),
       { icon: 'scale', prop: 'Scale', layer: 'Back Wallets', sel: '.wcard[data-role="mid"], .wcard[data-role="back"]', delay: 0, dur: PP, from: '100%', to: '86%', ease: S('pp'), note: 'The cards behind shrink and hide behind the wallet being confirmed.' },
       { icon: 'opacity', prop: 'Opacity', layer: 'Back Wallets', sel: '.wcard[data-role="mid"], .wcard[data-role="back"]', delay: 0, dur: PP, from: '1', to: '0', ease: S('pp') },
       { icon: 'move', prop: 'Move Y', layer: 'White Sheet', sel: '.skin__sheet', delay: 0, dur: PP, from: '500px', to: '−24px', ease: S('pp'), driver: 'frame', note: 'The pocket sheet rises and its notch flattens into the full-page takeover — one continuous rAF morph of the SVG path on the PP curve.' },
@@ -755,7 +757,8 @@ window.SPEC = (() => {
       { icon: 'scale', prop: 'Scale', layer: 'Ring', sel: '.av__ring', delay: 70, dur: 520, from: '100%', to: '106% → 100%', ease: C('ring'), note: 'A small pulse (peak at 40 %).' },
       { icon: 'move', prop: 'Rotate', layer: 'Big Sparkle', sel: '.av__sparkle--l', delay: 70, dur: 900, from: '0°', to: '180°', ease: S('star'), note: 'Half a turn clockwise; the angle accumulates (no snap back), interrupted spins carry on.' },
       { icon: 'move', prop: 'Rotate', layer: 'Small Sparkle', sel: '.av__sparkle--s', delay: 70, dur: 900, from: '0°', to: '−180°', ease: S('star'), note: 'The other way.' },
-      H('tap', 'Avatar Row', '.av__row', 0, 'A light tap on release when the avatar changed.', { approx: true }),
+      H('tick', 'Avatar Row', '.av__row', 0, 'A tick per avatar as the row passes under the finger and while it glides (≥ 45 ms apart; native iOS + Android — iOS Safari has no haptics mid-drag).', { approx: true }),
+      H('tap', 'Avatar Row', '.av__row', 0, 'A light tap on release when the avatar changed. A shake shuffle plays a medium impact.', { approx: true }),
     ] },
 
     { id: 19, name: 'Your interests', trig: 'Tap Continue on the avatar page', rows: () => [
@@ -794,7 +797,8 @@ window.SPEC = (() => {
       sc({ layer: 'Interest Chip', sel: '.ich.is-on', delay: 0, from: '96.5%', to: '100%', stagger: { n: 3, step: 250, order: 'each tap' }, note: 'A small springy bump (96.5 → 102 → 100 %).' }),
       { icon: 'move', prop: 'Hop', layer: 'Chip Icon', sel: '.ich.is-on .ich__ico', delay: 0, dur: PP, from: '0px', to: '−7px → 0px', ease: S('pp'), stagger: { n: 3, step: 250, order: 'each tap' }, note: 'The icon hops 7 px with an −8° tilt when picked; settles from 94 % when dropped.' },
       op({ layer: 'Selected State', sel: '.ich.is-on .ich__sel', delay: 0, stagger: { n: 3, step: 250, order: 'each tap' }, note: 'White + iridescent image + #d6e9ff stroke; the label turns to the purple→blue gradient (CSS cross-fade).' }),
-      H('tap', 'Interest Chip', '.ich', [0, 250, 500], 'A light tap per chip.'),
+      H('tap', 'Interest Chip', '.ich', [0, 250], 'A light tap per chip.'),
+      H('snap', 'Interest Chip', '.ich', 500, 'The pick that turns Continue on lands firmer (medium).'),
       { grp: 'Continue turns on', at: 500, note: 'At 3 picks (INT_MIN 3).' },
       sc({ layer: 'Continue Button', sel: '.int__cta', delay: 500, from: '96%', to: '100%', note: 'Disabled → Primary: fill, label, stroke and shadows cross-fade (CSS) with a soft spring (96 → 101.5 → 100 %).' }),
     ] },
@@ -834,6 +838,7 @@ window.SPEC = (() => {
     { id: 23, name: 'Scroll — header collapses', trig: 'Scroll the home page down', rows: () => [
       { icon: 'move', prop: 'Scroll', layer: 'Home Page', sel: '.hm__scroll', delay: 0, dur: 700, from: '0px', to: '460px', ease: C('scroll'), note: 'A demo flick. The page itself is the only thing tied 1:1 to the finger.' },
       { grp: 'Switcher morph — one spring', at: 16, note: 'The scroll only picks the target: collapse once the page is 12 px down, expand within 4 px of the top. A wheel notch, a flick and a slow drag all get the same motion; reversing mid-way bends it (velocity kept). It never moves the page.' },
+      H('tick', 'Switcher', '.hm__switcher', 16, 'A tick as the switcher snaps shut (native iOS + Android; scrolling is not a tap, so iOS Safari stays silent).'),
       { icon: 'size', prop: 'Size', layer: 'Switcher Tiles', sel: '.hm__tile', delay: 16, dur: 420, from: '73 × 76 · r15', to: '78 × 44 · r14', ease: S('hdr'), driver: 'frame', note: 'Pill / * (107:27730): supermall 88 wide; gap 6 → 8; row y 53 → 54.5; white + 0 2 6 rgba(13,5,51,.1) shadow fades in.' },
       { icon: 'opacity', prop: 'Opacity · Scale', layer: 'Tile Art', sel: '.hm__tbig', delay: 16, dur: 420, from: '1 · 100%', to: '0 · 90%', ease: S('hdr'), driver: 'frame', note: 'Shrinks with the tile and fades over progress .2 → .6.' },
       { icon: 'opacity', prop: 'Opacity · Scale', layer: 'Pill Logos', sel: '.hm__tmini', delay: 16, dur: 420, from: '0 · 80%', to: '1 · 100%', ease: S('hdr'), driver: 'frame', note: 'Fades in over .25 → .7, overlapping the art so it reads as one morph (logos are Figma’s SVGs).' },
@@ -846,6 +851,7 @@ window.SPEC = (() => {
     { id: 24, name: 'Back to top — header expands', trig: 'Scroll back to the very top', rows: () => [
       { icon: 'move', prop: 'Scroll', layer: 'Home Page', sel: '.hm__scroll', delay: 0, dur: 700, from: '460px', to: '0px', ease: C('scroll') },
       { grp: 'Expands within 4 px of the top', at: 620 },
+      H('tick', 'Switcher', '.hm__switcher', 620, 'A tick as it opens again.'),
       { icon: 'size', prop: 'Size', layer: 'Switcher Tiles', sel: '.hm__tile', delay: 620, dur: 420, from: '78 × 44 · r14', to: '73 × 76 · r15', ease: S('hdr'), driver: 'frame', note: 'The same spring in reverse; the pill logos hand back to the tile art.' },
       { icon: 'opacity', prop: 'Opacity', layer: 'Pill Logos → Tile Art', sel: '.hm__tmini, .hm__tbig', delay: 620, dur: 420, from: 'logo', to: 'art', ease: S('hdr'), driver: 'frame' },
     ] },
