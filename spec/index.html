@@ -793,7 +793,7 @@ window.SPEC = (() => {
       { grp: '3 · Settle', at: BUILD, note: 'One curve for the three big moves, so they close around the card as a single motion.' },
       { icon: 'move', prop: 'Move Y', layer: 'Wallet Card', sel: '.hm__card', delay: BUILD, dur: 820, from: '140px', to: '0px', ease: C('quint'), note: 'Glides up into the header and shrinks 320 → 272 (×1.176 → 1).' },
       { icon: 'move', prop: 'Move Y', layer: 'Wallet Header', sel: '.hm__wbg', delay: BUILD, dur: 820, from: '−577px', to: '0px', ease: C('quint'), note: 'The full header image (skin backdrop, vignette, rounded bottom) drops in from above the screen as one piece — no mask, no zoom (ref: 03_HomePage Loading).' },
-      { icon: 'move', prop: 'Move Y', layer: 'Marketplace Sheet', sel: '.hm__market, .hm__quest', delay: BUILD + 60, dur: 820, from: '342px', to: '0px', ease: C('quint'), note: 'Slides up solid from the bottom edge — a sheet, not a fade.' },
+      { icon: 'move', prop: 'Move Y', layer: 'Marketplace Sheet', sel: '.hm__market, .hm__tasks', delay: BUILD + 60, dur: 820, from: '342px', to: '0px', ease: C('quint'), note: 'Slides up solid from the bottom edge — a sheet, not a fade.' },
       { icon: 'opacity', prop: 'Opacity', layer: 'Blank Page', sel: '.hm__selbg', delay: BUILD + 220, dur: 460, from: '1', to: '0', ease: C('ease'), note: 'What’s left of it lifts off late and slowly.' },
       { icon: 'move', prop: 'Move Y', layer: 'Switcher', sel: '.hm__switcher', delay: BUILD + 260, dur: 560, from: '−10px', to: '0px', ease: C('ios') },
       { icon: 'opacity', prop: 'Opacity', layer: 'Switcher', sel: '.hm__switcher', delay: BUILD + 260, dur: 280, from: '0', to: '1', ease: C('ease') },
