@@ -1811,7 +1811,7 @@
             <a class="hm__tile hm__tile--min" aria-label="noon Minutes"><img class="hm__tbig" src="assets/home/sw/minutes.webp" alt=""><span class="hm__tmini"><img src="assets/home/pills/minutes.svg" alt="" style="left:-6px;top:-4px;width:90px;height:56px"></span></a>
           </nav>
         </div>
-        <div class="hm__notif" aria-hidden="true"><div class="hm__notif-bell" id="homeBell"></div><span class="hm__bdg"><img src="assets/home/tasks/badge.svg" alt=""><b>1</b></span></div>
+        <div class="hm__notif" aria-hidden="true"><div class="hm__notif-bell" id="homeBell"></div><span class="hm__bdg"><img src="assets/home/tasks/badge.svg" alt=""><b id="homeBellCount">4</b></span></div>
         <nav class="hm__nav" aria-label="Tasks · Wallet · Account">
           <div class="hm__navblur"></div><div class="hm__navfade"></div>
           <div class="hm__navitems">
@@ -3721,9 +3721,15 @@
         autoplay: false, path: 'assets/lottie/home-notification.json' });
       return bellAnim;
     }
+    // the badge = how many updates the notification centre holds (its pager has one dot per card)
+    const notifCount = () => document.querySelectorAll('#notifSheet .nt__pager i').length;
     function ringBell() {
       const a = ensureBell();
       if (!a) return;
+      const n = notifCount();
+      document.getElementById('homeBellCount').textContent = n;
+      document.querySelector('#notifSheet .nt__pager').setAttribute('aria-label', `Update 1 of ${n}`);
+      document.getElementById('homeBell').setAttribute('aria-label', `${n} updates`);
       homeScreen.classList.add('has-bell');
       haptic.light();
       a.goToAndPlay(0, true);                                // the bell pops from 0 and swings (lands ~0.53 s)
@@ -3804,8 +3810,9 @@
         if (ntOpen) return;
         ntEl.classList.remove('is-open'); ntEl.setAttribute('aria-hidden', 'true');
         ntEl.querySelectorAll(NT_PARTS).forEach((el) => { el.getAnimations().forEach((x) => x.cancel()); el.removeAttribute('style'); });
-        homeScreen.classList.remove('is-notif', 'has-bell');
-        hq('.hm__notif').getAnimations().forEach((x) => x.cancel());
+        homeScreen.classList.remove('is-notif');
+        hq('.hm__notif').getAnimations().forEach((x) => x.cancel());   // undo the "absorbed" state…
+        ringBell();                                                   // …and the bell pops back in and rings, badge = card count
         if (ntAnim) ntAnim.goToAndStop(0, true);
       }).catch(() => {});
     }
