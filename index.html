@@ -3894,25 +3894,27 @@
       if (!rm) go(nq('.nt__head'), [{ translate: `0 ${HEAD_DY}px`, scale: '1.12' }, { translate: '0 0', scale: '1' }], 820, MOVE_AT, GLIDE);
       const [c0, c1, c2] = ntCards();
       ntCards().forEach((c) => (c.style.opacity = '1'));
-      // 1 · the front card rises in behind the header as it goes up — the same soft spring, so the two read as one
-      //     motion: from 72 px lower and .95, fading in over 320 ms (no pop, no overshoot)
-      const CARD_AT = rm ? 0 : MOVE_AT + 180;
-      go(c0, [{ translate: '0 72px', scale: '.95' }, { translate: '0 0', scale: '1' }], 820, CARD_AT, GLIDE);
-      go(c0, [{ opacity: 0 }, { opacity: 1 }], 320, CARD_AT, OUT);
+      // 1 · the front card rises in behind the header as it goes up, on its own near-critically damped spring (ζ .97 — it
+      //     eases all the way in, no overshoot): from 90 px lower and .94, fading in over 420 ms
+      const CARD_AT = rm ? 0 : MOVE_AT + 160, DEAL = spring(0.97, 0.6, 900);   // (the helper is underdamped-only: ζ < 1)
+      go(c0, [{ translate: '0 90px', scale: '.94' }, { translate: '0 0', scale: '1' }], 900, CARD_AT, DEAL);
+      go(c0, [{ opacity: 0 }, { opacity: 1 }], 420, CARD_AT, OUT);
       // 2 · once it has landed, the two cards behind slide out from under its bottom edge, one after the other.
       //     They start fully tucked behind it (opaque — no ghosting), so only the edges that peek out move.
-      const PEEK = spring(0.86, 0.48, 700), tuck = (el, dy, at) => {
+      // 2 · the cards behind follow through before the front one has quite landed (overlapped, 80 ms apart): each
+      //     starts tucked fully under it (opaque — no ghosting) and eases out from its bottom edge, settling from .985
+      const PEEK = spring(0.95, 0.55, 850), tuck = (el, dy, at) => {
         if (!el) return;
         el.animate([{ opacity: 0 }, { opacity: 0 }], { duration: rm ? 1 : at, pp: false });   // hidden until its own start
-        go(el, [{ translate: `0 ${dy}px` }, { translate: '0 0' }], 700, at, PEEK);
+        go(el, [{ translate: `0 ${dy}px`, scale: '.985' }, { translate: '0 0', scale: '1' }], 850, at, PEEK);
       };
-      tuck(c1, -26, CARD_AT + 380);
-      tuck(c2, -40, CARD_AT + 500);
+      tuck(c1, -26, CARD_AT + 300);
+      tuck(c2, -40, CARD_AT + 380);
       // a strong haptic as each card lands — front pop, then each card behind (all inside WebKit's ~1 s
       // tap window, so iOS Safari plays them too)
-      if (!rm) [[c0, CARD_AT + 320], [c1, CARD_AT + 520], [c2, CARD_AT + 640]].forEach(([c, at]) => { if (c) ntTimers.push(setTimeout(() => ntOpen && haptic.heavy(), at)); });
+      if (!rm) [[c0, CARD_AT + 380], [c1, CARD_AT + 580], [c2, CARD_AT + 660]].forEach(([c, at]) => { if (c) ntTimers.push(setTimeout(() => ntOpen && haptic.heavy(), at)); });
       // 3 · then the footer rises (a card's contents never animate — they ride with their card, static)
-      go(nq('.nt__foot'), [{ opacity: 0, translate: '0 12px' }, { opacity: 1, translate: '0 0' }], 520, CARD_AT + 600, OUT);
+      go(nq('.nt__foot'), [{ opacity: 0, translate: '0 12px' }, { opacity: 1, translate: '0 0' }], 520, CARD_AT + 640, OUT);
       go(nq('.nt__line'), [{ opacity: 0 }, { opacity: 1 }], 800, CARD_AT + 300, OUT);
     }
     // Close, as one motion: the stack leaves as ONE layer (fading the cards one by one let the back cards ghost
@@ -3972,7 +3974,7 @@
     }, { capture: true, passive: true });
     var ntDrag = null;
     const THROW_PX = 110, FLICK = 0.55;                        // px, px/ms
-    const SETTLE = spring(0.8, 0.42, 620), BACK = spring(0.55, 0.42, 720);
+    const SETTLE = spring(0.92, 0.5, 760), BACK = spring(0.55, 0.42, 720);   // the stack steps up softly, no overshoot
     function grab(c) {                                         // freeze a card where it is (mid-flight is fine)…
       [c, c.querySelector('.nt__veil')].forEach((el) => el.getAnimations().forEach((x) => { x.commitStyles(); x.cancel(); }));
       c.style.opacity = '1'; c.style.translate = ''; c.style.scale = '';   // …but keep only its slot transform
@@ -4023,7 +4025,7 @@
       d.rest.forEach((c, i) => {
         const v = c.querySelector('.nt__veil'), fromT = c.style.transform, fromV = v.style.opacity;
         placeCard(c, i + 1);
-        c.animate([{ transform: fromT }, { transform: c.style.transform }], { duration: 620, easing: SETTLE, pp: false });
+        c.animate([{ transform: fromT }, { transform: c.style.transform }], { duration: 760, easing: SETTLE, pp: false });
         v.animate([{ opacity: fromV }, { opacity: v.style.opacity }], { duration: 380, easing: 'cubic-bezier(.22,1,.36,1)', pp: false });
       });
     }
@@ -4052,9 +4054,9 @@
         const v = c.querySelector('.nt__veil'), fromT = c.style.transform, fromV = v.style.opacity || '1', wasHidden = c.style.visibility === 'hidden';
         placeCard(c, k);
         if (k === 0) { c.style.transformOrigin = '50% 0'; }
-        c.animate([{ transform: fromT }, { transform: c.style.transform }], { duration: 620, delay: k * 40, easing: SETTLE, fill: 'backwards', pp: false });
-        v.animate([{ opacity: fromV }, { opacity: v.style.opacity }], { duration: k === 0 ? 300 : 420, delay: k * 40, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards', pp: false });
-        if (wasHidden || k === 2) c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360, delay: 120, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards', pp: false });
+        c.animate([{ transform: fromT }, { transform: c.style.transform }], { duration: 760, delay: k * 60, easing: SETTLE, fill: 'backwards', pp: false });
+        v.animate([{ opacity: fromV }, { opacity: v.style.opacity }], { duration: k === 0 ? 380 : 480, delay: k * 60, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards', pp: false });
+        if (wasHidden || k === 2) c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 480, delay: 140, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards', pp: false });
       });
       if (!ntUnread()) { setTimeout(() => haptic.success(), 260); setTimeout(closeNotif, 380); }   // all read → back home
       else ntTimers.push(setTimeout(() => ntOpen && haptic.light(), 300));   // the next card takes the front
