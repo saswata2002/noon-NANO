@@ -3911,7 +3911,7 @@
       // 1 · the front card is revealed by motion alone — fully opaque, it slides up from just below the screen's
       //     bottom edge (268 + 560 > 812) and eases into place under the gliding header on a near-critically damped
       //     spring (ζ .97, no overshoot). Any fade of a white card over the dark scrim either ghosts (slow) or pops (fast).
-      const CARD_AT = rm ? 0 : MOVE_AT + 160, DEAL = spring(0.97, 0.6, 900);   // (the helper is underdamped-only: ζ < 1)
+      const CARD_AT = rm ? 0 : MOVE_AT, DEAL = spring(0.97, 0.6, 900);   // (the helper is underdamped-only: ζ < 1)
       if (rm) go(c0, [{ opacity: 0 }, { opacity: 1 }], 200, 0, OUT);
       else go(c0, [{ translate: '0 560px' }, { translate: '0 0' }], 900, CARD_AT, DEAL);
       // 2 · once it has landed, the two cards behind slide out from under its bottom edge, one after the other.

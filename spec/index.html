@@ -501,7 +501,7 @@ window.SPEC = (() => {
   const FRONT_AT = 360;
   const BUILD = 840, CARDS = BUILD + 1100;
   // home + notifications (index.html: stepHdr / ringBell / openNotif / throwCard / closeNotif)
-  const MOVE_AT = 1250, CARD_AT = MOVE_AT + 160, NT_TAP = 80;       // header glide · front card · the 2nd tap of the double-tap
+  const MOVE_AT = 1250, CARD_AT = MOVE_AT, NT_TAP = 80;   // the deck starts up with the header, same instant       // header glide · front card · the 2nd tap of the double-tap
   const DRAG = 240, REL = 260;                                     // the demo drags: 240 ms of finger, released at 260 ms
   const THROW = 404;                                               // flight for that drag: 520 − |v| × 140 (v ≈ .83 px/ms), clamped 260–460
 
