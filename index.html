@@ -1188,6 +1188,56 @@
     .hm__bdg img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
     .hm__bdg b { position: absolute; left: 10.9px; top: 2.87px; transform: translateX(-50%); font-weight: 700; font-size: 13px;
       line-height: 14px; letter-spacing: -0.1px; color: #fff; }
+    /* 112:15283 "Notifications · Stack · Rest" — opened from the bell. Overlay: backdrop blur 10 + black .6 →
+       rgba(47,41,57,.93) by 41 %, over the live home page (Figma's background is a flattened screenshot of it).
+       Header = "Homepage notification cards.lottie" (512² comp, 60 fps, 115 frames: the bell pops big, rings,
+       then shrinks into "Updates Today!" as the words sweep in). Registered by fitting its last frame's white
+       sticker outline to the Figma header: scale .5 at (59, 48) — IoU .82 at 1×. Its clapper matte was exported
+       8 layers below the clapper; lottie-web wants it directly above, so the layer was moved (no visual change). */
+    .nt { position: absolute; inset: 0; z-index: 8; visibility: hidden; pointer-events: none; overflow: hidden; }
+    .nt.is-open { visibility: visible; pointer-events: auto; }
+    .nt__scrim { position: absolute; inset: 0; -webkit-backdrop-filter: blur(2.5px); backdrop-filter: blur(2.5px);   /* Figma "10" renders this soft: fitted on edge energy */
+      background: linear-gradient(180deg, rgba(0,0,0,.6) 0%, rgba(47,41,57,.93) 41.002%); opacity: 0; }
+    .nt__head { position: absolute; left: 59px; top: 48px; width: 512px; height: 512px; transform: scale(.5); transform-origin: 0 0; pointer-events: none; }
+    .nt__stack { position: absolute; left: 0; top: 256px; width: 375px; height: 440px; }
+    .nt__b2, .nt__b1 { position: absolute; border: 1.5px solid #fff; border-radius: 22px; box-shadow: 0 6px 14px rgba(26,13,77,.1); opacity: 0; }
+    .nt__b2 { left: 44px; top: 78.04px; width: 287px; height: 360px; background: #e5e5f2; }
+    .nt__b1 { left: 32px; top: 46px; width: 311px; height: 380px; background: #f2f2fa; }
+    .nt__card { position: absolute; left: 20px; top: 12px; width: 335px; height: 400px; margin: 0; padding: 22px; border-radius: 24px; overflow: hidden;
+      display: flex; flex-direction: column; align-items: flex-start; gap: 16px; opacity: 0;
+      background: linear-gradient(180deg, #fff 0%, #fff 40%, #ddf7ea 100%); box-shadow: 0 6px 18px rgba(15,20,41,.06); }
+    .nt__badge { display: flex; align-items: center; gap: 6px; height: 32px; padding: 8px 12px 8px 6px; border-radius: 40px; background: #e3fcf2; flex: none; }
+    .nt__badge i { display: flex; padding: 4px; border-radius: 12px; background: #0f8857; }
+    .nt__badge i img { display: block; width: 12px; height: 12px; }
+    .nt__badge span { font-weight: 600; font-size: 14px; line-height: 18px; letter-spacing: -0.1px; color: #0f8857; white-space: nowrap; }
+    .nt__body { display: flex; flex-direction: column; gap: 4px; padding: 16px 0; width: 100%; flex: none; }
+    .nt__title { margin: 0; font-weight: 700; font-size: 20px; line-height: 28px; letter-spacing: -0.25px; color: #1d2539;
+      text-decoration: line-through; text-decoration-skip-ink: none; }
+    .nt__sub { margin: 0; font-weight: 500; font-size: 14px; line-height: normal; color: #666d85; }
+    .nt__media { flex: 1 0 0; min-height: 1px; width: 100%; display: flex; align-items: center; }
+    .nt__ph { flex: none; display: flex; align-items: center; justify-content: center; }
+    .nt__ph--1 { width: 112.183px; height: 145.303px; margin-right: -19px; }
+    .nt__ph--2 { width: 116.965px; height: 148.734px; }
+    /* 105 × 140 frame with a 3.455 stroke CENTRED on its edge (measured: the visible photo is 101.5 × 136.5), so the
+       outer box is 108.455 × 143.455 pulled back by half a stroke, outer radius 15.549 + 1.73 */
+    .nt__ph > span { position: relative; flex: none; width: 108.455px; height: 143.455px; margin: -1.7275px; border: 3.455px solid #fff;
+      border-radius: 17.277px; overflow: hidden; background: #f2f3f7; box-shadow: 0 3.455px 13.822px rgba(0,0,0,.1); }
+    .nt__ph--1 > span { rotate: -3deg; }
+    .nt__ph--2 > span { rotate: 5.07deg; }
+    .nt__ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    .nt__foot { position: absolute; left: 20px; top: 716px; width: 335px; height: 64px; padding: 8px 0; display: flex; flex-direction: column;
+      align-items: center; gap: 16px; opacity: 0; }
+    .nt__pager { display: flex; align-items: center; gap: 5px; padding: 5px 6px; border-radius: 9999px; background: rgba(13,10,26,.55);
+      -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+    .nt__pager i { width: 6px; height: 6px; border-radius: 9999px; background: rgba(255,255,255,.28); }
+    .nt__pager i.is-on { width: 22px; height: 8px; background: #fff; }
+    .nt__foot p { margin: 0; font-weight: 500; font-size: 12px; line-height: normal; color: rgba(255,255,255,.8); white-space: nowrap; }
+    .nt__line { position: absolute; left: -143.91px; top: 530.97px; width: 412.749px; height: 418.441px; display: flex; align-items: center;
+      justify-content: center; pointer-events: none; opacity: 0; }
+    .nt__line > span { position: relative; flex: none; width: 336.846px; height: 328.247px; rotate: 72.91deg; }
+    .nt__line img { position: absolute; left: -1.34%; top: -1.46%; width: 102.75%; height: 102.12%; display: block; max-width: none; }
+    .hm.is-notif .hm__scroll { overflow-y: hidden; }
+    .hm.has-bell .hm__notif-bell { pointer-events: auto; cursor: pointer; }
     /* 107:28277 the bell sticker, now hanging off the second task card (tasks-local 318.75, 307.7) */
     .hm__bell { left: 318.75px; top: 1301.66px; width: 79.608px; height: 79.608px; z-index: 4;
       filter: drop-shadow(0 4px 4px rgba(0,0,0,.05)) drop-shadow(0 4px 8px rgba(0,0,0,.25)); }
@@ -1770,6 +1820,24 @@
             <a class="hm__ni"><span class="hm__nicon"><span class="hm__nacc"><img src="assets/home/nav/account.webp" alt=""></span></span><span class="hm__nlabel">Account</span></a>
           </div>
         </nav>
+        <!-- 112:15283 notifications, opened from the bell -->
+        <div class="nt" id="notifSheet" role="dialog" aria-modal="true" aria-label="Updates today" aria-hidden="true">
+          <div class="nt__scrim"></div>
+          <div class="nt__head" id="notifHead" aria-hidden="true"></div>
+          <div class="nt__stack">
+            <div class="nt__b2"></div><div class="nt__b1"></div>
+            <article class="nt__card">
+              <div class="nt__badge"><i><img src="assets/home/notif/verified.svg" alt=""></i><span>Approved</span></div>
+              <div class="nt__body"><h3 class="nt__title">Clean up your bedroom</h3><p class="nt__sub">Completed yesterday · 5 Sep</p></div>
+              <div class="nt__media">
+                <div class="nt__ph nt__ph--1"><span><img src="assets/home/notif/photo.webp" alt="Bedroom, tidied"></span></div>
+                <div class="nt__ph nt__ph--2"><span><img src="assets/home/notif/photo.webp" alt=""></span></div>
+              </div>
+            </article>
+          </div>
+          <div class="nt__foot"><div class="nt__pager" aria-label="Update 1 of 4"><i class="is-on"></i><i></i><i></i><i></i></div><p>Swipe left or right to mark as read</p></div>
+          <div class="nt__line" aria-hidden="true"><span><img src="assets/home/notif/line.svg" alt=""></span></div>
+        </div>
       </section>
     </div>
   </main>
@@ -3454,6 +3522,8 @@
     const homePre = [];
     function preloadHome() {
       if (typeof ensureBell === 'function') ensureBell();
+      if (typeof ensureNt === 'function') ensureNt();
+      ['assets/home/notif/photo.webp', 'assets/home/notif/verified.svg', 'assets/home/notif/line.svg'].forEach((src) => { const im = new Image(); im.src = src; homePre.push(im); });
       const sk = wrapSkin(skinIdx);
       [`assets/home/cards/${sk}.webp`, sk === 'lego' ? 'assets/home/wbg-lego.webp' : bgSrc(skinIdx), 'assets/home/sel-bg.webp',
         'assets/home/title.webp', 'assets/home/sw/nano.webp', 'assets/home/sw/noon.webp', 'assets/home/sw/supermall.webp',
@@ -3668,6 +3738,70 @@
       else bellTap = { t, x: e.clientX, y: e.clientY };
     });
 
+    // ---------- Bell → notifications (Figma 112:15283) ----------
+    // Open: the little bell is absorbed (quick press, then gone) as the scrim + blur fade in; the header Lottie
+    // pops its own bell, rings it, and folds it into "Updates Today!"; while the words land, the stack is dealt
+    // in on springs — top card first, the two behind it fanning out after — the photos settle into their tilt,
+    // and the pager + hint rise last. Tap outside the card to close (the reverse, quicker).
+    var ntAnim = null, ntOpen = false;   // var: hideHome() can run before this line
+    const NT_PARTS = '.nt__scrim, .nt__head, .nt__card, .nt__b1, .nt__b2, .nt__foot, .nt__line, .nt__ph > span';   // never the Lottie's own SVG
+    const ntEl = document.getElementById('notifSheet'), nq = (sel) => ntEl.querySelector(sel);
+    function ensureNt() {
+      if (ntAnim || !window.lottie) return ntAnim;
+      ntAnim = lottie.loadAnimation({ container: document.getElementById('notifHead'), renderer: 'svg', loop: false,
+        autoplay: false, path: 'assets/lottie/notification-cards.json' });
+      return ntAnim;
+    }
+    function openNotif() {
+      if (ntOpen) return;
+      ntOpen = true;
+      const rm = reduceMotion.matches, a = ensureNt();
+      const go = (el, kf, dur, delay, easing, fill = 'both') => el.animate(kf, { duration: rm ? Math.min(dur, 200) : dur, delay: rm ? 0 : delay, easing, fill, pp: false });
+      const OUT = 'cubic-bezier(0.22, 1, 0.36, 1)', DEAL = spring(0.8, 0.5, 760), SOFT = spring(0.86, 0.42, 620);
+      haptic.light();
+      ntEl.querySelectorAll(NT_PARTS).forEach((el) => { el.getAnimations().forEach((x) => x.cancel()); el.removeAttribute('style'); });
+      homeScreen.classList.add('is-notif');
+      ntEl.classList.add('is-open'); ntEl.setAttribute('aria-hidden', 'false');
+      // the small bell is absorbed
+      const nb = hq('.hm__notif');
+      nb.style.transformOrigin = '327.69px 600.68px';     // the bell's centre
+      nb.animate([{ scale: '1', opacity: 1 }, { scale: '.86', opacity: 1, offset: .35 }, { scale: '.4', opacity: 0 }],
+        { duration: 300, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards', pp: false });
+      go(nq('.nt__scrim'), [{ opacity: 0 }, { opacity: 1 }], 420, 0, OUT);
+      if (a) { a.goToAndStop(0, true); setTimeout(() => ntOpen && a.play(), rm ? 0 : 90); }
+      go(nq('.nt__card'), [{ opacity: 0, translate: '0 90px', scale: '.94' }, { opacity: 1, translate: '0 0', scale: '1' }], 760, 660, DEAL);   // as the bell starts folding into the title (f41)
+      go(nq('.nt__b1'), [{ opacity: 0, translate: '0 -34px', scale: '.96' }, { opacity: 1, translate: '0 0', scale: '1' }], 640, 780, SOFT);
+      go(nq('.nt__b2'), [{ opacity: 0, translate: '0 -64px', scale: '.94' }, { opacity: 1, translate: '0 0', scale: '1' }], 640, 840, SOFT);
+      go(nq('.nt__ph--1 > span'), [{ rotate: '0deg', scale: '.9', opacity: 0 }, { rotate: '-3deg', scale: '1', opacity: 1 }], 620, 880, SOFT);
+      go(nq('.nt__ph--2 > span'), [{ rotate: '0deg', scale: '.9', opacity: 0 }, { rotate: '5.07deg', scale: '1', opacity: 1 }], 620, 940, SOFT);
+      go(nq('.nt__foot'), [{ opacity: 0, translate: '0 14px' }, { opacity: 1, translate: '0 0' }], 480, 1040, OUT);
+      go(nq('.nt__line'), [{ opacity: 0 }, { opacity: 1 }], 700, 880, OUT);
+    }
+    function closeNotif() {
+      if (!ntOpen) return;
+      ntOpen = false;
+      const IN = 'cubic-bezier(0.4, 0, 1, 1)';
+      const out = (el, to, dur, delay = 0) => el.animate([{}, to], { duration: dur, delay, easing: IN, fill: 'forwards', pp: false });
+      ntEl.querySelectorAll(NT_PARTS).forEach((el) => el.getAnimations().forEach((x) => { x.commitStyles(); x.cancel(); }));
+      out(nq('.nt__card'), { opacity: 0, translate: '0 70px', scale: '.96' }, 260);
+      out(nq('.nt__b1'), { opacity: 0, translate: '0 50px' }, 240, 20);
+      out(nq('.nt__b2'), { opacity: 0, translate: '0 40px' }, 220, 40);
+      out(nq('.nt__foot'), { opacity: 0, translate: '0 10px' }, 180);
+      out(nq('.nt__line'), { opacity: 0 }, 220);
+      out(nq('.nt__head'), { opacity: 0, translate: '0 -12px' }, 220);
+      out(nq('.nt__scrim'), { opacity: 0 }, 320, 80).finished.then(() => {
+        if (ntOpen) return;
+        ntEl.classList.remove('is-open'); ntEl.setAttribute('aria-hidden', 'true');
+        ntEl.querySelectorAll(NT_PARTS).forEach((el) => { el.getAnimations().forEach((x) => x.cancel()); el.removeAttribute('style'); });
+        homeScreen.classList.remove('is-notif', 'has-bell');
+        hq('.hm__notif').getAnimations().forEach((x) => x.cancel());
+        if (ntAnim) ntAnim.goToAndStop(0, true);
+      }).catch(() => {});
+    }
+    document.getElementById('homeBell').addEventListener('click', () => { if (homeScreen.classList.contains('has-bell')) openNotif(); });
+    ntEl.addEventListener('click', (e) => { if (!e.target.closest('.nt__card, .nt__b1, .nt__b2')) closeNotif(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ntOpen) closeNotif(); });
+
     function hideHome() {
       (homeTimers || []).forEach(clearTimeout); homeTimers = [];
       if (typeof hdr !== 'undefined' && hdr) { cancelAnimationFrame(hdr.raf); cancelAnimationFrame(hdr.sraf); Object.assign(hdr, { y: 0, p: 0, v: 0, to: 0, raf: 0, sraf: 0, t: 0 }); }
@@ -3675,6 +3809,14 @@
       hs.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
       hs.classList.remove('is-shown', 'is-sel', 'is-locked', 'is-loading', 'has-bell');
       if (typeof bellAnim !== 'undefined' && bellAnim) bellAnim.goToAndStop(0, true);
+      if (typeof ntOpen !== 'undefined') {
+        ntOpen = false; hs.classList.remove('is-notif');
+        const nt = document.getElementById('notifSheet');
+        nt.classList.remove('is-open'); nt.setAttribute('aria-hidden', 'true');
+        nt.querySelectorAll(NT_PARTS).forEach((el) => { el.getAnimations().forEach((x) => x.cancel()); el.removeAttribute('style'); });
+        hs.querySelector('.hm__notif').getAnimations().forEach((x) => x.cancel());
+        if (ntAnim) ntAnim.goToAndStop(0, true);
+      }
       hs.setAttribute('aria-hidden', 'true');
       hs.querySelector('.hm__page').style.opacity = '';
       hs.querySelector('.hm__selbg').style.opacity = '';
