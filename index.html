@@ -3840,6 +3840,8 @@
       haptic.light();
       ntEl.querySelectorAll(NT_PARTS).forEach((el) => { el.getAnimations().forEach((x) => x.cancel()); });
       ['.nt__scrim', '.nt__head', '.nt__foot', '.nt__line'].forEach((q) => nq(q).removeAttribute('style'));
+      clearTimeout(ntCloseT);
+      ntStack.getAnimations().forEach((q) => q.cancel()); ntStack.removeAttribute('style');
       buildStack();
       homeScreen.classList.add('is-notif');
       ntEl.classList.add('is-open'); ntEl.setAttribute('aria-hidden', 'false');
@@ -3873,28 +3875,46 @@
       go(nq('.nt__foot'), [{ opacity: 0, translate: '0 14px' }, { opacity: 1, translate: '0 0' }], 480, CARD_AT + 560, OUT);
       go(nq('.nt__line'), [{ opacity: 0 }, { opacity: 1 }], 700, CARD_AT + 300, OUT);
     }
+    // Close, as one motion: the stack leaves as ONE layer (fading the cards one by one let the back cards ghost
+    // through the front one), header + footer clear first, the blur lifts on a soft ease-out, and the bell pops back
+    // into its spot once the cards are gone — under the still-clearing scrim, so the home page and the bell arrive
+    // together instead of one after the other.
+    var ntCloseT = 0;
     function closeNotif() {
       if (!ntOpen) return;
       ntOpen = false; ntDrag = null;
-      const IN = 'cubic-bezier(0.4, 0, 1, 1)';
-      const out = (el, to, dur, delay = 0) => el && el.animate([{}, to], { duration: dur, delay, easing: IN, fill: 'forwards', pp: false });
+      const rm = reduceMotion.matches;
+      const EXIT = 'cubic-bezier(0.4, 0, 0.75, 0.3)', LIFT = 'cubic-bezier(0.45, 0, 0.2, 1)';
+      const go = (el, kf, dur, delay, easing) => el.animate(kf, { duration: rm ? Math.min(dur, 160) : dur, delay: rm ? 0 : delay, easing, fill: 'forwards', pp: false });
+      // freeze everything exactly where it is (closing mid-reveal or mid-swipe included)
       ntEl.querySelectorAll(NT_PARTS).forEach((el) => el.getAnimations().forEach((x) => { x.commitStyles(); x.cancel(); }));
-      ntCards().slice(0, 3).forEach((c, i) => out(c, { opacity: 0, translate: `0 ${70 - i * 12}px` }, 260 - i * 20, i * 20));
-      out(nq('.nt__foot'), { opacity: 0, translate: '0 10px' }, 180);
-      out(nq('.nt__line'), { opacity: 0 }, 220);
-      out(nq('.nt__head'), { opacity: 0, translate: '0 -12px' }, 220);
-      out(nq('.nt__scrim'), { opacity: 0 }, 320, 80).finished.then(() => {
+      ntCards().forEach((c) => { c.style.translate = ''; c.style.scale = ''; c.style.opacity = '1'; });
+      if (ntAnim) ntAnim.pause();
+      ntStack.style.transformOrigin = '50% 35%';
+      // 1 · everything on the scrim leaves together and is gone by 260 ms — while the scrim is still dark,
+      //     so nothing half-faded ever sits over the home page
+      go(ntStack, [{ opacity: 1, translate: '0 0', scale: '1' }, { opacity: 0, translate: '0 48px', scale: '.94' }], 260, 0, EXIT);
+      go(nq('.nt__foot'), [{}, { opacity: 0, translate: '0 10px' }], 160, 0, EXIT);
+      go(nq('.nt__line'), [{}, { opacity: 0 }], 200, 0, EXIT);
+      go(nq('.nt__head'), [{}, { opacity: 0, translate: '0 -14px' }], 220, 0, EXIT);
+      // 2 · then the blur lifts (ease-in-out, from 150 ms) and the home page comes through clean
+      go(nq('.nt__scrim'), [{}, { opacity: 0 }], 440, 150, LIFT).finished.then(() => {
         if (ntOpen) return;
         ntEl.classList.remove('is-open'); ntEl.setAttribute('aria-hidden', 'true');
         ntEl.querySelectorAll(NT_PARTS).forEach((el) => { el.getAnimations().forEach((x) => x.cancel()); });
         ['.nt__scrim', '.nt__head', '.nt__foot', '.nt__line'].forEach((q) => nq(q).removeAttribute('style'));
+        ntStack.getAnimations().forEach((x) => x.cancel()); ntStack.removeAttribute('style');
         ntStack.textContent = '';
+        if (ntAnim) ntAnim.goToAndStop(0, true);
+      }).catch(() => {});
+      clearTimeout(ntCloseT);
+      ntCloseT = setTimeout(() => {                            // cards gone, the blur just starting to lift
+        if (ntOpen) return;
         homeScreen.classList.remove('is-notif');
         hq('.hm__notif').getAnimations().forEach((x) => x.cancel());   // undo the "absorbed" state…
         if (ntUnread()) ringBell();                                   // …the bell pops back in and rings, badge = unread
         else homeScreen.classList.remove('has-bell');                 // all caught up: nothing to ring about
-        if (ntAnim) ntAnim.goToAndStop(0, true);
-      }).catch(() => {});
+      }, rm ? 0 : 330);
     }
 
     // ---------- swipe ----------
@@ -4007,6 +4027,7 @@
         nt.classList.remove('is-open'); nt.setAttribute('aria-hidden', 'true');
         nt.querySelectorAll(NT_PARTS).forEach((el) => { el.getAnimations().forEach((x) => x.cancel()); el.removeAttribute('style'); });
         document.getElementById('ntStack').textContent = ''; ntRead = 0; ntDrag = null;
+        clearTimeout(ntCloseT); document.getElementById('ntStack').removeAttribute('style');
         hs.querySelector('.hm__notif').getAnimations().forEach((x) => x.cancel());
         if (ntAnim) ntAnim.goToAndStop(0, true);
       }
