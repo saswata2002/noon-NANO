@@ -972,7 +972,7 @@
     .int__line--2 { left: 56px; top: 31.7px; width: 166px; }
     /* Figma's 5px OUTSIDE white stroke, drawn as a ring of 24 shadows so its corners are round
        (-webkit-text-stroke can only mitre, which spiked at the W and ?) */
-    .int__line.is-stroke { color: #fff; text-shadow: 5.00px 0.00px 0 #fff, 4.83px 1.29px 0 #fff, 4.33px 2.50px 0 #fff, 3.54px 3.54px 0 #fff, 2.50px 4.33px 0 #fff, 1.29px 4.83px 0 #fff, 0.00px 5.00px 0 #fff, -1.29px 4.83px 0 #fff, -2.50px 4.33px 0 #fff, -3.54px 3.54px 0 #fff, -4.33px 2.50px 0 #fff, -4.83px 1.29px 0 #fff, -5.00px 0.00px 0 #fff, -4.83px -1.29px 0 #fff, -4.33px -2.50px 0 #fff, -3.54px -3.54px 0 #fff, -2.50px -4.33px 0 #fff, -1.29px -4.83px 0 #fff, -0.00px -5.00px 0 #fff, 1.29px -4.83px 0 #fff, 2.50px -4.33px 0 #fff, 3.54px -3.54px 0 #fff, 4.33px -2.50px 0 #fff, 4.83px -1.29px 0 #fff; }
+    :is(.int__line, .hm__fs).is-stroke { color: #fff; text-shadow: 5.00px 0.00px 0 #fff, 4.83px 1.29px 0 #fff, 4.33px 2.50px 0 #fff, 3.54px 3.54px 0 #fff, 2.50px 4.33px 0 #fff, 1.29px 4.83px 0 #fff, 0.00px 5.00px 0 #fff, -1.29px 4.83px 0 #fff, -2.50px 4.33px 0 #fff, -3.54px 3.54px 0 #fff, -4.33px 2.50px 0 #fff, -4.83px 1.29px 0 #fff, -5.00px 0.00px 0 #fff, -4.83px -1.29px 0 #fff, -4.33px -2.50px 0 #fff, -3.54px -3.54px 0 #fff, -2.50px -4.33px 0 #fff, -1.29px -4.83px 0 #fff, -0.00px -5.00px 0 #fff, 1.29px -4.83px 0 #fff, 2.50px -4.33px 0 #fff, 3.54px -3.54px 0 #fff, 4.33px -2.50px 0 #fff, 4.83px -1.29px 0 #fff; }
     .int__line.is-fill { color: transparent; -webkit-background-clip: text; background-clip: text; }
     .int__line--1.is-fill { background-image: linear-gradient(40.9deg, #000 52.85%, #7924ff 104.2%); }
     .int__line--2.is-fill { background-image: linear-gradient(51.67deg, #000 52.87%, #7924ff 118.1%); }
@@ -1005,8 +1005,8 @@
     .int__skip:active { opacity: .6; }
 
     /* ================= Selected Wallet (76:22259) → Home Page (76:21578) =================
-       Home coordinates throughout. The page scrolls (content runs to 2236); the bottom nav is the
-       frame's one fixed child. The wallet header (0, −1, 375 × 577, bottom radius 24) is live — its
+       Home coordinates throughout (105:25850). The page scrolls (content runs to 2605); the bottom nav is the
+       frame's one fixed child, and the footer (105:24523) waits under everything, revealed as the arcade scrolls off it. The wallet header (0, −1, 375 × 577, bottom radius 24) is live — its
        background and card are the skin picked earlier; every other section is a 3× Figma render. */
     .hm { position: absolute; inset: 0; z-index: 11; overflow: hidden; visibility: hidden; pointer-events: none; }
     .hm.is-shown { visibility: visible; pointer-events: auto; }
@@ -1015,14 +1015,14 @@
       -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: pan-y; }
     .hm__scroll::-webkit-scrollbar { display: none; }
     .hm.is-locked .hm__scroll { overflow-y: hidden; }
-    .hm__content { position: relative; width: 375px; height: 2236px; isolation: isolate; }
+    .hm__content { position: relative; width: 375px; height: 2605px; isolation: isolate; }
     .hm__content img { display: block; max-width: none; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
     /* blank page with the grid at both ends: over the home content while the card pops, then under it */
     .hm__selbg { position: absolute; left: 0; top: 0; width: 375px; height: 812px; z-index: 0; opacity: 0; pointer-events: none; }
     /* Selected Wallet stage: only the blank page + the card exist — every home layer stays unrendered
        until the build starts (they used to merely sit under the still-fading white page and flashed) */
     .hm.is-sel :is(.hm__wbg, .hm__ask, .hm__ready, .hm__topup, .hm__tag, .hm__cactus, .hm__switcher,
-      .hm__market, .hm__quest, .hm__game, .hm__bell, .hm__nav) { opacity: 0; }   /* opacity, not visibility: it isn't inherited, so no child can keep a stale hidden */
+      .hm__market, .hm__quest, .hm__game, .hm__bell, .hm__nav, .hm__foot) { opacity: 0; }   /* opacity, not visibility: it isn't inherited, so no child can keep a stale hidden */
     /* the header's clip (bottom radius 24) lives on its background only — the card's long baked shadow
        must not be cut off while it pops on the blank page */
     .hm__wallet { position: absolute; left: 0; top: -1px; width: 375px; height: 577px; }
@@ -1109,7 +1109,45 @@
     .hm__quest { left: 0; top: 998px; width: 375px; height: 622px; }
     .hm__game { left: 0; top: 1614px; width: 375px; height: 622px; }
     .hm__bell { left: 301.06px; top: 919.72px; width: 93px; height: 91px; z-index: 4; }
-    .hm__nav { position: absolute; left: 0; top: 680px; width: 375px; height: 132px; z-index: 2; display: block; pointer-events: none; }
+    .hm__nav { position: absolute; left: 0; top: 666.08px; width: 375px; height: 145.92px; z-index: 2; pointer-events: none; }
+    /* 105:24832 Bottom nav — white fade (Ellipse 24698: 462 × 165, white .7 → .9, layer blur 16 + background blur 12)
+       under a row of three 72-wide items (gap 20, pt 24, pb 6) and the 34px home-indicator strip */
+    .hm__nav > * { position: absolute; }
+    .hm__navblur, .hm__navfade { left: 50%; top: 11.16px; width: 462.201px; height: 164.735px; margin-left: -231.1px; border-radius: 50%; }
+    /* Figma's background blur (12) is itself softened by the layer blur (16), so the frosted area has no
+       hard rim: a stronger backdrop blur feathered out over the ellipse's outer fifth (fitted to the render) */
+    .hm__navblur { -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+      -webkit-mask: radial-gradient(farthest-side, #000 80%, transparent 100%); mask: radial-gradient(farthest-side, #000 80%, transparent 100%); }
+    .hm__navfade { background: linear-gradient(180deg, rgba(255,255,255,.7) 0%, rgba(255,255,255,.9) 54.54%); filter: blur(16px); }
+    .hm__navitems { left: 0; top: 0; width: 375px; display: flex; justify-content: center; align-items: flex-end; gap: 20px; padding: 24px 0 6px; }
+    .hm__ni { width: 72px; flex-shrink: 0; padding-top: 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .hm__nicon { position: relative; width: 51.92px; height: 51.92px; flex-shrink: 0; }
+    .hm__nicon img { position: absolute; display: block; max-width: none; user-select: none; -webkit-user-drag: none; }
+    .hm__nring { left: 0; top: 0; width: 51.92px; height: 51.92px; }
+    .hm__nbook { left: 1.3px; top: 0.37px; width: 49.324px; height: 49.324px; }
+    .hm__nwallet { left: -3.78px; top: 5.41px; width: 59.971px; height: 39.981px; rotate: -7.66deg; }
+    .hm__nacc { position: absolute; left: 0; top: 0; width: 52.847px; height: 51.92px; border-radius: 69.576px; overflow: hidden; background: #ff6301; }
+    .hm__nacc img { left: 4.21px; top: 2.41px; width: 43.488px; height: 54.341px; }
+    .hm__nlabel { width: 88px; height: 24px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;
+      font-weight: 500; font-size: 13px; line-height: normal; color: rgba(29,37,57,.62); white-space: nowrap; padding-top: 2px; }   /* glyphs 1px high in Chrome (measured) */
+    /* 105:24523 Footer — 375 × 390, the bottom-most layer: pinned to the viewport bottom (y 422) under the scroll,
+       so the arcade card slides up off it. Clipped (JS) to just below the arcade's bottom edge until then, so
+       it never shows through the gaps between the cards higher up. */
+    .hm__foot { position: absolute; left: 0; top: 422px; width: 375px; height: 390px; overflow: hidden; visibility: hidden;
+      background: linear-gradient(180deg, #fff 29.037%, #dbb8ff 116.86%); pointer-events: none; }
+    .hm__foot img { position: absolute; display: block; max-width: none; user-select: none; -webkit-user-drag: none; }
+    .hm__fbg { left: -63.335px; top: -188.149px; width: 473.941px; height: 416.834px; }
+    .hm__ftext { position: absolute; inset: 0; filter: drop-shadow(0 5px 10px rgba(61,41,163,.14)); }
+    .hm__fpill { position: absolute; left: 155.86px; top: 108.47px; width: 76.219px; height: 27.711px; background: #fff; }
+    .hm__fs { position: absolute; margin: 0; white-space: nowrap; text-align: center;
+      font-weight: 800; font-size: 36px; line-height: 48px; letter-spacing: -0.25px; }
+    .hm__fs--shop { left: 190.99px; top: 93.28px; transform: translate(-50%, -50%) rotate(-3.25deg); }   /* 105:24533 · 96.57 × 53.25 box at 142.7, 65.9 */
+    .hm__fs--earn { left: 94.74px; top: 100.18px; width: 194px; }   /* +1 / +0.5: Noontree sets high in Chrome vs Figma (measured) */
+    .hm__fs.is-fill { color: transparent; -webkit-background-clip: text; background-clip: text;
+      background-image: linear-gradient(90deg, #000 0%, #666d85 124.05%); }
+    .hm__fright { left: 176.1px; top: 104.09px; width: 254.323px; height: 132.131px; }
+    .hm__fhands { left: -33.4px; top: 90.09px; width: 230.344px; height: 172.758px; }
+    .hm__fart { left: 99.91px; top: 60.48px; width: 52.845px; height: 52.845px; rotate: -31.11deg; }
 
 
 
@@ -1556,6 +1594,18 @@
       <!-- ================= Selected Wallet (Figma 76:22259) → Home Page (76:21578) ================= -->
       <section class="hm" id="homeScreen" aria-hidden="true" aria-label="Home">
         <div class="hm__page"></div>
+        <!-- 105:24523 footer: bottom-most, pinned to the viewport bottom, revealed at the end of the scroll -->
+        <div class="hm__foot" aria-label="Shop, Earn &amp; Save">
+          <img class="hm__fbg" src="assets/home/footer/bg.svg" width="474" height="417" alt="">
+          <div class="hm__ftext" aria-hidden="true">
+            <span class="hm__fpill"></span>
+            <span class="hm__fs hm__fs--shop is-stroke">Shop,</span><span class="hm__fs hm__fs--shop is-fill">Shop,</span>
+            <span class="hm__fs hm__fs--earn is-stroke">Earn &amp; Save</span><span class="hm__fs hm__fs--earn is-fill">Earn &amp; Save</span>
+          </div>
+          <img class="hm__fright" src="assets/home/footer/art-right.webp" alt="">
+          <img class="hm__fhands" src="assets/home/footer/hands.webp" alt="">
+          <img class="hm__fart" src="assets/home/footer/art.webp" alt="">
+        </div>
         <div class="hm__scroll">
           <div class="hm__content">
             <!-- blank "Selected Wallet" page: same grid header as the interests page + the mirrored grid
@@ -1598,7 +1648,14 @@
             <a class="hm__tile" aria-label="noon Minutes"><img class="hm__tbig" src="assets/home/sw/minutes.webp" alt=""><span class="hm__tmini"><span class="wm wm--min">MINUTES</span></span></a>
           </nav>
         </div>
-        <img class="hm__nav" src="assets/home/nav.webp" width="375" height="132" alt="Tasks · Wallet · Account">
+        <nav class="hm__nav" aria-label="Tasks · Wallet · Account">
+          <div class="hm__navblur"></div><div class="hm__navfade"></div>
+          <div class="hm__navitems">
+            <a class="hm__ni"><span class="hm__nicon"><img class="hm__nring" src="assets/home/nav/tasks-ring.webp" alt=""><img class="hm__nbook" src="assets/home/nav/tasks.webp" alt=""></span><span class="hm__nlabel">Tasks</span></a>
+            <a class="hm__ni"><span class="hm__nicon"><img class="hm__nring" src="assets/home/nav/wallet-ring.webp" alt=""><img class="hm__nwallet" src="assets/home/nav/wallet.webp" alt=""></span><span class="hm__nlabel">Wallet</span></a>
+            <a class="hm__ni"><span class="hm__nicon"><span class="hm__nacc"><img src="assets/home/nav/account.webp" alt=""></span></span><span class="hm__nlabel">Account</span></a>
+          </div>
+        </nav>
       </section>
     </div>
   </main>
@@ -3286,7 +3343,8 @@
       [`assets/home/cards/${sk}.webp`, sk === 'lego' ? 'assets/home/wbg-lego.webp' : bgSrc(skinIdx), 'assets/home/sel-bg.webp',
         'assets/home/title.webp', 'assets/home/sw/nano.webp', 'assets/home/sw/noon.webp', 'assets/home/sw/supermall.webp',
         'assets/home/sw/food.webp', 'assets/home/sw/minutes.webp', 'assets/home/market-sheet.webp', 'assets/home/mk-noon.webp', 'assets/home/mk-food.webp',
-        'assets/home/mk-minutes.webp', 'assets/home/mk-supermall.webp', 'assets/home/quest.webp', 'assets/home/nav.webp',
+        'assets/home/mk-minutes.webp', 'assets/home/mk-supermall.webp', 'assets/home/quest.webp', 'assets/home/nav/tasks-ring.webp', 'assets/home/nav/tasks.webp',
+        'assets/home/nav/wallet-ring.webp', 'assets/home/nav/wallet.webp', 'assets/home/nav/account.webp',
         'assets/home/tag.webp', 'assets/home/cactusL.webp', 'assets/home/cactusR.webp'].forEach((src) => {
         const im = new Image(); im.decoding = 'async'; im.src = src; homePre.push(im); im.decode && im.decode().catch(() => {});
       });
@@ -3449,8 +3507,16 @@
       if (ms >= HDR_MS) { hdr.anim = null; return; }
       requestAnimationFrame(stepHdr);
     }
+    // footer reveal: shown only below the arcade card's bottom edge (content y 2236, less 30 for its corners)
+    function clipFoot() {                                  // a declaration (hoisted): hideHome() can run before this line
+      const hs = document.getElementById('homeScreen'), hmFoot = hs.querySelector('.hm__foot');
+      const t = Math.max(0, Math.min(390, 2236 - 30 - hs.querySelector('.hm__scroll').scrollTop - 422));
+      hmFoot.style.visibility = t >= 390 ? '' : 'visible';
+      hmFoot.style.clipPath = t > 0 && t < 390 ? `inset(${t}px 0 0 0)` : '';
+    }
     hmScroll.addEventListener('scroll', () => {
       const y = hmScroll.scrollTop;
+      clipFoot();
       if (!hdr.collapsed && y > 2) setHdrCollapsed(true);
       else if (hdr.collapsed && y <= 0) setHdrCollapsed(false);
     }, { passive: true });
@@ -3466,6 +3532,7 @@
       hs.querySelector('.hm__selbg').style.opacity = '';
       hs.querySelector('.hm__card').style.transform = '';
       hs.querySelector('.hm__scroll').scrollTop = 0;
+      clipFoot();
     }
     hq('.hm__topup').addEventListener('click', () => haptic.light());
 
