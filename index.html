@@ -3769,13 +3769,24 @@
         { duration: 300, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards', pp: false });
       go(nq('.nt__scrim'), [{ opacity: 0 }, { opacity: 1 }], 420, 0, OUT);
       if (a) { a.goToAndStop(0, true); setTimeout(() => ntOpen && a.play(), rm ? 0 : 90); }
-      go(nq('.nt__card'), [{ opacity: 0, translate: '0 90px', scale: '.94' }, { opacity: 1, translate: '0 0', scale: '1' }], 760, 660, DEAL);   // as the bell starts folding into the title (f41)
-      go(nq('.nt__b1'), [{ opacity: 0, translate: '0 -34px', scale: '.96' }, { opacity: 1, translate: '0 0', scale: '1' }], 640, 780, SOFT);
-      go(nq('.nt__b2'), [{ opacity: 0, translate: '0 -64px', scale: '.94' }, { opacity: 1, translate: '0 0', scale: '1' }], 640, 840, SOFT);
-      go(nq('.nt__ph--1 > span'), [{ rotate: '0deg', scale: '.9', opacity: 0 }, { rotate: '-3deg', scale: '1', opacity: 1 }], 620, 880, SOFT);
-      go(nq('.nt__ph--2 > span'), [{ rotate: '0deg', scale: '.9', opacity: 0 }, { rotate: '5.07deg', scale: '1', opacity: 1 }], 620, 940, SOFT);
-      go(nq('.nt__foot'), [{ opacity: 0, translate: '0 14px' }, { opacity: 1, translate: '0 0' }], 480, 1040, OUT);
-      go(nq('.nt__line'), [{ opacity: 0 }, { opacity: 1 }], 700, 880, OUT);
+      // 1 · the top card pops on its own (as the bell starts folding into the title, f41): a springy scale-up
+      //     from .86 with ~4 % overshoot, rising 36 px; its opacity comes up fast so the pop reads as solid
+      const CARD_AT = 660, POP = spring(0.62, 0.42, 720);
+      go(nq('.nt__card'), [{ translate: '0 36px', scale: '.86' }, { translate: '0 0', scale: '1' }], 720, CARD_AT, POP);
+      go(nq('.nt__card'), [{ opacity: 0 }, { opacity: 1 }], 180, CARD_AT, OUT);
+      // 2 · once it has landed, the two cards behind slide out from under its bottom edge, one after the other.
+      //     They start fully tucked behind it (opaque — no ghosting), so only the edges that peek out move.
+      const PEEK = spring(0.72, 0.4, 620), tuck = (el, dy, at) => {
+        el.animate([{ opacity: 1 }, { opacity: 1 }], { duration: 1, delay: rm ? 0 : at, fill: 'forwards', pp: false });   // visible from its start only
+        go(el, [{ translate: `0 ${dy}px` }, { translate: '0 0' }], 620, at, PEEK);
+      };
+      tuck(nq('.nt__b1'), -26, CARD_AT + 300);
+      tuck(nq('.nt__b2'), -40, CARD_AT + 420);
+      // 3 · then the card's own contents settle and the footer rises
+      go(nq('.nt__ph--1 > span'), [{ rotate: '0deg', scale: '.9', opacity: 0 }, { rotate: '-3deg', scale: '1', opacity: 1 }], 620, CARD_AT + 180, SOFT);
+      go(nq('.nt__ph--2 > span'), [{ rotate: '0deg', scale: '.9', opacity: 0 }, { rotate: '5.07deg', scale: '1', opacity: 1 }], 620, CARD_AT + 240, SOFT);
+      go(nq('.nt__foot'), [{ opacity: 0, translate: '0 14px' }, { opacity: 1, translate: '0 0' }], 480, CARD_AT + 560, OUT);
+      go(nq('.nt__line'), [{ opacity: 0 }, { opacity: 1 }], 700, CARD_AT + 300, OUT);
     }
     function closeNotif() {
       if (!ntOpen) return;
