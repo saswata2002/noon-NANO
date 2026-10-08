@@ -12,6 +12,8 @@
   <script>
     // Phones / tablets use their own keyboards: the drawn keyboard + number pad are desktop-only
     if (matchMedia('(hover: none) and (pointer: coarse)').matches) document.documentElement.classList.add('is-touch');
+    // Android GPUs pay heavily for backdrop blurs that have to be recomputed while content scrolls under them
+    if (/Android/i.test(navigator.userAgent)) document.documentElement.classList.add('is-android');
   </script>
   <title>Login · Email</title>
   <link rel="preload" href="fonts/Noontree-ExtraBold.otf" as="font" type="font/otf" crossorigin>
@@ -1200,6 +1202,14 @@
       background: linear-gradient(180deg, rgba(0,0,0,.6) 0%, rgba(47,41,57,.93) 41.002%); opacity: 0; }
     /* same placement as before (512 comp at .5 from 59, 48), anchored at its centre so it can also scale about
        it: the box sits at −69, −80 and scales .5 around (256, 256) → visual 256 × 256 from 59, 48 */
+    /* Android: no backdrop blur where content scrolls underneath (re-blurred every frame) — the nav keeps its white
+       fade, the task cards are ≥ 80 % white anyway, so the look barely changes */
+    .is-android .hm__navblur, .is-android .hm__tk { -webkit-backdrop-filter: none; backdrop-filter: none; }
+    .is-android .hm__navfade { background: linear-gradient(180deg, rgba(255,255,255,.78) 0%, rgba(255,255,255,.94) 54.54%); }
+    /* the header plays as a pre-rendered animated WebP (every frame of the Lottie, 1.5× the comp, 60 fps, once):
+       decoded off the main thread, one frame in memory — the live SVG Lottie (masks + 3 matte copies + a 12.9×
+       image) dropped frames on Android while the scrim, glide and cards ran. Placed at its crop box in the comp. */
+    .nt__headimg { position: absolute; left: 24.667px; top: 73.333px; width: 445.333px; height: 331.333px; display: block; max-width: none; }
     .nt__head { position: absolute; left: -69px; top: -80px; width: 512px; height: 512px; transform: scale(.5); transform-origin: 50% 50%; pointer-events: none; }
     .nt__stack { position: absolute; left: 0; top: 256px; width: 375px; height: 440px; }
     /* Every update is a full card in a slot: 0 = front (20, 12, 335 × 400); 1 and 2 are Figma's "Behind · 1/2"
@@ -1585,9 +1595,9 @@
              phones, where the Lottie's 6 track mattes + 12 full-size gradient ripples stuttered as
              SVG. Shown with multiply: its white background drops out over the white page, so the
              coin still grows out of the collapsing green disc beneath. -->
-        <video class="otp__success" id="otpTick" src="assets/tick-otp.mp4" muted playsinline preload="auto" aria-hidden="true"></video>
+        <video class="otp__success" id="otpTick" src="assets/tick-otp.mp4" muted playsinline preload="metadata" aria-hidden="true"></video>
         <!-- plays the moment the tick Lottie ends (Wallet Intro, 750 × 1624 = 375 × 812 @2x, 2 s, opens on white) -->
-        <video class="otp__intro" id="walletIntro" src="assets/wallet-intro.mp4" muted playsinline preload="auto" aria-hidden="true"></video>
+        <video class="otp__intro" id="walletIntro" src="assets/wallet-intro.mp4" muted playsinline preload="metadata" aria-hidden="true"></video>
         <div class="numpad" id="numpad" aria-label="Number pad">
           <img class="numpad__img" src="assets/numpad@3x.png" width="375" height="318" alt="">
           <button class="numpad__key" type="button" data-key="1" style="left: 6.67px; top: 24px" aria-label="1"></button>
@@ -1844,7 +1854,7 @@
         <!-- 112:15283 notifications, opened from the bell -->
         <div class="nt" id="notifSheet" role="dialog" aria-modal="true" aria-label="Updates today" aria-hidden="true">
           <div class="nt__scrim"></div>
-          <div class="nt__head" id="notifHead" aria-hidden="true"></div>
+          <div class="nt__head" id="notifHead" aria-hidden="true"><img class="nt__headimg" alt="" decoding="async"></div>
           <div class="nt__stack" id="ntStack"></div>
           <div class="nt__foot"><div class="nt__pager" aria-label="Update 1 of 4"><span class="nt__pg-n"><b>1</b></span><span class="nt__pg-of"> of </span><span class="nt__pg-t">4</span></div><p>Swipe left or right to mark as read</p></div>
           <div class="nt__line" aria-hidden="true"><span><img src="assets/home/notif/line.svg" alt=""></span></div>
@@ -1991,6 +2001,9 @@
 
     if (src) {
       video.addEventListener('playing', () => screen.classList.add('is-playing'), { once: true });
+      // the OTP tick + Wallet Intro videos buffer only once the splash is playing (on a phone connection they used to
+      // download alongside it and delay its first frames); Send OTP primes them well before they're needed
+      video.addEventListener('playing', () => setTimeout(() => ['otpTick', 'walletIntro'].forEach((id) => { const v = document.getElementById(id); if (v) v.preload = 'auto'; }), 2500), { once: true });
       // A bad path keeps the still in place rather than showing an empty box.
       video.addEventListener('error', () => screen.classList.remove('is-playing'));
       video.src = src;
@@ -2030,8 +2043,20 @@
       }, 1200), { once: true });
       video.addEventListener('ended', startLoop);
       video.addEventListener('error', startLoop);
-      // the loop never stops: resume it when the tab comes back (browsers pause background video)
-      document.addEventListener('visibilitychange', () => { if (!document.hidden && loopOn && loopVideo.paused) loopVideo.play().catch(() => {}); });
+      // the loop never stops while it can be seen: resume it when the tab comes back (browsers pause background video)
+      document.addEventListener('visibilitychange', () => { if (!document.hidden && loopOn && loopVideo.paused && !loopCovered()) loopVideo.play().catch(() => {}); });
+      // …but once an opaque full-screen page covers it (skin picker → avatar → interests → home) it's paused: decoding
+      // a 750 × 1624 60 fps video under every later screen cost phones (Android especially) frames in every animation.
+      // It resumes the moment the login can be seen again (Reset, back paths).
+      const covers = ['skinScreen', 'avatarScreen', 'intScreen', 'homeScreen'].map((id) => document.getElementById(id)).filter(Boolean);
+      const loopCovered = () => covers.some((el) => el.classList.contains('is-shown'));
+      const syncLoop = () => {
+        if (!loopOn) return;
+        if (loopCovered()) { if (!loopVideo.paused) loopVideo.pause(); }
+        else if (loopVideo.paused && !document.hidden) loopVideo.play().catch(() => {});
+      };
+      const mo = new MutationObserver(syncLoop);
+      covers.forEach((el) => mo.observe(el, { attributes: true, attributeFilter: ['class'] }));
     }
 
     // Phones: size the frame in px from the window, and never while a field is focused — Safari's
@@ -3873,8 +3898,32 @@
         .then(() => cur.remove()).catch(() => cur.remove());
       nb.animate([{ translate: '0 12px', opacity: 0 }, { translate: '0 0', opacity: 1 }], { duration: 260, easing: E, pp: false });
     }
+    // The header: an animated WebP of the Lottie's frames. Each play gets a fresh blob URL so it starts from frame 0
+    // (browsers share one animation timeline per image URL). The spec sheet's recorder (?spec) runs a virtual clock an
+    // animated image can't follow, so it keeps the live Lottie.
+    const NT_LIVE_LOTTIE = /[?&]spec=/.test(location.search);
+    const NT_WEBP = 'assets/lottie/notification-cards.webp', NT_LAST = 'assets/lottie/notification-cards-last.webp';
+    function headPlayer() {
+      const img = document.querySelector('#notifHead .nt__headimg');
+      let blob = null, url = null, n = 0;
+      fetch(NT_WEBP).then((r) => r.blob()).then((b) => { blob = b; }).catch(() => {});
+      new Image().src = NT_LAST;
+      const clear = () => { img.removeAttribute('src'); if (url) { URL.revokeObjectURL(url); url = null; } };
+      return {
+        isLoaded: true, isPaused: true, totalFrames: 115, currentFrame: 0,
+        goToAndStop() { clear(); },
+        play() {
+          clear();
+          if (reduceMotion.matches) { img.src = NT_LAST; return; }
+          if (blob) { url = URL.createObjectURL(blob); img.src = url; } else img.src = `${NT_WEBP}?play=${++n}`;
+        },
+        pause() {},
+      };
+    }
     function ensureNt() {
-      if (ntAnim || !window.lottie) return ntAnim;
+      if (ntAnim) return ntAnim;
+      if (!NT_LIVE_LOTTIE) return (ntAnim = headPlayer());
+      if (!window.lottie) return null;
       ntAnim = lottie.loadAnimation({ container: document.getElementById('notifHead'), renderer: 'svg', loop: false,
         autoplay: false, path: 'assets/lottie/notification-cards.json' });
       return ntAnim;
