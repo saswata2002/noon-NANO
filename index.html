@@ -1174,6 +1174,20 @@
     .hm__tape--3 > span { width: 54.827px; height: 23.426px; rotate: 16.68deg; opacity: .8; }
     .hm__tape--3 img { left: -56.828px; top: -6.866px; width: 172.206px; height: 114.804px; }
     .hm__game { left: 0; top: 1532.96px; width: 375px; height: 622px; }
+    /* 108:32036 "Bell (fixed)": double-tap the nano tile → HOMEPAGE_NOTIFICATION.lottie (512² comp, 60 fps, 1.5 s:
+       pops from 0 with an overshoot, swings, rests by frame 72) plays fixed over the page, then the "1" badge pops.
+       Placed by registering the Lottie's last frame against Figma's bell (sticker 75 px, rotate 15°, centred at
+       327.69, 600.68): scale .199, origin 279.19, 553.68 (mean alpha error .4 %). Badge: Ellipse 24717 at
+       (307.18, 569.38) Ø 19.8 — its svg carries the 1/2 drop shadow, hence the −1 px / 23.8 box. */
+    .hm__notif { position: absolute; inset: 0; z-index: 4; pointer-events: none; visibility: hidden; }
+    .hm.has-bell .hm__notif { visibility: visible; }
+    .hm__notif-bell { position: absolute; left: 279.19px; top: 553.68px; width: 512px; height: 512px;
+      transform: scale(0.199); transform-origin: 0 0; }
+    .hm__bdg { position: absolute; left: 306.18px; top: 569.38px; width: 23.805px; height: 23.805px;
+      transform-origin: 10.9px 9.9px; scale: 0; }
+    .hm__bdg img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    .hm__bdg b { position: absolute; left: 10.9px; top: 2.87px; transform: translateX(-50%); font-weight: 700; font-size: 13px;
+      line-height: 14px; letter-spacing: -0.1px; color: #fff; }
     /* 107:28277 the bell sticker, now hanging off the second task card (tasks-local 318.75, 307.7) */
     .hm__bell { left: 318.75px; top: 1301.66px; width: 79.608px; height: 79.608px; z-index: 4;
       filter: drop-shadow(0 4px 4px rgba(0,0,0,.05)) drop-shadow(0 4px 8px rgba(0,0,0,.25)); }
@@ -1747,6 +1761,7 @@
             <a class="hm__tile hm__tile--min" aria-label="noon Minutes"><img class="hm__tbig" src="assets/home/sw/minutes.webp" alt=""><span class="hm__tmini"><img src="assets/home/pills/minutes.svg" alt="" style="left:-6px;top:-4px;width:90px;height:56px"></span></a>
           </nav>
         </div>
+        <div class="hm__notif" aria-hidden="true"><div class="hm__notif-bell" id="homeBell"></div><span class="hm__bdg"><img src="assets/home/tasks/badge.svg" alt=""><b>1</b></span></div>
         <nav class="hm__nav" aria-label="Tasks · Wallet · Account">
           <div class="hm__navblur"></div><div class="hm__navfade"></div>
           <div class="hm__navitems">
@@ -3438,6 +3453,7 @@
     var homeTimers = [];                                   // var: hideHome() can run (via hideInterests) before this line
     const homePre = [];
     function preloadHome() {
+      if (typeof ensureBell === 'function') ensureBell();
       const sk = wrapSkin(skinIdx);
       [`assets/home/cards/${sk}.webp`, sk === 'lego' ? 'assets/home/wbg-lego.webp' : bgSrc(skinIdx), 'assets/home/sel-bg.webp',
         'assets/home/title.webp', 'assets/home/sw/nano.webp', 'assets/home/sw/noon.webp', 'assets/home/sw/supermall.webp',
@@ -3627,12 +3643,38 @@
       });
     }, { passive: true });
 
+    // ---------- Double-tap the nano tile → notification bell (Figma 108:32012) ----------
+    var bellAnim = null, bellTap = { t: 0, x: 0, y: 0 };   // var: hideHome() can run before this line
+    function ensureBell() {
+      if (bellAnim || !window.lottie) return bellAnim;
+      bellAnim = lottie.loadAnimation({ container: document.getElementById('homeBell'), renderer: 'svg', loop: false,
+        autoplay: false, path: 'assets/lottie/home-notification.json' });
+      return bellAnim;
+    }
+    function ringBell() {
+      const a = ensureBell();
+      if (!a) return;
+      homeScreen.classList.add('has-bell');
+      haptic.light();
+      a.goToAndPlay(0, true);                                // the bell pops from 0 and swings (lands ~0.53 s)
+      const b = hq('.hm__bdg');
+      b.getAnimations().forEach((x) => x.cancel());
+      b.animate([{ scale: 0 }, { scale: 1 }], { duration: 560, delay: reduceMotion.matches ? 0 : 420,
+        easing: spring(0.55, 0.36, 560), fill: 'both', pp: false });
+    }
+    hq('.hm__tile--nano').addEventListener('pointerup', (e) => {
+      const t = performance.now();
+      if (t - bellTap.t < 320 && Math.hypot(e.clientX - bellTap.x, e.clientY - bellTap.y) < 24) { bellTap.t = 0; ringBell(); }
+      else bellTap = { t, x: e.clientX, y: e.clientY };
+    });
+
     function hideHome() {
       (homeTimers || []).forEach(clearTimeout); homeTimers = [];
       if (typeof hdr !== 'undefined' && hdr) { cancelAnimationFrame(hdr.raf); cancelAnimationFrame(hdr.sraf); Object.assign(hdr, { y: 0, p: 0, v: 0, to: 0, raf: 0, sraf: 0, t: 0 }); }
       const hs = document.getElementById('homeScreen');
       hs.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
-      hs.classList.remove('is-shown', 'is-sel', 'is-locked', 'is-loading');
+      hs.classList.remove('is-shown', 'is-sel', 'is-locked', 'is-loading', 'has-bell');
+      if (typeof bellAnim !== 'undefined' && bellAnim) bellAnim.goToAndStop(0, true);
       hs.setAttribute('aria-hidden', 'true');
       hs.querySelector('.hm__page').style.opacity = '';
       hs.querySelector('.hm__selbg').style.opacity = '';
