@@ -1219,7 +1219,9 @@
     .nt__card { position: absolute; left: 20px; top: 12px; width: 335px; height: 400px; margin: 0; padding: 22px; border-radius: 24px; overflow: hidden;
       display: flex; flex-direction: column; align-items: flex-start; gap: 16px; opacity: 0;
       background: linear-gradient(180deg, #fff 0%, #fff 40%, var(--tone-bg, #ddf7ea) 100%); box-shadow: 0 6px 18px rgba(15,20,41,.06);
-      touch-action: none; user-select: none; -webkit-user-select: none; transform-origin: 50% 0; will-change: transform; }
+      touch-action: none; user-select: none; -webkit-user-select: none; transform-origin: 50% 0; isolation: isolate; }
+    /* no will-change on the cards: it pins their raster scale, so a card promoted from a scaled-down slot could stay
+       soft / snap sharp on Android GPUs — WAAPI transform animations are composited anyway, and re-raster at rest */
     .nt__card[data-tone="purple"] { --tone-bg: #ece2ff; --tone-chip: #f1e9ff; --tone-ink: #6a24d9; --tone-icon: #7924ff; }
     .nt__card[data-tone="amber"]  { --tone-bg: #fff0d6; --tone-chip: #fff4dc; --tone-ink: #a35d00; --tone-icon: #e08a00; }
     .nt__card[data-tone="purple"] .nt__badge, .nt__card[data-tone="amber"] .nt__badge { background: var(--tone-chip); }
@@ -3837,11 +3839,13 @@
     var ntRead = 0;                                            // updates read so far (front card = NOTIFS[ntRead])
     var ntHintGone = false;                                    // the swipe hint, once a card has been swiped
     const ntUnread = () => NOTIFS.length - ntRead;
+    // uniform scales (x = y): Figma's Behind widths (311 / 287) and bottom edges (426 / 438.04) exactly — the only parts
+    // that show; a non-uniform scale distorted the cards' text + photos in raster and while scaling back to 1 (Android)
     const SLOTS = [
       { ty: 0, sx: 1, sy: 1, veil: 0, tint: '#f2f2fa' },
-      { ty: 34, sx: 311 / 335, sy: 380 / 400, veil: 1, tint: '#f2f2fa' },
-      { ty: 66.04, sx: 287 / 335, sy: 360 / 400, veil: 1, tint: '#e5e5f2' },
-      { ty: 84, sx: 263 / 335, sy: 340 / 400, veil: 1, tint: '#e5e5f2' },
+      { ty: 42.64, sx: 311 / 335, sy: 311 / 335, veil: 1, tint: '#f2f2fa' },
+      { ty: 83.35, sx: 287 / 335, sy: 287 / 335, veil: 1, tint: '#e5e5f2' },
+      { ty: 100, sx: 263 / 335, sy: 263 / 335, veil: 1, tint: '#e5e5f2' },
     ];
     const slotAt = (k) => SLOTS[Math.min(k, 3)];
     const slotT = (k, toward = 0) => {                      // slot k, `toward` of the way to slot k − 1
@@ -3968,13 +3972,20 @@
       // 2 · the cards behind follow through before the front one has quite landed (overlapped, 80 ms apart): each
       //     starts tucked fully under it (opaque — no ghosting) and eases out from its bottom edge, settling from .985
       //     The deck rises as ONE: the cards behind ride up with the front card, tucked under it (same motion, so
-      //     no edge can peek out early), then slide out on an additive animation layered on top of the rise.
-      const PEEK = spring(0.95, 0.55, 850), tuck = (el, dy, at) => {
+      //     no edge can peek out early), then slide out. Both motions are pre-summed into ONE keyframe track per card
+      //     (no composite: 'add' layering for the GPU to combine).
+      const sx = (z, resp, t) => { if (t <= 0) return 0; const w = 2 * Math.PI / resp, wd = w * Math.sqrt(1 - z * z);
+        return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + (z * w / wd) * Math.sin(wd * t)); };
+      const tuck = (el, dy, at) => {
         if (!el) return;
         if (rm) { el.animate([{ opacity: 0 }, { opacity: 0 }], { duration: 1, pp: false }); return; }
-        go(el, [{ translate: '0 560px' }, { translate: '0 0' }], 900, CARD_AT, DEAL);
-        el.animate([{ translate: `0 ${dy}px`, scale: '.985' }, { translate: '0 0', scale: '1' }],
-          { duration: 850, delay: at, easing: PEEK, fill: 'both', composite: 'add', pp: false });
+        const lead = at - CARD_AT, D = lead + 850, N = 48, kf = [];
+        for (let i = 0; i <= N; i++) {
+          const t = (i / N) * D / 1000, tp = t - lead / 1000;
+          const rise = i === N ? 0 : 560 * (1 - Math.min(1, sx(0.97, 0.6, t))), p = i === N ? 1 : Math.max(0, sx(0.95, 0.55, tp));
+          kf.push({ offset: i / N, translate: `0 ${(rise + dy * (1 - p)).toFixed(2)}px`, scale: (0.985 + 0.015 * p).toFixed(4) });
+        }
+        go(el, kf, D, CARD_AT, 'linear');
       };
       tuck(c1, -26, CARD_AT + 300);
       tuck(c2, -40, CARD_AT + 380);
