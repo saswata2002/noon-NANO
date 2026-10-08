@@ -3890,30 +3890,30 @@
       if (a) { a.goToAndStop(0, true); setTimeout(() => ntOpen && a.play(), rm ? 0 : 90); }
       // 0 · the header Lottie plays in the middle of the screen (its title centre at y ≈ 406, 1.12×); once the
       //     words have landed and the bell is settling (≈ f76), it glides up to its place and everything else follows
-      const HEAD_DY = 226, MOVE_AT = 1350;
-      if (!rm) go(nq('.nt__head'), [{ translate: `0 ${HEAD_DY}px`, scale: '1.12' }, { translate: '0 0', scale: '1' }], 720, MOVE_AT, spring(0.84, 0.5, 720));
+      const HEAD_DY = 226, MOVE_AT = 1250, GLIDE = spring(0.9, 0.55, 820);   // ζ .9: settles with no visible overshoot
+      if (!rm) go(nq('.nt__head'), [{ translate: `0 ${HEAD_DY}px`, scale: '1.12' }, { translate: '0 0', scale: '1' }], 820, MOVE_AT, GLIDE);
       const [c0, c1, c2] = ntCards();
       ntCards().forEach((c) => (c.style.opacity = '1'));
-      // 1 · the front card pops on its own: a quick, well-damped scale-up from .9 rising 28 px (~1 % overshoot),
-      //     opacity up in 200 ms so it reads solid
-      const CARD_AT = rm ? 0 : MOVE_AT + 240, POP = spring(0.78, 0.36, 560);   // as the header leaves the centre
-      go(c0, [{ translate: '0 28px', scale: '.9' }, { translate: '0 0', scale: '1' }], 560, CARD_AT, POP);
-      go(c0, [{ opacity: 0 }, { opacity: 1 }], 200, CARD_AT, OUT);
+      // 1 · the front card rises in behind the header as it goes up — the same soft spring, so the two read as one
+      //     motion: from 72 px lower and .95, fading in over 320 ms (no pop, no overshoot)
+      const CARD_AT = rm ? 0 : MOVE_AT + 180;
+      go(c0, [{ translate: '0 72px', scale: '.95' }, { translate: '0 0', scale: '1' }], 820, CARD_AT, GLIDE);
+      go(c0, [{ opacity: 0 }, { opacity: 1 }], 320, CARD_AT, OUT);
       // 2 · once it has landed, the two cards behind slide out from under its bottom edge, one after the other.
       //     They start fully tucked behind it (opaque — no ghosting), so only the edges that peek out move.
-      const PEEK = spring(0.72, 0.4, 620), tuck = (el, dy, at) => {
+      const PEEK = spring(0.86, 0.48, 700), tuck = (el, dy, at) => {
         if (!el) return;
         el.animate([{ opacity: 0 }, { opacity: 0 }], { duration: rm ? 1 : at, pp: false });   // hidden until its own start
-        go(el, [{ translate: `0 ${dy}px` }, { translate: '0 0' }], 620, at, PEEK);
+        go(el, [{ translate: `0 ${dy}px` }, { translate: '0 0' }], 700, at, PEEK);
       };
-      tuck(c1, -26, CARD_AT + 240);
-      tuck(c2, -40, CARD_AT + 340);
+      tuck(c1, -26, CARD_AT + 380);
+      tuck(c2, -40, CARD_AT + 500);
       // a strong haptic as each card lands — front pop, then each card behind (all inside WebKit's ~1 s
       // tap window, so iOS Safari plays them too)
-      if (!rm) [[c0, CARD_AT + 170], [c1, CARD_AT + 330], [c2, CARD_AT + 430]].forEach(([c, at]) => { if (c) ntTimers.push(setTimeout(() => ntOpen && haptic.heavy(), at)); });
+      if (!rm) [[c0, CARD_AT + 320], [c1, CARD_AT + 520], [c2, CARD_AT + 640]].forEach(([c, at]) => { if (c) ntTimers.push(setTimeout(() => ntOpen && haptic.heavy(), at)); });
       // 3 · then the footer rises (a card's contents never animate — they ride with their card, static)
-      go(nq('.nt__foot'), [{ opacity: 0, translate: '0 14px' }, { opacity: 1, translate: '0 0' }], 480, CARD_AT + 480, OUT);
-      go(nq('.nt__line'), [{ opacity: 0 }, { opacity: 1 }], 700, CARD_AT + 260, OUT);
+      go(nq('.nt__foot'), [{ opacity: 0, translate: '0 12px' }, { opacity: 1, translate: '0 0' }], 520, CARD_AT + 600, OUT);
+      go(nq('.nt__line'), [{ opacity: 0 }, { opacity: 1 }], 800, CARD_AT + 300, OUT);
     }
     // Close, as one motion: the stack leaves as ONE layer (fading the cards one by one let the back cards ghost
     // through the front one), header + footer clear first, the blur lifts on a soft ease-out, and the bell pops back
