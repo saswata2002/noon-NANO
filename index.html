@@ -1198,6 +1198,18 @@
        8 layers below the clapper; lottie-web wants it directly above, so the layer was moved (no visual change). */
     .nt { position: absolute; inset: 0; z-index: 8; visibility: hidden; pointer-events: none; overflow: hidden; }
     .nt.is-open { visibility: visible; pointer-events: auto; }
+    /* pre-raster: while the bell rings, the built stack sits in its slots at 0.1 % (invisible, no touches) on its own
+       layers, so Android rasterises the cards while idle — not on the frame the deck starts to rise (a 250 ms stall) */
+    /* Android: the scrim's backdrop-filter had to be re-blurred whenever the header / cards above it started moving —
+       a 250 ms stall on the deck's rise (measured on Android Chrome; gone with the blur off). Instead the home page's
+       own layers carry the same 2.5 px blur as a plain filter: computed while the scrim fades in, then cached. */
+    .is-android .nt__scrim, .is-android .nt__pager { -webkit-backdrop-filter: none; backdrop-filter: none; }
+    .is-android .nt__pager { background: rgba(13,10,26,.62); }   /* its 6 px blur was invisible over the dark scrim — and cost a hitch as the footer landed */
+    .is-android .hm > :is(.hm__page, .hm__scroll, .hm__hdr, .hm__nav, .hm__foot) { transition: filter .48s cubic-bezier(0.3, 0, 0.2, 1); }
+    .is-android .hm.is-notif > :is(.hm__page, .hm__scroll, .hm__hdr, .hm__nav, .hm__foot) { filter: blur(2.5px); }
+    .nt.is-warm #ntStack { visibility: visible; }
+    .nt.is-warm:not(.is-open) #ntStack { opacity: .001; }
+    .nt.is-warm .nt__card { will-change: transform; }
     .nt__scrim { position: absolute; inset: 0; -webkit-backdrop-filter: blur(2.5px); backdrop-filter: blur(2.5px);   /* Figma "10" renders this soft: fitted on edge energy */
       background: linear-gradient(180deg, rgba(0,0,0,.6) 0%, rgba(47,41,57,.93) 41.002%); opacity: 0; }
     /* same placement as before (512 comp at .5 from 59, 48), anchored at its centre so it can also scale about
@@ -1269,7 +1281,10 @@
       justify-content: center; pointer-events: none; opacity: 0; }
     .nt__line > span { position: relative; flex: none; width: 336.846px; height: 328.247px; rotate: 72.91deg; }
     .nt__line img { position: absolute; left: -1.34%; top: -1.46%; width: 102.75%; height: 102.12%; display: block; max-width: none; }
-    .hm.is-notif .hm__scroll { overflow-y: hidden; }
+    /* (no overflow toggle on the home scroller while notifications are open: switching it re-rasterised the whole
+       2.5k-px home layer on Android — a ~750 ms freeze on the bell tap. The overlay covers the page and takes every
+       touch / wheel itself, so the page can't scroll underneath anyway.) */
+    .nt { overscroll-behavior: contain; touch-action: none; }
     .hm.has-bell .hm__notif-bell { pointer-events: auto; cursor: pointer; }
     /* 107:28277 the bell sticker, now hanging off the second task card (tasks-local 318.75, 307.7) */
     .hm__bell { left: 318.75px; top: 1301.66px; width: 79.608px; height: 79.608px; z-index: 4;
@@ -3801,6 +3816,7 @@
       homeScreen.classList.add('has-bell');
       haptic.medium();                                       // the bell pops in
       a.goToAndPlay(0, true);                                // the bell pops from 0 and swings (lands ~0.53 s)
+      setTimeout(() => { if (typeof warmNotif === 'function') warmNotif(); }, 700);   // after the pop, while it swings
       const b = hq('.hm__bdg');
       b.getAnimations().forEach((x) => x.cancel());
       b.animate([{ scale: 0 }, { scale: 1 }], { duration: 560, delay: reduceMotion.matches ? 0 : 420,
@@ -3862,7 +3878,10 @@
         <div class="nt__media">${media}</div><span class="nt__veil"></span>`;
     }
     // (re)build the stack from the first unread update; every card parked in its slot, invisible until the reveal
+    var ntBuiltFor = -1;                                         // the ntRead the current stack DOM was built for
+    var ntWarmT = 0;
     function buildStack() {
+      ntBuiltFor = ntRead;
       ntStack.textContent = '';
       NOTIFS.slice(ntRead).forEach((n, k) => {
         const c = document.createElement('article');
@@ -3875,6 +3894,16 @@
       paintPager();
     }
     const ntCards = () => [...ntStack.querySelectorAll('.nt__card:not(.is-gone)')];
+    // Warm-up while the bell is ringing on the home page: build the stack and decode every card image now, so the tap
+    // has nothing heavy left to do (on Android, building + decoding at the tap stalled the deck's rise ~250 ms)
+    function warmNotif() {
+      if (ntOpen || !ntUnread()) return;
+      if (ntBuiltFor !== ntRead || !ntCards().length) buildStack();
+      ntStack.querySelectorAll('img').forEach((im) => { if (im.decode) im.decode().catch(() => {}); });
+      ntCards().forEach((c) => (c.style.opacity = '1'));
+      ntEl.classList.add('is-warm');
+      const a = ensureNt(); if (a && a.prime) a.prime();
+    }
     function placeCard(c, k, toward = 0) {
       const sl = slotAt(k);
       c.dataset.slot = k;
@@ -3913,10 +3942,20 @@
       fetch(NT_WEBP).then((r) => r.blob()).then((b) => { blob = b; }).catch(() => {});
       new Image().src = NT_LAST;
       const clear = () => { img.removeAttribute('src'); if (url) { URL.revokeObjectURL(url); url = null; } };
+      // Android: primed ahead of the tap — src set + first frame decoded while the overlay is hidden; an animated image
+      // only starts its timeline on its first paint, so it still plays from frame 0, at play() (when it's made visible)
+      const PRIME = document.documentElement.classList.contains('is-android');
+      let primed = false;
       return {
         isLoaded: true, isPaused: true, totalFrames: 115, currentFrame: 0,
-        goToAndStop() { clear(); },
+        goToAndStop() { clear(); primed = false; img.style.visibility = ''; },
+        prime() {
+          if (!PRIME || primed || !blob || reduceMotion.matches) return;
+          clear(); url = URL.createObjectURL(blob); img.style.visibility = 'hidden'; img.src = url; primed = true;
+          if (img.decode) img.decode().catch(() => {});
+        },
         play() {
+          if (primed) { primed = false; img.style.visibility = ''; return; }
           clear();
           if (reduceMotion.matches) { img.src = NT_LAST; return; }
           if (blob) { url = URL.createObjectURL(blob); img.src = url; } else img.src = `${NT_WEBP}?play=${++n}`;
@@ -3944,7 +3983,8 @@
       ['.nt__scrim', '.nt__head', '.nt__foot', '.nt__pager', '.nt__line'].forEach((q) => nq(q).removeAttribute('style'));
       clearTimeout(ntCloseT);
       ntStack.getAnimations().forEach((q) => q.cancel()); ntStack.removeAttribute('style');
-      buildStack();
+      if (ntBuiltFor !== ntRead || !ntCards().length) buildStack();   // normally already built + decoded by warmNotif()
+      else { ntCards().forEach((c, k) => placeCard(c, k)); paintPager(); }
       homeScreen.classList.add('is-notif');
       ntEl.classList.add('is-open'); ntEl.setAttribute('aria-hidden', 'false');
       // the small bell is absorbed
@@ -3964,6 +4004,7 @@
       // 1 · the front card is revealed by motion alone — fully opaque, it slides up from just below the screen's
       //     bottom edge (268 + 560 > 812) and eases into place under the gliding header on a near-critically damped
       //     spring (ζ .97, no overshoot). Any fade of a white card over the dark scrim either ghosts (slow) or pops (fast).
+      clearTimeout(ntWarmT); ntWarmT = setTimeout(() => ntEl.classList.remove('is-warm'), (rm ? 0 : MOVE_AT) + 1700);
       const CARD_AT = rm ? 0 : MOVE_AT, DEAL = spring(0.97, 0.6, 900);   // (the helper is underdamped-only: ζ < 1)
       if (rm) go(c0, [{ opacity: 0 }, { opacity: 1 }], 200, 0, OUT);
       else go(c0, [{ translate: '0 560px' }, { translate: '0 0' }], 900, CARD_AT, DEAL);
@@ -4026,7 +4067,7 @@
         ntEl.querySelectorAll(NT_PARTS).forEach((el) => { el.getAnimations().forEach((x) => x.cancel()); });
         ['.nt__scrim', '.nt__head', '.nt__foot', '.nt__pager', '.nt__line'].forEach((q) => nq(q).removeAttribute('style'));
         ntStack.getAnimations().forEach((x) => x.cancel()); ntStack.removeAttribute('style');
-        ntStack.textContent = '';
+        ntStack.textContent = ''; ntBuiltFor = -1; ntEl.classList.remove('is-warm');
         if (ntAnim) ntAnim.goToAndStop(0, true);
       }).catch(() => {});
       clearTimeout(ntCloseT);
@@ -4163,7 +4204,8 @@
         const nt = document.getElementById('notifSheet');
         nt.classList.remove('is-open'); nt.setAttribute('aria-hidden', 'true');
         nt.querySelectorAll(NT_PARTS).forEach((el) => { el.getAnimations().forEach((x) => x.cancel()); el.removeAttribute('style'); });
-        document.getElementById('ntStack').textContent = ''; ntRead = 0; ntDrag = null; ntHintGone = false;
+        document.getElementById('ntStack').textContent = ''; ntRead = 0; ntDrag = null; ntHintGone = false; ntBuiltFor = -1;
+        nt.classList.remove('is-warm'); clearTimeout(ntWarmT);
         nt.querySelector('.nt__foot p').classList.remove('is-gone');
         clearTimeout(ntCloseT); document.getElementById('ntStack').removeAttribute('style');
         (ntTimers || []).forEach(clearTimeout); ntTimers = [];
