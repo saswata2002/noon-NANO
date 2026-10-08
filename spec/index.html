@@ -812,7 +812,7 @@ window.SPEC = (() => {
       { grp: '3 · Settle', at: BUILD, note: 'One curve for the three big moves, so they close around the card as a single motion.' },
       { icon: 'move', prop: 'Move Y', layer: 'Wallet Card', sel: '.hm__card', delay: BUILD, dur: 820, from: '140px', to: '0px', ease: C('quint'), note: 'Glides up into the header and shrinks 320 → 272 (×1.176 → 1).' },
       H('snap', 'Wallet Card', '.hm__card', BUILD + 520, 'A firm impact as the wallet settles into the header.'),
-      { icon: 'move', prop: 'Move Y', layer: 'Wallet Header', sel: '.hm__wbg', delay: BUILD, dur: 820, from: '−577px', to: '0px', ease: C('quint'), note: 'The full header image (skin backdrop, vignette, rounded bottom) drops in from above the screen as one piece — no mask, no zoom (ref: 03_HomePage Loading).' },
+      { icon: 'move', prop: 'Move Y', layer: 'Wallet Header', sel: '.hm__wbg, .hm__veil, .hm__bar', delay: BUILD, dur: 820, from: '−577px', to: '0px', ease: C('quint'), note: 'The full header image (skin backdrop, vignette, rounded bottom) drops in from above the screen as one piece — no mask, no zoom (ref: 03_HomePage Loading). It is three sticky layers that drop together: the backdrop, the veil over the wallet content and the 115 px pinned bar (identical pictures).' },
       { icon: 'move', prop: 'Move Y', layer: 'Marketplace Sheet', sel: '.hm__market, .hm__tasks', delay: BUILD + 60, dur: 820, from: '342px', to: '0px', ease: C('quint'), note: 'Slides up solid from the bottom edge — a sheet, not a fade.' },
       { icon: 'opacity', prop: 'Opacity', layer: 'Blank Page', sel: '.hm__selbg', delay: BUILD + 220, dur: 460, from: '1', to: '0', ease: C('ease'), note: 'What’s left of it lifts off late and slowly.' },
       { icon: 'move', prop: 'Move Y', layer: 'Switcher', sel: '.hm__switcher', delay: BUILD + 260, dur: 560, from: '−10px', to: '0px', ease: C('ios') },
@@ -876,7 +876,7 @@ window.SPEC = (() => {
       H('strong', 'Behind · 1', '.nt__card', CARD_AT + 580, 'Strong, for the second card.'),
       H('strong', 'Behind · 2', '.nt__card', CARD_AT + 660, 'Strong, for the third.'),
       { icon: 'opacity', prop: 'Opacity', layer: 'Line', sel: '.nt__line', delay: CARD_AT + 300, dur: 800, from: '0', to: '1', ease: C('quint') },
-      { icon: 'move', prop: 'Move Y', layer: 'Pager + Hint', sel: '.nt__foot', delay: CARD_AT + 640, dur: 520, from: '12px', to: '0px', ease: C('quint'), note: 'Nothing inside a card ever animates — the cards move as wholes.' },
+      { icon: 'move', prop: 'Move Y', layer: 'Pager + Hint', sel: '.nt__foot', delay: CARD_AT + 640, dur: 520, from: '12px', to: '0px', ease: C('quint'), note: 'The pager is the “1 of 4” counter (121:20299: smoked-glass pill, current number bold white, “of N” 60 % white) at 159.5, 720; the hint below at y 758. Nothing inside a card ever animates — the cards move as wholes.' },
       { icon: 'opacity', prop: 'Opacity', layer: 'Pager + Hint', sel: '.nt__foot', delay: CARD_AT + 640, dur: 520, from: '0', to: '1', ease: C('quint') },
     ] },
 
@@ -886,12 +886,13 @@ window.SPEC = (() => {
       { grp: 'Let go short of 110 px (and no flick)', at: REL },
       { icon: 'move', prop: 'Spring back', layer: 'Front Card', sel: '.nt__card', delay: REL, dur: 720, from: '−80px · −4.8°', to: '0 · 0°', ease: S('back'), note: 'Back into the stack with a little give.' },
       { icon: 'move', prop: 'Settle', layer: 'Cards Behind', sel: '.nt__card[data-slot="1"], .nt__card[data-slot="2"]', delay: REL, dur: 760, from: 'part-way', to: 'slot', ease: S('promote') },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Tint (cards behind)', sel: '.nt__veil', delay: REL, dur: 380, from: '.8', to: '1', ease: C('quint'), note: 'The tint the drag had started lifting comes back.' },
       H('tick', 'Front Card', '.nt__card', REL + 40, 'A detent as it snaps back.', { approx: true }),
     ] },
 
     { id: 29, name: 'Swipe a card — marked read', trig: 'Drag the front card past 110 px and let go', rows: () => [
       { icon: 'move', prop: 'Follow · Tilt', layer: 'Front Card', sel: '.nt__card', delay: 0, dur: DRAG, from: '0 · 0°', to: '200px · 12°', ease: C('lin'), driver: 'frame' },
-      H('tick', 'Front Card', '.nt__card', 130, 'A detent as it crosses the “let go to read” line (110 px).', { approx: true }),
+      H('tick', 'Front Card', '.nt__card', 140, 'A detent as it crosses the “let go to read” line (110 px).', { approx: true }),
       { grp: 'Thrown — marked read', at: REL },
       { icon: 'move', prop: 'Throw', layer: 'Front Card', sel: '.nt__card.is-gone', delay: REL, dur: THROW, from: '200px · 12°', to: '~500px · 22°', ease: C('throw'), note: 'Off-screen along the throw; a faster flick flies faster (260–460 ms) and spins more (16–30°); fades over the last 30 %.' },
       H('strong', 'Front Card', '.nt__card', REL + 40, 'A strong impact as it’s thrown.', { approx: true }),
@@ -905,18 +906,24 @@ window.SPEC = (() => {
 
     { id: 30, name: 'Flick a card', trig: 'Flick the front card (short, fast)', rows: () => [
       { icon: 'move', prop: 'Follow', layer: 'Front Card', sel: '.nt__card', delay: 0, dur: 32, from: '0px', to: '−64px', ease: C('lin'), driver: 'frame', note: 'Only 64 px, but > .55 px/ms in the throw’s direction → thrown.' },
-      { icon: 'move', prop: 'Throw', layer: 'Front Card', sel: '.nt__card.is-gone', delay: 40, dur: 296, from: '−64px', to: '~−450px · −29°', ease: C('throw'), note: 'Fast flick → short flight, more spin.' },
+      { icon: 'move', prop: 'Throw', layer: 'Front Card', sel: '.nt__card.is-gone', delay: 40, dur: 260, from: '−64px · −3.8°', to: '−446px · −30°', ease: C('throw'), note: 'A fast flick (≈ 2 px/ms) gets the shortest flight (the 260 ms floor of 520 − |v| × 140) and the most spin (16 + 14°); distance 420 + |dx| × .4. Fades over the last 30 %.' },
       H('strong', 'Front Card', '.nt__card', 80, 'Strong on the throw.', { approx: true }),
       { icon: 'move', prop: 'Step up', layer: 'Stack', sel: '.nt__card', delay: 40, dur: 760, from: 'slot n', to: 'slot n − 1', ease: S('promote'), stagger: { n: 3, step: 60, order: 'front → back' } },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Tint (next card)', sel: '.nt__veil', delay: 40, dur: 380, from: '1', to: '0', ease: C('quint') },
+      { icon: 'move', prop: 'Roll', layer: 'Pager (n of N)', sel: '.nt__pg-n b', delay: 40, dur: 260, from: '2 of 4', to: '3 of 4', ease: C('quint') },
+      H('tap', 'Next Card', '.nt__card', 340, 'A light pulse as the next card takes the front.'),
     ] },
 
     { id: 31, name: 'Swipe the last card — all caught up', trig: 'Swipe away the last update', rows: () => [
       { icon: 'move', prop: 'Follow · Tilt', layer: 'Last Card', sel: '.nt__card', delay: 0, dur: DRAG, from: '0 · 0°', to: '200px · 12°', ease: C('lin'), driver: 'frame' },
-      { icon: 'move', prop: 'Throw', layer: 'Last Card', sel: '.nt__card.is-gone', delay: REL, dur: THROW, from: '200px', to: '~500px', ease: C('throw') },
+      H('tick', 'Last Card', '.nt__card', 140, 'A detent at the 110 px line.', { approx: true }),
+      { icon: 'move', prop: 'Throw', layer: 'Last Card', sel: '.nt__card.is-gone', delay: REL, dur: THROW, from: '200px · 12°', to: '500px · 22.6°', ease: C('throw') },
+      H('strong', 'Last Card', '.nt__card', REL + 40, 'Strong on the throw.', { approx: true }),
       { icon: 'scale', prop: 'Opacity · Scale', layer: 'Pager', sel: '.nt__pager', delay: REL + Math.round(THROW * 0.2), dur: 220, from: '1 · 100%', to: '0 · 90%', ease: C('glow'), note: 'As the card leaves the frame; the pager keeps its last state (no flick to “all read”).' },
-      H('success', 'Notifications', '.nt', REL + 260, 'All caught up.'),
+      H('success', 'Notifications', '.nt', REL + 260, 'All caught up (the success notification, then a heavy .9 pulse 150 ms later).'),
       { grp: 'Closes on its own', at: REL + 380 },
-      { icon: 'opacity', prop: 'Opacity', layer: 'Header + Line', sel: '.nt__head, .nt__line', delay: REL + 380, dur: 220, from: '1', to: '0', ease: C('nexit') },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Header + Line', sel: '.nt__head, .nt__line', delay: REL + 380, dur: 220, from: '1', to: '0', ease: C('nexit'), note: 'The same close as a tap outside (the stack is already empty).' },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Hint', sel: '.nt__foot', delay: REL + 380, dur: 160, from: '1', to: '0', ease: C('nexit') },
       { icon: 'opacity', prop: 'Opacity', layer: 'Scrim', sel: '.nt__scrim', delay: REL + 380 + 150, dur: 440, from: '1', to: '0', ease: C('lift'), note: 'The blur lifts; the bell does not come back (nothing unread).' },
     ] },
 
