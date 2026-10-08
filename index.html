@@ -3857,11 +3857,11 @@
       if (a) { a.goToAndStop(0, true); setTimeout(() => ntOpen && a.play(), rm ? 0 : 90); }
       const [c0, c1, c2] = ntCards();
       ntCards().forEach((c) => (c.style.opacity = '1'));
-      // 1 · the front card pops on its own (as the bell starts folding into the title, f41): a springy scale-up
-      //     from .86 with ~4 % overshoot, rising 36 px; its opacity comes up fast so the pop reads as solid
-      const CARD_AT = 660, POP = spring(0.62, 0.42, 720);
-      go(c0, [{ translate: '0 36px', scale: '.86' }, { translate: '0 0', scale: '1' }], 720, CARD_AT, POP);
-      go(c0, [{ opacity: 0 }, { opacity: 1 }], 180, CARD_AT, OUT);
+      // 1 · the front card pops on its own, early — while the bell is still ringing big (≈ f26): a quick,
+      //     well-damped scale-up from .9 rising 28 px (~1 % overshoot), opacity up in 200 ms so it reads solid
+      const CARD_AT = 440, POP = spring(0.78, 0.36, 560);
+      go(c0, [{ translate: '0 28px', scale: '.9' }, { translate: '0 0', scale: '1' }], 560, CARD_AT, POP);
+      go(c0, [{ opacity: 0 }, { opacity: 1 }], 200, CARD_AT, OUT);
       // 2 · once it has landed, the two cards behind slide out from under its bottom edge, one after the other.
       //     They start fully tucked behind it (opaque — no ghosting), so only the edges that peek out move.
       const PEEK = spring(0.72, 0.4, 620), tuck = (el, dy, at) => {
@@ -3869,11 +3869,11 @@
         el.animate([{ opacity: 0 }, { opacity: 0 }], { duration: rm ? 1 : at, pp: false });   // hidden until its own start
         go(el, [{ translate: `0 ${dy}px` }, { translate: '0 0' }], 620, at, PEEK);
       };
-      tuck(c1, -26, CARD_AT + 300);
-      tuck(c2, -40, CARD_AT + 420);
+      tuck(c1, -26, CARD_AT + 240);
+      tuck(c2, -40, CARD_AT + 340);
       // 3 · then the footer rises (a card's contents never animate — they ride with their card, static)
-      go(nq('.nt__foot'), [{ opacity: 0, translate: '0 14px' }, { opacity: 1, translate: '0 0' }], 480, CARD_AT + 560, OUT);
-      go(nq('.nt__line'), [{ opacity: 0 }, { opacity: 1 }], 700, CARD_AT + 300, OUT);
+      go(nq('.nt__foot'), [{ opacity: 0, translate: '0 14px' }, { opacity: 1, translate: '0 0' }], 480, CARD_AT + 480, OUT);
+      go(nq('.nt__line'), [{ opacity: 0 }, { opacity: 1 }], 700, CARD_AT + 260, OUT);
     }
     // Close, as one motion: the stack leaves as ONE layer (fading the cards one by one let the back cards ghost
     // through the front one), header + footer clear first, the blur lifts on a soft ease-out, and the bell pops back
