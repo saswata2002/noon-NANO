@@ -898,7 +898,7 @@ window.SPEC = (() => {
       { icon: 'move', prop: 'Step up', layer: 'Stack', sel: '.nt__card', delay: REL, dur: 760, from: 'slot n', to: 'slot n − 1', ease: S('promote'), stagger: { n: 3, step: 60, order: 'next card → the one behind it → the new back card' }, note: 'A soft, no-overshoot step: the next card un-tints into the front (380 ms), the next takes Behind · 1 (tint 480 ms), a new one fades into Behind · 2 (480 ms from +140).' },
       { icon: 'opacity', prop: 'Opacity', layer: 'Tint (next card)', sel: '.nt__veil', delay: REL, dur: 380, from: '1', to: '0', ease: C('quint') },
       H('tap', 'Next Card', '.nt__card', REL + 300, 'A light pulse as the next card takes the front.'),
-      { icon: 'size', prop: 'Pager', layer: 'Pager', sel: '.nt__pager i', delay: REL, dur: 420, from: 'dot 1 current', to: 'dot 2 current', ease: C('quint'), note: 'The read dot becomes a bead, the marker (22 × 8) moves on (CSS width / colour transition).' },
+      { icon: 'move', prop: 'Roll', layer: 'Pager (n of N)', sel: '.nt__pg-n b', delay: REL, dur: 260, from: '1 of 4', to: '2 of 4', ease: C('quint'), note: '121:20299: the number rolls — the old one slides up 12 px and fades (200 ms), the new one rises in from 12 px below (260 ms).' },
       { icon: 'opacity', prop: 'Opacity', layer: 'Swipe Hint', sel: '.nt__foot p', delay: REL, dur: 260, from: '1', to: '0', ease: C('glow'), note: 'Goes after the first swipe (not a spring-back) and stays gone; back on the double-tap reset. The pager never moves.' },
       { icon: 'flag', prop: 'Badge', layer: 'Unread', sel: '#homeBellCount', delay: REL, dur: 10, from: '4', to: '3', ease: C('lin'), note: 'The bell’s badge counts unread updates.' },
     ] },

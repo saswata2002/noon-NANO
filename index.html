@@ -1239,14 +1239,17 @@
     .nt__ph--1 > span { rotate: -3deg; }
     .nt__ph--2 > span { rotate: 5.07deg; }
     .nt__ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-    .nt__foot { position: absolute; left: 20px; top: 716px; width: 335px; height: 64px; padding: 8px 0; display: flex; flex-direction: column;
+    .nt__foot { position: absolute; left: 20px; top: 712px; width: 335px; height: 68px; padding: 8px 0; display: flex; flex-direction: column;
       align-items: center; gap: 16px; opacity: 0; }
-    .nt__pager { display: flex; align-items: center; gap: 5px; padding: 5px 6px; border-radius: 9999px; background: rgba(13,10,26,.55);
-      -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-    .nt__pager i { width: 6px; height: 6px; border-radius: 9999px; background: rgba(255,255,255,.28);
-      transition: width .42s cubic-bezier(.22,1,.36,1), height .42s cubic-bezier(.22,1,.36,1), background-color .3s; }
-    .nt__pager i.is-read { background: rgba(255,255,255,.62); }   /* "chrome beads for read cards" */
-    .nt__pager i.is-on { width: 22px; height: 8px; background: #fff; }
+    /* 121:20299 Pager — a counter on the smoked-glass pill (hugs, 56 × 22 for "1 of 4"): Noontree 12/16, the
+       current number Bold white, " of N" Medium 60 % white */
+    .nt__pager { display: flex; align-items: center; justify-content: center; height: 22px; padding: 3px 12px; border-radius: 9999px;
+      background: rgba(13,10,26,.55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+      font-weight: 500; font-size: 12px; line-height: 16px; letter-spacing: 0.24px; color: rgba(255,255,255,.6); white-space: nowrap; }
+    .nt__pg-n { position: relative; display: inline-block; height: 16px; overflow: hidden; vertical-align: top; }
+    .nt__pg-n b { display: block; font-weight: 700; color: #fff; letter-spacing: 0.32px; }
+    .nt__pg-n b + b { position: absolute; left: 0; top: 0; }   /* the outgoing number, while it rolls away */
+    .nt__pg-of { letter-spacing: 0.32px; white-space: pre; }
     .nt__foot p { margin: 0; font-weight: 500; font-size: 12px; line-height: normal; color: rgba(255,255,255,.8); white-space: nowrap;
       transition: opacity .26s cubic-bezier(.4,0,.2,1), translate .26s cubic-bezier(.4,0,.2,1); }
     .nt__foot p.is-gone { opacity: 0; translate: 0 4px; }   /* the hint goes once you've swiped a card (the pager stays put) */
@@ -1843,7 +1846,7 @@
           <div class="nt__scrim"></div>
           <div class="nt__head" id="notifHead" aria-hidden="true"></div>
           <div class="nt__stack" id="ntStack"></div>
-          <div class="nt__foot"><div class="nt__pager" aria-label="Update 1 of 4"><i class="is-on"></i><i></i><i></i><i></i></div><p>Swipe left or right to mark as read</p></div>
+          <div class="nt__foot"><div class="nt__pager" aria-label="Update 1 of 4"><span class="nt__pg-n"><b>1</b></span><span class="nt__pg-of"> of </span><span class="nt__pg-t">4</span></div><p>Swipe left or right to mark as read</p></div>
           <div class="nt__line" aria-hidden="true"><span><img src="assets/home/notif/line.svg" alt=""></span></div>
         </div>
       </section>
@@ -3761,7 +3764,7 @@
       return bellAnim;
     }
     // the badge = how many updates the notification centre holds (its pager has one dot per card)
-    const notifCount = () => (typeof ntRead === 'number' ? document.querySelectorAll('#notifSheet .nt__pager i').length - ntRead : 4);   // unread updates
+    const notifCount = () => (typeof ntRead === 'number' && typeof NOTIFS !== 'undefined' ? NOTIFS.length - ntRead : 4);   // unread updates
     function ringBell() {
       const a = ensureBell();
       if (!a) return;
@@ -3854,11 +3857,21 @@
       v.style.opacity = k === 0 ? '0' : String(lerp(sl.veil, slotAt(k - 1).veil, toward));
       c.style.visibility = k > 2 ? 'hidden' : '';
     }
-    function paintPager() {
-      const dots = ntEl.querySelectorAll('.nt__pager i');
-      dots.forEach((d, i) => { d.classList.toggle('is-read', i < ntRead); d.classList.toggle('is-on', i === ntRead); });
-      const pg = nq('.nt__pager');
-      pg.setAttribute('aria-label', ntUnread() ? `Update ${ntRead + 1} of ${NOTIFS.length}` : 'All caught up');
+    // "n of N": on a swipe the number rolls — the old one slides up and out as the new one rises in (200 ms)
+    function paintPager(roll = false) {
+      const pg = nq('.nt__pager'), box = pg.querySelector('.nt__pg-n'), n = Math.min(ntRead + 1, NOTIFS.length);
+      pg.querySelector('.nt__pg-t').textContent = NOTIFS.length;
+      pg.setAttribute('aria-label', ntUnread() ? `Update ${n} of ${NOTIFS.length}` : 'All caught up');
+      const cur = box.querySelector('b');
+      if (cur && cur.textContent === String(n)) return;
+      box.querySelectorAll('b + b').forEach((x) => x.remove());
+      if (!roll || !cur || reduceMotion.matches) { box.innerHTML = `<b>${n}</b>`; return; }
+      const nb = document.createElement('b'); nb.textContent = n;
+      box.insertBefore(nb, cur);                                   // the new one takes the flow; the old one rides on top
+      const E = 'cubic-bezier(.22, 1, .36, 1)';
+      cur.animate([{ translate: '0 0', opacity: 1 }, { translate: '0 -12px', opacity: 0 }], { duration: 200, easing: E, fill: 'forwards', pp: false }).finished
+        .then(() => cur.remove()).catch(() => cur.remove());
+      nb.animate([{ translate: '0 12px', opacity: 0 }, { translate: '0 0', opacity: 1 }], { duration: 260, easing: E, pp: false });
     }
     function ensureNt() {
       if (ntAnim || !window.lottie) return ntAnim;
@@ -4046,7 +4059,7 @@
         // the last card: the pager keeps its state (no flick to "all read") and fades out as the card leaves the frame
         nq('.nt__pager').animate([{ opacity: 1, scale: '1' }, { opacity: 0, scale: '.9' }],
           { duration: 220, delay: Math.round(dur * 0.2), easing: 'cubic-bezier(.4, 0, .2, 1)', fill: 'forwards', pp: false });
-      } else paintPager();
+      } else paintPager(true);
       if (!ntHintGone) { ntHintGone = true; nq('.nt__foot p').classList.add('is-gone'); }
       // the stack steps up a slot: the next card un-veils into the front, the one after takes slot 1, a new one
       // fades into slot 2 from behind
