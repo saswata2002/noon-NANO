@@ -1021,18 +1021,33 @@
     .hm__selbg { position: absolute; left: 0; top: 0; width: 375px; height: 812px; z-index: 0; opacity: 0; pointer-events: none; }
     /* Selected Wallet stage: only the blank page + the card exist — every home layer stays unrendered
        until the build starts (they used to merely sit under the still-fading white page and flashed) */
-    .hm.is-sel :is(.hm__wbg, .hm__ask, .hm__ready, .hm__topup, .hm__tag, .hm__cactus, .hm__switcher,
+    .hm.is-sel :is(.hm__wbg, .hm__veil, .hm__bar, .hm__ask, .hm__ready, .hm__topup, .hm__tag, .hm__cactus, .hm__switcher,
       .hm__market, .hm__tasks, .hm__game, .hm__bell, .hm__nav, .hm__foot) { opacity: 0; }   /* opacity, not visibility: it isn't inherited, so no child can keep a stale hidden */
     /* the header's clip (bottom radius 24) lives on its background only — the card's long baked shadow
        must not be cut off while it pops on the blank page */
     .hm__wallet { position: absolute; left: 0; top: -1px; width: 375px; height: 577px; }
-    .hm__wallet > *, .hm__wfg > * { position: absolute; z-index: 2; }
-    /* the wallet's own content scrolls normally but dissolves into a soft band just under the switcher */
-    .hm__wfg { inset: 0; -webkit-mask: linear-gradient(180deg, transparent var(--fy0), #000 var(--fy1));
-      mask: linear-gradient(180deg, transparent var(--fy0), #000 var(--fy1)); }
-    .hm__wbg { inset: 0; z-index: 1 !important; isolation: isolate; overflow: hidden; border-radius: 0 0 24px 24px; }
+    .hm__wallet > * { position: absolute; z-index: 2; }
+    /* Backdrop, veil and bar are position: sticky inside the scroller, so the compositor moves them with the page —
+       no script runs on scroll, nothing can lag a frame behind (the old JS counter-move jittered on fast scrolls).
+       .hm__stick (content −1 … 956): the wallet backdrop (577 tall, bottom r24 — its bottom edge always sits under
+       the marketplace sheet) holds still at the top while the sheet slides over it, with the veil — the same
+       picture, faded out downwards — stuck over it ABOVE the wallet content and BELOW the sheet, so the card,
+       copy and button dissolve under the switcher. .hm__barwrap (whole page): the 115 bar, stuck above every
+       section, so the sheet and everything after it slide under it; over the backdrop it is pixel-identical. */
+    .hm__stick, .hm__barwrap { position: absolute; left: 0; width: 375px; pointer-events: none; }
+    .hm__stick { top: -1px; height: 957px; }
+    .hm__barwrap { top: 0; height: 100%; }
+    .hm__wbg { position: sticky; top: -1px; display: block; width: 375px; height: 577px; z-index: 1;
+      isolation: isolate; overflow: hidden; border-radius: 0 0 24px 24px; }
+    .hm__veil { position: sticky; top: -1px; display: block; width: 375px; height: 180px; margin-top: -577px; z-index: 2;
+      overflow: hidden; isolation: isolate;
+      -webkit-mask: linear-gradient(180deg, #000 calc(97px + 22px * var(--p)), transparent calc(137px + 32px * var(--p)));
+      mask: linear-gradient(180deg, #000 calc(97px + 22px * var(--p)), transparent calc(137px + 32px * var(--p))); }
+    .hm__bar { position: sticky; top: 0; display: block; width: 375px; height: 115px; z-index: 6;
+      overflow: hidden; isolation: isolate; border-radius: 0 0 24px 24px; }
+    .hm__bar .hm__wbg-img { top: -65px; }
+    .hm__bar .hm__wbg-ov { top: -0.414px; }
     .hm__wbg-img { position: absolute; left: -30px; top: -64px; width: 435px; height: 772.922px; object-fit: cover; }
-    .hm__wbg > .hm__wbg-img, .hm__wbg > .hm__wbg-ov { transform: translateY(var(--wy)); }   /* backdrop holds still while the page scrolls */
     .hm__wbg-img.is-dim { filter: brightness(.8); }
     /* 76:21597 navy vignette, blended as Overlay (radial 193.78 × 304.89 at 187.5, 271.05; clear to 61.6 %) */
     .hm__wbg-ov { position: absolute; left: 0; top: 0.586px; width: 375px; height: 590px; mix-blend-mode: overlay;
@@ -1062,16 +1077,9 @@
          tiles 73 × 76 r15 (gap 6, y 53) → Pill 78 × 44 r14 (supermall 88; gap 8, y 54.5), white + 0 2 6 shadow;
          tile art shrinks with the tile and hands over to the pill logo in an overlapped cross-scale on the same
          spring (art 1 → .9 and out over p .2–.6, logo .8 → 1 and in over .25–.7), so it reads as one morph.
-       The wallet backdrop stays put while the page scrolls (its image counter-moves), so the marketplace sheet
-       slides up over it; just before the sheet's top reaches 115 the pinned bar (Wallet 107:27722: the same
-       backdrop, 375 × 115, bottom r24) takes over above the content — pixel-identical, so the hand-off is invisible. */
-    .hm { --p: 0; --big: 1; --mini: 0; --bs: 1; --ms: .8; --wy: 0px; --fy0: 96px; --fy1: 136px; }
+       The pinned bar is Wallet 107:27722 (the same backdrop, 375 × 115, bottom r24) — see .hm__barwrap. */
+    .hm { --p: 0; --big: 1; --mini: 0; --bs: 1; --ms: .8; }
     .hm__hdr { position: absolute; left: 0; top: 0; width: 375px; height: 115px; z-index: 3; pointer-events: none; }
-    .hm__bar { position: absolute; left: 0; top: 0; width: 375px; height: 115px; overflow: hidden; border-radius: 0 0 24px 24px;
-      isolation: isolate; visibility: hidden; }
-    .hm.is-pinned .hm__bar { visibility: visible; }
-    .hm__bar .hm__wbg-img { top: -65px; }
-    .hm__bar .hm__wbg-ov { top: -0.414px; }
     .hm__switcher { position: absolute; left: 0; top: calc(45px + 1.5px * var(--p)); width: 375px; height: calc(92px - 32px * var(--p));
       display: flex; align-items: flex-start; gap: calc(6px + 2px * var(--p)); padding: 8px 12px; pointer-events: auto;
       overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-x; }
@@ -1672,8 +1680,6 @@
                  at the bottom; sits over the home content and under the wallet card while it pops -->
             <img class="hm__selbg" src="assets/home/sel-bg.webp" width="375" height="812" alt="">
             <div class="hm__wallet">
-              <div class="hm__wbg"><img class="hm__wbg-img" alt=""><div class="hm__wbg-ov"></div></div>
-              <div class="hm__wfg">
               <p class="hm__ask">Ask your parents to add money</p>
               <img class="hm__ready" src="assets/home/title.webp" width="242" height="51" alt="Wallet is Ready">
               <button class="hm__topup" type="button"><img src="assets/home/plus.svg" width="20" height="20" alt=""><span>Top up wallet</span></button>
@@ -1682,7 +1688,11 @@
               <img class="hm__tag" src="assets/home/tag.webp" width="119" height="83" alt="Empty wallet">
               <img class="hm__cactus hm__cactus--r" src="assets/home/cactusR.webp" width="185" height="109" alt="">
               <img class="hm__cactus hm__cactus--l" src="assets/home/cactusL.webp" width="187" height="135" alt="">
-              </div>
+            </div>
+            <!-- sticky layers (see .hm__stick): backdrop under the wallet content, veil over it -->
+            <div class="hm__stick" aria-hidden="true">
+              <div class="hm__wbg"><img class="hm__wbg-img" alt=""><div class="hm__wbg-ov"></div></div>
+              <div class="hm__veil"><img class="hm__wbg-img" alt=""><div class="hm__wbg-ov"></div></div>
             </div>
             <!-- marketplace sheet (cards hidden in Figma for this render) + the 4 cards as their own layers,
                  each over a skeleton tile that shimmers while the home page loads -->
@@ -1722,13 +1732,13 @@
             </div>
             <img class="hm__game" src="assets/home/game.webp" width="375" height="622" alt="nano Arcade — play daily and win rewards">
             <img class="hm__bell" src="assets/home/tasks/bell.webp" width="80" height="80" alt="">
+            <!-- 107:27722 the pinned wallet bar: sticky over the whole page (see .hm__stick) -->
+            <div class="hm__barwrap" aria-hidden="true"><div class="hm__bar"><img class="hm__wbg-img" alt=""><div class="hm__wbg-ov"></div></div></div>
           </div>
         </div>
         <!-- 76:21611 switcher — pinned above the scroll and collapsing on scroll like the 3D Bot Homepage
              (noon app): tiles 76 → 35 tall pills, the tile art cross-fades to one-line wordmarks -->
         <div class="hm__hdr">
-          <!-- 107:27722 the pinned wallet bar (same backdrop as the header, 375 × 115) -->
-          <div class="hm__bar"><img class="hm__wbg-img" alt=""><div class="hm__wbg-ov"></div></div>
           <nav class="hm__switcher" aria-label="noon services">
             <a class="hm__tile hm__tile--nano" aria-label="noon nano"><img class="hm__tbig" src="assets/home/sw/nano.webp" alt=""><span class="hm__tmini"><img src="assets/home/pills/nano.svg" alt="" style="left:11.08px;top:11px;width:55.851px;height:22px"></span></a>
             <a class="hm__tile" aria-label="noon"><img class="hm__tbig" src="assets/home/sw/noon.webp" alt=""><span class="hm__tmini"><img src="assets/home/pills/noon.svg" alt="" style="left:14.62px;top:15.8px;width:48.751px;height:12.394px"></span></a>
@@ -3517,7 +3527,7 @@
       // the card glides up into the header while the full header image comes down from above the screen as one
       // piece (ref: 03_HomePage Loading — no mask, no zoom), and the sheet slides up from the bottom edge
       go(hmCard, [{ transform: SEL_POSE }, { transform: 'translate(0px, 0px) scale(1)' }], CLOSE_MS, 0, CLOSE);
-      go(hq('.hm__wbg'), [{ translate: '0 -577px' }, { translate: '0 0' }], CLOSE_MS, 0, CLOSE);
+      [hq('.hm__wbg'), hq('.hm__veil'), hq('.hm__bar')].forEach((el) => go(el, [{ translate: '0 -577px' }, { translate: '0 0' }], CLOSE_MS, 0, CLOSE));
       // solid, from just below the screen (sheet top 470 + 342 = 812) — a sheet, not a fade; quest rides with it
       [hq('.hm__market'), hq('.hm__tasks')].forEach((el) => go(el, [{ translate: '0 342px' }, { translate: '0 0' }], CLOSE_MS, 60, CLOSE));
       // then what lives in the frame settles in as it lands: chrome, copy, props — a few px each, small groups
@@ -3566,31 +3576,22 @@
       intBusy = false;
     }
     // ---------- Collapsing header (107:27475) ----------
-    // The switcher morph runs on ONE spring (ζ .9, response .44 s — a soft, quick settle, no visible overshoot). The
+    // The switcher morph runs on ONE spring (ζ .86, response .34 s — snappy, settles with a hair of give). The
     // scroll only picks the target: collapse once the page is 12 px down, expand once it's back within 4 px of the
     // top. The spring keeps its velocity when reversed, so changing direction mid-morph just bends the motion — and
-    // it never moves the page itself. What IS tied 1:1 to the scroll is the page: the wallet backdrop holds still
-    // (its image counter-moves) while the wallet content dissolves into a soft band under the switcher and the
-    // marketplace sheet slides over it; from 380 px — before the sheet's highest point (content 502) reaches the
-    // bar's edge at 115 — the pixel-identical pinned bar takes over above the content.
+    // it never moves the page itself. Backdrop, veil and pinned bar are CSS sticky (see .hm__stick) — no scroll script.
     var hdr = { y: 0, p: 0, v: 0, to: 0, raf: 0, sraf: 0, t: 0 };   // var: hideHome() can run before this line
-    const HDR_ON = 12, HDR_OFF = 4, BAR_AT = 380;
-    const HDR_K = Math.pow(2 * Math.PI / 0.44, 2), HDR_C = 2 * 0.9 * Math.sqrt(HDR_K);
+    const HDR_ON = 12, HDR_OFF = 4;
+    const HDR_K = Math.pow(2 * Math.PI / 0.34, 2), HDR_C = 2 * 0.86 * Math.sqrt(HDR_K);   // response .34 s, ζ .86: quick, ~0.3 % overshoot
     const smooth01 = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
     function paintHdr() {
       const hs = document.getElementById('homeScreen');
-      const p = Math.min(1.02, Math.max(0, hdr.p)), y = hdr.y, q = Math.min(1, p);
+      const p = Math.min(1.02, Math.max(0, hdr.p)), q = Math.min(1, p);
       hs.style.setProperty('--p', p.toFixed(4));
       hs.style.setProperty('--big', (1 - smooth01(0.2, 0.6, q)).toFixed(3));
       hs.style.setProperty('--bs', (1 - 0.1 * smooth01(0.1, 0.6, q)).toFixed(4));
       hs.style.setProperty('--mini', smooth01(0.25, 0.7, q).toFixed(3));
       hs.style.setProperty('--ms', (0.8 + 0.2 * smooth01(0.2, 0.85, q)).toFixed(4));
-      const wy = Math.max(0, y);
-      hs.style.setProperty('--wy', wy + 'px');
-      hs.style.setProperty('--fy0', (wy + 96 + 22 * q).toFixed(1) + 'px');   // band follows the switcher's bottom (129 → 98.5)
-      hs.style.setProperty('--fy1', (wy + 136 + 32 * q).toFixed(1) + 'px');
-      hs.classList.toggle('is-pinned', y >= BAR_AT);
-      clipFoot();
     }
     function stepHdr(now) {
       const dt = hdr.t ? Math.min(0.032, (now - hdr.t) / 1000) : 1 / 60;
@@ -3622,7 +3623,7 @@
         hdr.raf = 0;
         hdr.y = hmScroll.scrollTop;
         if (hdr.y > HDR_ON) aimHdr(1); else if (hdr.y < HDR_OFF) aimHdr(0);
-        if (!hdr.sraf) paintHdr();                          // while the spring runs it paints on its own frames
+        clipFoot();
       });
     }, { passive: true });
 
@@ -3631,7 +3632,7 @@
       if (typeof hdr !== 'undefined' && hdr) { cancelAnimationFrame(hdr.raf); cancelAnimationFrame(hdr.sraf); Object.assign(hdr, { y: 0, p: 0, v: 0, to: 0, raf: 0, sraf: 0, t: 0 }); }
       const hs = document.getElementById('homeScreen');
       hs.querySelectorAll('*').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
-      hs.classList.remove('is-shown', 'is-sel', 'is-locked', 'is-loading', 'is-pinned');
+      hs.classList.remove('is-shown', 'is-sel', 'is-locked', 'is-loading');
       hs.setAttribute('aria-hidden', 'true');
       hs.querySelector('.hm__page').style.opacity = '';
       hs.querySelector('.hm__selbg').style.opacity = '';
