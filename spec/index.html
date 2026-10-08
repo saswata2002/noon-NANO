@@ -399,14 +399,16 @@ window.SpecKit = (() => {
   const firstT = (f, test, max = 4) => { for (let t = 0; t < max; t += 0.001) if (test(f.d(t), f.v(t))) return t * 1000; return max * 1000; };
   const S = (k, extra = {}) => ({ kind: 'spring', k, ...extra });
   const C = (k) => ({ kind: 'curve', k });
-  // haptics (the prototype's Haptics helper): iOS generator + style, Android vibrate, iOS-Safari fallback
+  // haptics (the prototype's `haptic` helper, intensities raised 2026-10-08): native iOS generator + style +
+  // intensity (webkit.messageHandlers.haptic, e.g. VercelSim), Android vibrate, iOS-Safari switch-tick burst
   const HAP = {
-    tap:     { name: 'tap',     gen: 'UIImpactFeedbackGenerator', style: 'light', vibe: '8ms', call: 'Haptics.tap()' },
-    tick:    { name: 'tick',    gen: 'UISelectionFeedbackGenerator', style: 'selection', vibe: '4ms', call: 'Haptics.tick()' },
-    snap:    { name: 'snap',    gen: 'UIImpactFeedbackGenerator', style: 'medium', intensity: 0.8, vibe: '12ms', call: 'Haptics.snap()' },
-    edge:    { name: 'edge',    gen: 'UIImpactFeedbackGenerator', style: 'rigid', intensity: 0.6, vibe: '10ms', call: 'Haptics.edge()' },
-    success: { name: 'success', gen: 'UINotificationFeedbackGenerator', style: 'success', vibe: '[10, 40, 16]', call: 'Haptics.success()' },
-    error:   { name: 'error',   gen: 'UINotificationFeedbackGenerator', style: 'error', vibe: '[45, 40, 45, 40, 45]', call: 'Haptics.error()' },
+    tap:     { name: 'tap',     gen: 'UIImpactFeedbackGenerator', style: 'medium', intensity: 0.85, vibe: '38ms', call: 'haptic.light()' },
+    tick:    { name: 'tick',    gen: 'UIImpactFeedbackGenerator', style: 'rigid', intensity: 0.75, vibe: '26ms', call: 'haptic.selection()' },
+    snap:    { name: 'snap',    gen: 'UIImpactFeedbackGenerator', style: 'heavy', intensity: 0.85, vibe: '58ms', call: 'haptic.medium()' },
+    strong:  { name: 'strong',  gen: 'UIImpactFeedbackGenerator', style: 'heavy', intensity: 1, vibe: '85ms', call: 'haptic.heavy()' },
+    edge:    { name: 'edge',    gen: 'UIImpactFeedbackGenerator', style: 'rigid', intensity: 0.75, vibe: '26ms', call: 'haptic.selection()' },
+    success: { name: 'success', gen: 'UINotificationFeedbackGenerator', style: 'success', vibe: '[45, 60, 70]', call: 'haptic.success()' },
+    error:   { name: 'error',   gen: 'UINotificationFeedbackGenerator', style: 'error', vibe: '[60, 40, 60, 40, 70]', call: 'haptic.error()' },
   };
   const H = (k, layer, sel, at, note, extra = {}) => ({ icon: 'haptic', prop: 'Haptic', layer, sel, delay: Array.isArray(at) ? (at[0] || 0) : at, dur: 10, from: '—', to: '—',
     ease: { kind: 'haptic', ...HAP[k] }, marks: Array.isArray(at) ? at : [at], note, ...extra });
@@ -790,8 +792,10 @@ window.SPEC = (() => {
       { grp: '2 · Present', at: 220 },
       { icon: 'move', prop: 'Move Y', layer: 'Wallet Card', sel: '.hm__card', delay: 220, dur: 700, from: '36px', to: '0px', ease: S('present'), note: 'The picked skin rises into the middle (Selected Wallet 76:22259, 320 wide) from 86 % on a soft spring (~1 % overshoot), and rests a beat.' },
       { icon: 'opacity', prop: 'Opacity', layer: 'Wallet Card', sel: '.hm__card', delay: 220, dur: 200, from: '0', to: '1', ease: C('ease') },
+      H('strong', 'Wallet Card', '.hm__card', 480, 'A strong impact as the selected wallet pops up.'),
       { grp: '3 · Settle', at: BUILD, note: 'One curve for the three big moves, so they close around the card as a single motion.' },
       { icon: 'move', prop: 'Move Y', layer: 'Wallet Card', sel: '.hm__card', delay: BUILD, dur: 820, from: '140px', to: '0px', ease: C('quint'), note: 'Glides up into the header and shrinks 320 → 272 (×1.176 → 1).' },
+      H('snap', 'Wallet Card', '.hm__card', BUILD + 520, 'A firm impact as the wallet settles into the header.'),
       { icon: 'move', prop: 'Move Y', layer: 'Wallet Header', sel: '.hm__wbg', delay: BUILD, dur: 820, from: '−577px', to: '0px', ease: C('quint'), note: 'The full header image (skin backdrop, vignette, rounded bottom) drops in from above the screen as one piece — no mask, no zoom (ref: 03_HomePage Loading).' },
       { icon: 'move', prop: 'Move Y', layer: 'Marketplace Sheet', sel: '.hm__market, .hm__tasks', delay: BUILD + 60, dur: 820, from: '342px', to: '0px', ease: C('quint'), note: 'Slides up solid from the bottom edge — a sheet, not a fade.' },
       { icon: 'opacity', prop: 'Opacity', layer: 'Blank Page', sel: '.hm__selbg', delay: BUILD + 220, dur: 460, from: '1', to: '0', ease: C('ease'), note: 'What’s left of it lifts off late and slowly.' },

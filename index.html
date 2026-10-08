@@ -1905,19 +1905,25 @@
     })();
 
     // ---------- Haptics ----------
-    // iOS Safari has no Vibration API, but since iOS 17.4 toggling an <input type=checkbox switch>
-    // plays the system haptic — so a hidden switch is clicked through its label. Android / Chrome
-    // use navigator.vibrate. Desktop: silent. Patterns follow iOS feedback generators:
-    //   light   — a tap / key press (selection)
-    //   success — two quick taps (notification · success)
-    //   error   — three quick taps (notification · error)
+    // Exactly one channel plays per event:
+    //  1. native iOS — inside a WKWebView host that registers `webkit.messageHandlers.haptic` (VercelSim), a real
+    //     Taptic pulse: UIImpactFeedbackGenerator / UINotificationFeedbackGenerator with an intensity;
+    //  2. iOS Safari — no Vibration API, but since iOS 17.4 toggling an <input type=checkbox switch> plays the
+    //     system haptic; iOS has one fixed-strength tick, so "stronger" = a tighter burst of ticks (25–30 ms apart
+    //     reads as one firmer bump). WebKit only plays it within ~1 s of a real tap, so tap-driven sequences keep
+    //     their haptics inside that window;
+    //  3. Android / Chrome — navigator.vibrate pulses (longer = stronger). Desktop: silent.
+    // Intensities were raised across the whole flow (user, 2026-10-08): every kind is one step firmer than before.
+    //   selection — detents, ticks while dragging          light   — a tap / key press
+    //   medium    — things landing / appearing             heavy   — a strong landing (cards dealt in, throws)
+    //   success   — two firm bumps                         error   — three firm bumps
     const haptic = (() => {
       const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
         || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const bridge = () => (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.haptic) || null;
       // A fresh <label style=display:none><input type=checkbox switch></label> in <head> per tick:
       // display:none means the switch can never take focus (so a focused field never blurs and the
-      // keyboard never drops), and toggling it still plays the system haptic. iOS only plays it from
-      // a real tap, so callers fire it from click / submit handlers, not pointerdown.
+      // keyboard never drops), and toggling it still plays the system haptic.
       function iosTick() {
         const label = document.createElement('label');
         label.setAttribute('aria-hidden', 'true');
@@ -1932,22 +1938,44 @@
         label.remove();
         if (active && active !== document.body && document.activeElement !== active) active.focus({ preventScroll: true });
       }
-      // iOS has one fixed-strength tick, so "stronger" = a tight burst of ticks (30 ms apart reads as
-      // one firmer bump); Android gets longer pulses. Offsets in ms.
-      function play(iosOffsets, androidPattern) {
-        if (isIOS) {
+      // native: [kind, intensity] (or a list of them with offsets) · iOS Safari: tick offsets · Android: pattern
+      let lastAt = -1;
+      function play(native, iosOffsets, androidPattern) {
+        lastAt = performance.now();
+        const h = bridge();
+        if (h) {
+          const pulses = Array.isArray(native[0]) ? native : [[0, ...native]];
+          for (const [ms, type, intensity] of pulses) {
+            const post = () => { try { h.postMessage(intensity == null ? type : { type, intensity }); } catch (e) {} };
+            if (ms) setTimeout(post, ms); else post();
+          }
+        } else if (isIOS) {
           for (const ms of iosOffsets) { if (ms === 0) iosTick(); else setTimeout(iosTick, ms); }
         } else if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) {
           try { navigator.vibrate(androidPattern); } catch (e) {}
         }
       }
       return {
-        light: () => play([0, 30], 24),                                   // taps, key presses
-        medium: () => play([0, 30, 60], 40),                              // things landing / appearing
-        success: () => play([0, 30, 130, 160], [30, 60, 42]),             // two firm bumps
-        error: () => play([0, 30, 100, 130, 200, 230], [45, 40, 45, 40, 45]),   // three firm bumps
+        selection: () => play(['rigid', 0.75], [0, 28], 26),
+        light: () => play(['medium', 0.85], [0, 28, 56], 38),                                   // taps, key presses
+        medium: () => play(['heavy', 0.85], [0, 26, 52, 78], 58),                               // things landing / appearing
+        heavy: () => play(['heavy', 1], [0, 25, 50, 75, 100], 85),                              // strong landings, throws
+        success: () => play([[0, 'success'], [150, 'heavy', 0.9]], [0, 28, 56, 150, 178, 206], [45, 60, 70]),   // two firm bumps
+        error: () => play([[0, 'error'], [220, 'heavy', 1]], [0, 28, 56, 110, 138, 166, 220, 248, 276], [60, 40, 60, 40, 70]),
+        get lastAt() { return lastAt; },
       };
     })();
+    // Every tap on something tappable answers with a light pulse — unless its own handler already played a
+    // haptic for that tap (checked right after the handlers run, still inside the tap). Text fields are left
+    // alone: a haptic there must never disturb the keyboard.
+    const TAPPABLE = 'button, a, [role="button"], [role="tab"], label, .ich, .av__item, .hm__tile, .hm__ni, .hm__mk, .hm__tk, .hm__bell, .skin__card';
+    document.addEventListener('click', (e) => {
+      if (!e.isTrusted) return;                       // the iOS haptic itself is a scripted label click — never answer it
+      const t = e.target.closest && e.target.closest(TAPPABLE);
+      if (!t || t.disabled || t.getAttribute('aria-disabled') === 'true' || e.target.closest('input[type="email"], input[type="text"], textarea')) return;
+      const at = performance.now();
+      setTimeout(() => { if (haptic.lastAt < at) haptic.light(); }, 0);
+    }, true);
 
     // Intro background: the Splash video (plays once, then holds its last frame)
     const VIDEO_SRC = 'assets/splash.mp4';
@@ -3585,6 +3613,7 @@
       ], { duration: 700, delay: POP_AT, easing: spring(0.74, 0.44, 700), fill: 'backwards', pp: false });
 
       // --- 3 · settle into the home page ---
+      homeTimers.push(setTimeout(() => haptic.heavy(), POP_AT + 260));      // the selected wallet pops up (strong)
       homeTimers.push(setTimeout(() => homeBuild(rm), rm ? 620 : 840));
     }
     function homeBuild(rm) {
@@ -3619,6 +3648,7 @@
       // the card glides up into the header while the full header image comes down from above the screen as one
       // piece (ref: 03_HomePage Loading — no mask, no zoom), and the sheet slides up from the bottom edge
       go(hmCard, [{ transform: SEL_POSE }, { transform: 'translate(0px, 0px) scale(1)' }], CLOSE_MS, 0, CLOSE);
+      homeTimers.push(setTimeout(() => haptic.medium(), rm ? 0 : 520));     // the wallet settles into the header
       [hq('.hm__wbg'), hq('.hm__veil'), hq('.hm__bar')].forEach((el) => go(el, [{ translate: '0 -577px' }, { translate: '0 0' }], CLOSE_MS, 0, CLOSE));
       // solid, from just below the screen (sheet top 470 + 342 = 812) — a sheet, not a fade; quest rides with it
       [hq('.hm__market'), hq('.hm__tasks')].forEach((el) => go(el, [{ translate: '0 342px' }, { translate: '0 0' }], CLOSE_MS, 60, CLOSE));
@@ -3654,6 +3684,7 @@
         const k = skel.animate([{ opacity: 1 }, { opacity: 0 }], { ...o, duration: 353, easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)' });
         return Promise.all([f.finished, k.finished]);
       });
+      homeTimers.push(setTimeout(() => haptic.selection(), 140), setTimeout(() => haptic.selection(), 280));   // each row lands
       // loaded: back to the resting CSS (cards shown, skeletons gone) and stop the shimmer
       Promise.all(done).then(() => {
         homeScreen.classList.remove('is-loading');
@@ -3736,16 +3767,16 @@
       document.getElementById('homeBellCount').textContent = n;
       document.getElementById('homeBell').setAttribute('aria-label', `${n} updates`);
       homeScreen.classList.add('has-bell');
-      haptic.light();
+      haptic.medium();                                       // the bell pops in
       a.goToAndPlay(0, true);                                // the bell pops from 0 and swings (lands ~0.53 s)
       const b = hq('.hm__bdg');
       b.getAnimations().forEach((x) => x.cancel());
       b.animate([{ scale: 0 }, { scale: 1 }], { duration: 560, delay: reduceMotion.matches ? 0 : 420,
         easing: spring(0.55, 0.36, 560), fill: 'both', pp: false });
     }
-    hq('.hm__tile--nano').addEventListener('pointerup', (e) => {
+    hq('.hm__tile--nano').addEventListener('click', (e) => {   // click, not pointerup: iOS only plays haptics from a real tap
       const t = performance.now();
-      if (t - bellTap.t < 320 && Math.hypot(e.clientX - bellTap.x, e.clientY - bellTap.y) < 24) { bellTap.t = 0; ntRead = 0; ntHintGone = false; document.querySelector('#notifSheet .nt__foot p').classList.remove('is-gone'); ringBell(); }
+      if (t - bellTap.t < 320 && Math.hypot(e.clientX - bellTap.x, e.clientY - bellTap.y) < 24) { e.stopPropagation(); bellTap.t = 0; ntRead = 0; ntHintGone = false; document.querySelector('#notifSheet .nt__foot p').classList.remove('is-gone'); ringBell(); }
       else bellTap = { t, x: e.clientX, y: e.clientY };
     });
 
@@ -3756,7 +3787,7 @@
     // Swipe (the Dribbble "Swiping Style" reference): the front card follows the finger and tilts from below its
     // base while the next card already starts lifting forward; past 110 px or on a flick it is thrown off-screen
     // (marked read) and the stack steps up a slot on a spring; short of that it springs back with a little give.
-    var ntAnim = null, ntOpen = false;   // var: hideHome() can run before this line
+    var ntAnim = null, ntOpen = false, ntTimers = [];   // var: hideHome() can run before this line
     const NT_PARTS = '.nt__scrim, .nt__head, .nt__card, .nt__veil, .nt__foot, .nt__pager, .nt__line, .nt__ph > span';   // never the Lottie's own SVG
     const ntEl = document.getElementById('notifSheet'), nq = (sel) => ntEl.querySelector(sel), ntStack = document.getElementById('ntStack');
     // Figma has the first update only (Approved); the other three are placeholders built from the Tasks section.
@@ -3838,7 +3869,8 @@
       const rm = reduceMotion.matches, a = ensureNt();
       const go = (el, kf, dur, delay, easing, fill = 'both') => el && el.animate(kf, { duration: rm ? Math.min(dur, 200) : dur, delay: rm ? 0 : delay, easing, fill, pp: false });
       const OUT = 'cubic-bezier(0.22, 1, 0.36, 1)';
-      haptic.light();
+      haptic.medium();                                          // the bell is tapped / absorbed
+      ntTimers.forEach(clearTimeout); ntTimers = [];
       ntEl.querySelectorAll(NT_PARTS).forEach((el) => { el.getAnimations().forEach((x) => x.cancel()); });
       ['.nt__scrim', '.nt__head', '.nt__foot', '.nt__pager', '.nt__line'].forEach((q) => nq(q).removeAttribute('style'));
       clearTimeout(ntCloseT);
@@ -3869,6 +3901,9 @@
       };
       tuck(c1, -26, CARD_AT + 240);
       tuck(c2, -40, CARD_AT + 340);
+      // a strong haptic as each card lands — front pop, then each card behind (all inside WebKit's ~1 s
+      // tap window, so iOS Safari plays them too)
+      if (!rm) [[c0, CARD_AT + 170], [c1, CARD_AT + 330], [c2, CARD_AT + 430]].forEach(([c, at]) => { if (c) ntTimers.push(setTimeout(() => ntOpen && haptic.heavy(), at)); });
       // 3 · then the footer rises (a card's contents never animate — they ride with their card, static)
       go(nq('.nt__foot'), [{ opacity: 0, translate: '0 14px' }, { opacity: 1, translate: '0 0' }], 480, CARD_AT + 480, OUT);
       go(nq('.nt__line'), [{ opacity: 0 }, { opacity: 1 }], 700, CARD_AT + 260, OUT);
@@ -3881,6 +3916,7 @@
     function closeNotif() {
       if (!ntOpen) return;
       ntOpen = false; ntDrag = null;
+      ntTimers.forEach(clearTimeout); ntTimers = [];
       const rm = reduceMotion.matches;
       const EXIT = 'cubic-bezier(0.4, 0, 0.75, 0.3)', LIFT = 'cubic-bezier(0.45, 0, 0.2, 1)';
       const go = (el, kf, dur, delay, easing) => el.animate(kf, { duration: rm ? Math.min(dur, 160) : dur, delay: rm ? 0 : delay, easing, fill: 'forwards', pp: false });
@@ -3916,6 +3952,17 @@
     }
 
     // ---------- swipe ----------
+    // Throws / spring-backs are decided on pointerup, which iOS Safari may not count as a tap; their haptic is
+    // queued and played from the touchend that follows (or after 40 ms for mouse / keyboard).
+    let gestHap = null, gestT = 0;
+    function gestureHaptic(kind) {
+      gestHap = kind; clearTimeout(gestT);
+      gestT = setTimeout(() => { if (gestHap) { const k = gestHap; gestHap = null; haptic[k](); } }, 40);
+    }
+    document.addEventListener('touchend', () => {
+      if (!gestHap) return;
+      clearTimeout(gestT); const k = gestHap; gestHap = null; haptic[k]();
+    }, { capture: true, passive: true });
     var ntDrag = null;
     const THROW_PX = 110, FLICK = 0.55;                        // px, px/ms
     const SETTLE = spring(0.8, 0.42, 620), BACK = spring(0.55, 0.42, 720);
@@ -3947,7 +3994,7 @@
       d.dx = e.clientX - d.x0; d.dy = e.clientY - d.y0;
       d.hist.push([performance.now(), e.clientX]); if (d.hist.length > 6) d.hist.shift();
       const over = Math.abs(d.dx) > THROW_PX;
-      if (over !== d.crossed) { d.crossed = over; haptic.light(); }   // a tick as it crosses the "let go to read" line
+      if (over !== d.crossed) { d.crossed = over; haptic.selection(); }   // a detent as it crosses the "let go to read" line
       dragPaint(d);
     });
     const endDrag = (e) => {
@@ -3963,6 +4010,7 @@
     ntStack.addEventListener('pointercancel', endDrag);
     function springBack(d) {
       const c0 = d.card, from = c0.style.transform;
+      if (Math.abs(d.dx) > 12) gestureHaptic('selection');      // it snaps back into the stack
       c0.style.transform = 'none';
       c0.animate([{ transform: from }, { transform: 'translate(0px, 0px) rotate(0deg)' }], { duration: 720, easing: BACK, pp: false });
       d.rest.forEach((c, i) => {
@@ -3974,7 +4022,7 @@
     }
     function throwCard(d, dir, vx) {
       const c0 = d.card, from = c0.style.transform;
-      haptic.success();
+      gestureHaptic('heavy');                                   // thrown — marked read
       // off-screen along the throw, keeping the flick's speed: faster flick → shorter flight
       const dist = 420 + Math.abs(d.dx) * 0.4, rot = dir * (16 + Math.min(14, Math.abs(vx) * 8));
       const dur = Math.max(260, Math.min(460, 520 - Math.abs(vx) * 140));
@@ -4001,10 +4049,11 @@
         v.animate([{ opacity: fromV }, { opacity: v.style.opacity }], { duration: k === 0 ? 300 : 420, delay: k * 40, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards', pp: false });
         if (wasHidden || k === 2) c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360, delay: 120, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards', pp: false });
       });
-      if (!ntUnread()) setTimeout(closeNotif, 380);           // all read → back to the home page
+      if (!ntUnread()) { setTimeout(() => haptic.success(), 260); setTimeout(closeNotif, 380); }   // all read → back home
+      else ntTimers.push(setTimeout(() => ntOpen && haptic.light(), 300));   // the next card takes the front
     }
     document.getElementById('homeBell').addEventListener('click', () => { if (homeScreen.classList.contains('has-bell')) openNotif(); });
-    ntEl.addEventListener('click', (e) => { if (!e.target.closest('.nt__card')) closeNotif(); });
+    ntEl.addEventListener('click', (e) => { if (!e.target.closest('.nt__card') && ntOpen) { haptic.light(); closeNotif(); } });
     document.addEventListener('keydown', (e) => {
       if (!ntOpen) return;
       if (e.key === 'Escape') closeNotif();
@@ -4029,6 +4078,7 @@
         document.getElementById('ntStack').textContent = ''; ntRead = 0; ntDrag = null; ntHintGone = false;
         nt.querySelector('.nt__foot p').classList.remove('is-gone');
         clearTimeout(ntCloseT); document.getElementById('ntStack').removeAttribute('style');
+        (ntTimers || []).forEach(clearTimeout); ntTimers = [];
         hs.querySelector('.hm__notif').getAnimations().forEach((x) => x.cancel());
         if (ntAnim) ntAnim.goToAndStop(0, true);
       }
@@ -4040,6 +4090,7 @@
       if (typeof hdr !== 'undefined' && hdr) paintHdr(); else clipFoot();
     }
     hq('.hm__topup').addEventListener('click', () => haptic.light());
+    // (home taps — tiles, nav, marketplace + task cards — get their light pulse from the global tap haptic)
 
 
     function hideSkin() {
