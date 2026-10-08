@@ -3836,7 +3836,7 @@
       ntOpen = true;
       const rm = reduceMotion.matches, a = ensureNt();
       const go = (el, kf, dur, delay, easing, fill = 'both') => el && el.animate(kf, { duration: rm ? Math.min(dur, 200) : dur, delay: rm ? 0 : delay, easing, fill, pp: false });
-      const OUT = 'cubic-bezier(0.22, 1, 0.36, 1)', SOFT = spring(0.86, 0.42, 620);
+      const OUT = 'cubic-bezier(0.22, 1, 0.36, 1)';
       haptic.light();
       ntEl.querySelectorAll(NT_PARTS).forEach((el) => { el.getAnimations().forEach((x) => x.cancel()); });
       ['.nt__scrim', '.nt__head', '.nt__foot', '.nt__line'].forEach((q) => nq(q).removeAttribute('style'));
@@ -3868,10 +3868,7 @@
       };
       tuck(c1, -26, CARD_AT + 300);
       tuck(c2, -40, CARD_AT + 420);
-      // 3 · then the front card's own contents settle and the footer rises
-      go(c0.querySelector('.nt__ph--1 > span'), [{ rotate: '0deg', scale: '.9', opacity: 0 }, { rotate: '-3deg', scale: '1', opacity: 1 }], 620, CARD_AT + 180, SOFT);
-      go(c0.querySelector('.nt__ph--2 > span'), [{ rotate: '0deg', scale: '.9', opacity: 0 }, { rotate: '5.07deg', scale: '1', opacity: 1 }], 620, CARD_AT + 240, SOFT);
-      go(c0.querySelector('.nt__art img'), [{ scale: '.8', opacity: 0 }, { scale: '1', opacity: 1 }], 620, CARD_AT + 180, SOFT);
+      // 3 · then the footer rises (a card's contents never animate — they ride with their card, static)
       go(nq('.nt__foot'), [{ opacity: 0, translate: '0 14px' }, { opacity: 1, translate: '0 0' }], 480, CARD_AT + 560, OUT);
       go(nq('.nt__line'), [{ opacity: 0 }, { opacity: 1 }], 700, CARD_AT + 300, OUT);
     }
@@ -3996,10 +3993,6 @@
         c.animate([{ transform: fromT }, { transform: c.style.transform }], { duration: 620, delay: k * 40, easing: SETTLE, fill: 'backwards', pp: false });
         v.animate([{ opacity: fromV }, { opacity: v.style.opacity }], { duration: k === 0 ? 300 : 420, delay: k * 40, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards', pp: false });
         if (wasHidden || k === 2) c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360, delay: 120, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards', pp: false });
-        if (k === 0) {
-          const art = c.querySelector('.nt__art img');
-          if (art) art.animate([{ scale: '.86' }, { scale: '1' }], { duration: 640, delay: 60, easing: spring(0.6, 0.42, 640), pp: false });
-        }
       });
       if (!ntUnread()) setTimeout(closeNotif, 380);           // all read → back to the home page
     }
