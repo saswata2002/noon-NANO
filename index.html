@@ -1198,7 +1198,9 @@
     .nt.is-open { visibility: visible; pointer-events: auto; }
     .nt__scrim { position: absolute; inset: 0; -webkit-backdrop-filter: blur(2.5px); backdrop-filter: blur(2.5px);   /* Figma "10" renders this soft: fitted on edge energy */
       background: linear-gradient(180deg, rgba(0,0,0,.6) 0%, rgba(47,41,57,.93) 41.002%); opacity: 0; }
-    .nt__head { position: absolute; left: 59px; top: 48px; width: 512px; height: 512px; transform: scale(.5); transform-origin: 0 0; pointer-events: none; }
+    /* same placement as before (512 comp at .5 from 59, 48), anchored at its centre so it can also scale about
+       it: the box sits at −69, −80 and scales .5 around (256, 256) → visual 256 × 256 from 59, 48 */
+    .nt__head { position: absolute; left: -69px; top: -80px; width: 512px; height: 512px; transform: scale(.5); transform-origin: 50% 50%; pointer-events: none; }
     .nt__stack { position: absolute; left: 0; top: 256px; width: 375px; height: 440px; }
     /* Every update is a full card in a slot: 0 = front (20, 12, 335 × 400); 1 and 2 are Figma's "Behind · 1/2"
        (32, 46, 311 × 380 #f2f2fa · 44, 78, 287 × 360 #e5e5f2, 1.5 white stroke) — the next cards themselves,
@@ -3781,9 +3783,10 @@
     });
 
     // ---------- Bell → notifications (Figma 112:15283) ----------
-    // Open: the little bell is absorbed (quick press, then gone) as the scrim + blur fade in; the header Lottie
-    // pops its own bell, rings it, and folds it into "Updates Today!"; the front card pops, then the two behind it
-    // slide out from under it, the photos settle and the pager + hint rise. Tap outside the cards to close.
+    // Open: the little bell is absorbed (quick press, then gone) as the scrim + blur fade in; the header Lottie plays
+    // in the middle of the screen — pops its own bell, rings it, folds it into "Updates Today!" — then glides up to
+    // its place; as it leaves the centre the front card pops, the two behind slide out from under it, and the
+    // pager + hint rise. Tap outside the cards to close.
     // Swipe (the Dribbble "Swiping Style" reference): the front card follows the finger and tilts from below its
     // base while the next card already starts lifting forward; past 110 px or on a flick it is thrown off-screen
     // (marked read) and the stack steps up a slot on a spring; short of that it springs back with a little give.
@@ -3885,11 +3888,15 @@
         { duration: 300, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards', pp: false });
       go(nq('.nt__scrim'), [{ opacity: 0 }, { opacity: 1 }], 420, 0, OUT);
       if (a) { a.goToAndStop(0, true); setTimeout(() => ntOpen && a.play(), rm ? 0 : 90); }
+      // 0 · the header Lottie plays in the middle of the screen (its title centre at y ≈ 406, 1.12×); once the
+      //     words have landed and the bell is settling (≈ f76), it glides up to its place and everything else follows
+      const HEAD_DY = 226, MOVE_AT = 1350;
+      if (!rm) go(nq('.nt__head'), [{ translate: `0 ${HEAD_DY}px`, scale: '1.12' }, { translate: '0 0', scale: '1' }], 720, MOVE_AT, spring(0.84, 0.5, 720));
       const [c0, c1, c2] = ntCards();
       ntCards().forEach((c) => (c.style.opacity = '1'));
-      // 1 · the front card pops on its own, early — while the bell is still ringing big (≈ f26): a quick,
-      //     well-damped scale-up from .9 rising 28 px (~1 % overshoot), opacity up in 200 ms so it reads solid
-      const CARD_AT = 440, POP = spring(0.78, 0.36, 560);
+      // 1 · the front card pops on its own: a quick, well-damped scale-up from .9 rising 28 px (~1 % overshoot),
+      //     opacity up in 200 ms so it reads solid
+      const CARD_AT = rm ? 0 : MOVE_AT + 240, POP = spring(0.78, 0.36, 560);   // as the header leaves the centre
       go(c0, [{ translate: '0 28px', scale: '.9' }, { translate: '0 0', scale: '1' }], 560, CARD_AT, POP);
       go(c0, [{ opacity: 0 }, { opacity: 1 }], 200, CARD_AT, OUT);
       // 2 · once it has landed, the two cards behind slide out from under its bottom edge, one after the other.
