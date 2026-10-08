@@ -447,6 +447,12 @@ window.SPEC = (() => {
     star:    { name: 'Sparkle spin', w: w(0.78), z: 0.84, src: 'spinStar · spring(0.84, 0.78, 900)' },
     row:     { name: 'Avatar row', w: +Math.sqrt(260).toFixed(2), z: 0.86, src: 'runRow · K 260, ζ 0.86 (rAF-integrated)' },
     present: { name: 'Wallet present', w: w(0.44), z: 0.74, src: 'showHome · spring(0.74, 0.44, 700)' },
+    hdr:     { name: 'Switcher morph', w: w(0.34), z: 0.86, src: 'stepHdr · K (2π/0.34)², ζ 0.86 (rAF-integrated, keeps velocity on reversal)' },
+    badge:   { name: 'Badge pop', w: w(0.36), z: 0.55, src: 'ringBell · spring(0.55, 0.36, 560)' },
+    glide:   { name: 'Header glide + card rise', w: w(0.55), z: 0.9, src: 'openNotif · GLIDE = spring(0.9, 0.55, 820)' },
+    peek:    { name: 'Behind cards slide out', w: w(0.48), z: 0.86, src: 'openNotif · PEEK = spring(0.86, 0.48, 700)' },
+    promote: { name: 'Stack steps up', w: w(0.42), z: 0.8, src: 'throwCard · SETTLE = spring(0.8, 0.42, 620)' },
+    back:    { name: 'Card springs back', w: w(0.42), z: 0.55, src: 'springBack · BACK = spring(0.55, 0.42, 720)' },
   };
   // cubic-bezier → linear() (solve x(t) = s, sample y)
   const bez = (x1, y1, x2, y2, n = 24) => {
@@ -474,6 +480,10 @@ window.SPEC = (() => {
     plpF:  { name: 'PLP card fade · 1 − (1 − t)^2.8', fn: pow((t) => 1 - (1 - t) ** 2.8) },
     plpR:  { name: 'PLP card rise · 1 − (1 − t)^2.5', fn: pow((t) => 1 - (1 - t) ** 2.5) },
     hdr:   { name: 'Header collapse · 1 − (1 − t)^1.8', fn: pow((t) => 1 - (1 - t) ** 1.8) },
+    throw: { name: 'Card throw · cubic-bezier(0.25, 0.6, 0.35, 1)', fn: bez(0.25, 0.6, 0.35, 1) },
+    nexit: { name: 'Exit · cubic-bezier(0.4, 0, 0.75, 0.3)', fn: bez(0.4, 0, 0.75, 0.3) },
+    lift:  { name: 'Scrim lift · cubic-bezier(0.45, 0, 0.2, 1)', fn: bez(0.45, 0, 0.2, 1) },
+    scroll:{ name: 'Scroll (demo flick) · 1 − (1 − t)³', fn: pow((t) => 1 - (1 - t) ** 3) },
   };
   const PP = 540, FD = 200;                              // the global Move / fade
   const mv = (o) => ({ icon: 'move', prop: 'Move Y', dur: PP, ease: S('pp'), ...o });
@@ -488,11 +498,15 @@ window.SPEC = (() => {
   const LOADING = 1500, PILL_HOLD = 1700, GLIDE_AT = LOADING + PILL_HOLD + 60, DISC_AT = GLIDE_AT + 220, TICK_AT = DISC_AT + 60;
   const FRONT_AT = 360;
   const BUILD = 840, CARDS = BUILD + 1100;
+  // home + notifications (index.html: stepHdr / ringBell / openNotif / throwCard / closeNotif)
+  const MOVE_AT = 1250, CARD_AT = MOVE_AT + 180, NT_TAP = 80;       // header glide · front card · the 2nd tap of the double-tap
+  const DRAG = 240, REL = 260;                                     // the demo drags: 240 ms of finger, released at 260 ms
+  const THROW = 404;                                               // flight for that drag: 520 − |v| × 140 (v ≈ .83 px/ms), clamped 260–460
 
   /* ═══ scenes ═════════════════════════════════════════════════════════════ */
   const SCENES = [
     { id: 0, name: 'Overview', trig: 'the full journey, played end to end', overview: true,
-      summary: 'Splash → login → email (leave · incomplete · wrong · retype) → OTP (back · wrong · retype · right) → wallet skin → keep → avatar (back) → interests (back) → home reveal' },
+      summary: 'Splash → login → email (leave · incomplete · wrong · retype) → OTP (back · wrong · retype · right) → wallet skin → keep → avatar (back) → interests (back) → home reveal → header collapse / expand → bell → Updates Today (spring back · swipe · close · reopen · flick · swipe · last card)' },
 
     { id: 1, name: 'Splash → login', trig: 'Open the app', rows: () => [
       { icon: 'flag', prop: 'Video', layer: 'Splash (Splash_01)', sel: '#screenVideo', delay: 0, dur: SPLASH_MS, from: '0s', to: '4.6s', ease: C('lin'),
@@ -812,6 +826,112 @@ window.SPEC = (() => {
       { icon: 'move', prop: 'Move Y', layer: 'Marketplace Cards', sel: '.hm__mkcard', delay: CARDS, dur: 260, from: '17.5px', to: '0px', ease: C('plpR'), stagger: { n: 4, step: 45, order: 'col 45 ms · row 140 ms' }, note: 'noon, Food, then Minutes, supermall (second row +140 ms).' },
       { icon: 'opacity', prop: 'Opacity', layer: 'Marketplace Cards', sel: '.hm__mkcard', delay: CARDS, dur: 180, from: '0', to: '1', ease: C('plpF'), stagger: { n: 4, step: 45, order: 'col 45 ms · row 140 ms' } },
       { icon: 'opacity', prop: 'Opacity', layer: 'Card Skeletons', sel: '.hm__skel', delay: CARDS, dur: 353, from: '1', to: '0', ease: C('ease'), stagger: { n: 4, step: 45, order: 'col 45 ms · row 140 ms' }, note: 'Each skeleton fades out underneath its card.' },
+      H('tick', 'Marketplace Cards', '.hm__mkcard', [CARDS + 140, CARDS + 280], 'A tick as each row lands.'),
+    ] },
+
+    { id: 23, name: 'Scroll — header collapses', trig: 'Scroll the home page down', rows: () => [
+      { icon: 'move', prop: 'Scroll', layer: 'Home Page', sel: '.hm__scroll', delay: 0, dur: 700, from: '0px', to: '460px', ease: C('scroll'), note: 'A demo flick. The page itself is the only thing tied 1:1 to the finger.' },
+      { grp: 'Switcher morph — one spring', at: 16, note: 'The scroll only picks the target: collapse once the page is 12 px down, expand within 4 px of the top. A wheel notch, a flick and a slow drag all get the same motion; reversing mid-way bends it (velocity kept). It never moves the page.' },
+      { icon: 'size', prop: 'Size', layer: 'Switcher Tiles', sel: '.hm__tile', delay: 16, dur: 420, from: '73 × 76 · r15', to: '78 × 44 · r14', ease: S('hdr'), driver: 'frame', note: 'Pill / * (107:27730): supermall 88 wide; gap 6 → 8; row y 53 → 54.5; white + 0 2 6 rgba(13,5,51,.1) shadow fades in.' },
+      { icon: 'opacity', prop: 'Opacity · Scale', layer: 'Tile Art', sel: '.hm__tbig', delay: 16, dur: 420, from: '1 · 100%', to: '0 · 90%', ease: S('hdr'), driver: 'frame', note: 'Shrinks with the tile and fades over progress .2 → .6.' },
+      { icon: 'opacity', prop: 'Opacity · Scale', layer: 'Pill Logos', sel: '.hm__tmini', delay: 16, dur: 420, from: '0 · 80%', to: '1 · 100%', ease: S('hdr'), driver: 'frame', note: 'Fades in over .25 → .7, overlapping the art so it reads as one morph (logos are Figma’s SVGs).' },
+      { grp: 'Wallet header — CSS sticky (compositor, no scroll script)', at: 0 },
+      { icon: 'move', prop: 'Sticky', layer: 'Wallet Backdrop', sel: '.hm__wbg', delay: 0, dur: 700, from: 'holds still', to: 'holds still', ease: C('lin'), note: 'The skin backdrop stays put while the marketplace sheet slides up over it (sticky until 380 px).' },
+      { icon: 'opacity', prop: 'Veil', layer: 'Wallet Content Fade', sel: '.hm__veil', delay: 0, dur: 700, from: 'band 97 → 137', to: 'band 119 → 169', ease: C('lin'), note: 'The same picture, sticky over the wallet content and under the sheet: the card, copy and button dissolve into it under the switcher.' },
+      { icon: 'move', prop: 'Sticky', layer: 'Pinned Bar', sel: '.hm__bar', delay: 0, dur: 700, from: '0 px', to: '0 px', ease: C('lin'), note: 'Wallet 107:27722: the same backdrop, 375 × 115, bottom r24, sticky above every section — pixel-identical over the backdrop, so the sheet just slides under it.' },
+    ] },
+
+    { id: 24, name: 'Back to top — header expands', trig: 'Scroll back to the very top', rows: () => [
+      { icon: 'move', prop: 'Scroll', layer: 'Home Page', sel: '.hm__scroll', delay: 0, dur: 700, from: '460px', to: '0px', ease: C('scroll') },
+      { grp: 'Expands within 4 px of the top', at: 620 },
+      { icon: 'size', prop: 'Size', layer: 'Switcher Tiles', sel: '.hm__tile', delay: 620, dur: 420, from: '78 × 44 · r14', to: '73 × 76 · r15', ease: S('hdr'), driver: 'frame', note: 'The same spring in reverse; the pill logos hand back to the tile art.' },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Pill Logos → Tile Art', sel: '.hm__tmini, .hm__tbig', delay: 620, dur: 420, from: 'logo', to: 'art', ease: S('hdr'), driver: 'frame' },
+    ] },
+
+    { id: 25, name: 'End of page — footer reveal', trig: 'Scroll to the bottom of the home page', rows: () => [
+      { icon: 'move', prop: 'Scroll', layer: 'Home Page', sel: '.hm__scroll', delay: 0, dur: 1400, from: '0px', to: '1712px', ease: C('scroll') },
+      { icon: 'size', prop: 'Reveal', layer: 'Footer', sel: '.hm__foot', delay: 900, dur: 500, from: 'clipped', to: 'open', ease: C('scroll'), driver: 'frame', note: '“Shop, Earn & Save” (105:24523) waits under the page, pinned to the bottom (y 422); it is clipped to 30 px above the arcade’s bottom edge, so it only ever shows as the arcade scrolls off it.' },
+    ] },
+
+    { id: 26, name: 'Double-tap nano — the bell', trig: 'Double-tap the noon nano tile', rows: () => [
+      H('tap', 'nano Tile', '.hm__tile--nano', 0, 'The first tap: a light pulse.'),
+      H('snap', 'Bell', '#homeBell', NT_TAP, 'The second tap (within 320 ms / 24 px) rings the bell.'),
+      { icon: 'flag', prop: 'Lottie', layer: 'Bell (HOMEPAGE_NOTIFICATION)', sel: '#homeBell', delay: NT_TAP, dur: 1500, from: 'f0', to: 'f89', ease: C('lin'), note: 'Pops from 0 (112 % at f13, settles f32), swings ±14° and rests by f72 — fixed over the page at Figma’s “Bell (fixed)” (registered on its last frame: 512² comp × .199 at 279.19, 553.68).' },
+      { icon: 'scale', prop: 'Scale', layer: 'Badge', sel: '.hm__bdg', delay: NT_TAP + 420, dur: 560, from: '0%', to: '100%', ease: S('badge'), note: 'Ellipse 24717: the count = unread updates (one pager dot each → 4).' },
+    ] },
+
+    { id: 27, name: 'Tap the bell — Updates Today', trig: 'Tap the bell', rows: () => [
+      H('snap', 'Bell', '#homeBell', 0, 'A firm tap.'),
+      { icon: 'scale', prop: 'Scale · Opacity', layer: 'Bell (absorbed)', sel: '.hm__notif', delay: 0, dur: 300, from: '100% → 86%', to: '40% · 0', ease: C('glow'), note: 'A quick press, then it’s gone.' },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Scrim', sel: '.nt__scrim', delay: 0, dur: 420, from: '0', to: '1', ease: C('quint'), note: 'Live blur (2.5 px — Figma’s “10” fitted on edge energy) + black .6 → rgba(47,41,57,.93) by 41 %.' },
+      { icon: 'flag', prop: 'Lottie', layer: 'Header (Homepage notification cards)', sel: '#notifHead', delay: 90, dur: 1917, from: 'f0', to: 'f114', ease: C('lin'), note: 'Plays in the middle of the screen (1.12×): the bell pops big, rings, then folds into “Updates Today!” as the words sweep in (f50–67). Registered to Figma 112:15283 on its last frame (512² × .5 at 59, 48).' },
+      { grp: 'Header glides up — the rest follows', at: MOVE_AT },
+      { icon: 'move', prop: 'Move Y · Scale', layer: 'Header', sel: '.nt__head', delay: MOVE_AT, dur: 820, from: '226px · 112%', to: '0px · 100%', ease: S('glide'), note: 'From the screen centre to its place, no overshoot.' },
+      { icon: 'move', prop: 'Move Y · Scale', layer: 'Front Card', sel: '.nt__card', delay: CARD_AT, dur: 820, from: '72px · 95%', to: '0px · 100%', ease: S('glide'), note: 'Rises in behind the header on the same spring, so the two read as one motion.' },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Front Card', sel: '.nt__card', delay: CARD_AT, dur: 320, from: '0', to: '1', ease: C('quint') },
+      { icon: 'move', prop: 'Slide out', layer: 'Behind · 1', sel: '.nt__card[data-slot="1"]', delay: CARD_AT + 380, dur: 700, from: '−26px', to: '0px', ease: S('peek'), note: 'The next cards themselves, scaled into Figma’s Behind boxes under a tint; they start tucked fully under the front card (opaque — no ghosting) and slide out from its bottom edge.' },
+      { icon: 'move', prop: 'Slide out', layer: 'Behind · 2', sel: '.nt__card[data-slot="2"]', delay: CARD_AT + 500, dur: 700, from: '−40px', to: '0px', ease: S('peek') },
+      H('strong', 'Front Card', '.nt__card', CARD_AT + 320, 'A strong impact as each card lands.'),
+      H('strong', 'Behind · 1', '.nt__card', CARD_AT + 520, 'Strong, for the second card.'),
+      H('strong', 'Behind · 2', '.nt__card', CARD_AT + 640, 'Strong, for the third.'),
+      { icon: 'opacity', prop: 'Opacity', layer: 'Line', sel: '.nt__line', delay: CARD_AT + 300, dur: 800, from: '0', to: '1', ease: C('quint') },
+      { icon: 'move', prop: 'Move Y', layer: 'Pager + Hint', sel: '.nt__foot', delay: CARD_AT + 600, dur: 520, from: '12px', to: '0px', ease: C('quint'), note: 'Nothing inside a card ever animates — the cards move as wholes.' },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Pager + Hint', sel: '.nt__foot', delay: CARD_AT + 600, dur: 520, from: '0', to: '1', ease: C('quint') },
+    ] },
+
+    { id: 28, name: 'Drag a card — springs back', trig: 'Drag the front card, let go early', rows: () => [
+      { icon: 'move', prop: 'Follow · Tilt', layer: 'Front Card', sel: '.nt__card', delay: 0, dur: DRAG, from: '0 · 0°', to: '−80px · −4.8°', ease: C('lin'), driver: 'frame', note: 'Follows the finger (y × .22) and tilts dx × .06° about a pivot below its base (50 % 125 %) — the Dribbble “Swiping Style” feel.' },
+      { icon: 'move', prop: 'Step up', layer: 'Cards Behind', sel: '.nt__card[data-slot="1"], .nt__card[data-slot="2"]', delay: 0, dur: DRAG, from: 'slot', to: '20 % toward the next', ease: C('lin'), driver: 'frame', note: 'Up to 40 % of the way to the next slot as the front card leaves (|dx| / 160), the tint lifting with it.' },
+      { grp: 'Let go short of 110 px (and no flick)', at: REL },
+      { icon: 'move', prop: 'Spring back', layer: 'Front Card', sel: '.nt__card', delay: REL, dur: 720, from: '−80px · −4.8°', to: '0 · 0°', ease: S('back'), note: 'Back into the stack with a little give.' },
+      { icon: 'move', prop: 'Settle', layer: 'Cards Behind', sel: '.nt__card[data-slot="1"], .nt__card[data-slot="2"]', delay: REL, dur: 620, from: 'part-way', to: 'slot', ease: S('promote') },
+      H('tick', 'Front Card', '.nt__card', REL + 40, 'A detent as it snaps back.', { approx: true }),
+    ] },
+
+    { id: 29, name: 'Swipe a card — marked read', trig: 'Drag the front card past 110 px and let go', rows: () => [
+      { icon: 'move', prop: 'Follow · Tilt', layer: 'Front Card', sel: '.nt__card', delay: 0, dur: DRAG, from: '0 · 0°', to: '200px · 12°', ease: C('lin'), driver: 'frame' },
+      H('tick', 'Front Card', '.nt__card', 130, 'A detent as it crosses the “let go to read” line (110 px).', { approx: true }),
+      { grp: 'Thrown — marked read', at: REL },
+      { icon: 'move', prop: 'Throw', layer: 'Front Card', sel: '.nt__card.is-gone', delay: REL, dur: THROW, from: '200px · 12°', to: '~500px · 22°', ease: C('throw'), note: 'Off-screen along the throw; a faster flick flies faster (260–460 ms) and spins more (16–30°); fades over the last 30 %.' },
+      H('strong', 'Front Card', '.nt__card', REL + 40, 'A strong impact as it’s thrown.', { approx: true }),
+      { icon: 'move', prop: 'Step up', layer: 'Stack', sel: '.nt__card', delay: REL, dur: 620, from: 'slot n', to: 'slot n − 1', ease: S('promote'), stagger: { n: 3, step: 40, order: 'next card → the one behind it → the new back card' }, note: 'The next card un-tints into the front (300 ms), the next takes Behind · 1, a new one fades into Behind · 2 (360 ms from +120).' },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Tint (next card)', sel: '.nt__veil', delay: REL, dur: 300, from: '1', to: '0', ease: C('quint') },
+      H('tap', 'Next Card', '.nt__card', REL + 300, 'A light pulse as the next card takes the front.'),
+      { icon: 'size', prop: 'Pager', layer: 'Pager', sel: '.nt__pager i', delay: REL, dur: 420, from: 'dot 1 current', to: 'dot 2 current', ease: C('quint'), note: 'The read dot becomes a bead, the marker (22 × 8) moves on (CSS width / colour transition).' },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Swipe Hint', sel: '.nt__foot p', delay: REL, dur: 260, from: '1', to: '0', ease: C('glow'), note: 'Goes after the first swipe (not a spring-back) and stays gone; back on the double-tap reset. The pager never moves.' },
+      { icon: 'flag', prop: 'Badge', layer: 'Unread', sel: '#homeBellCount', delay: REL, dur: 10, from: '4', to: '3', ease: C('lin'), note: 'The bell’s badge counts unread updates.' },
+    ] },
+
+    { id: 30, name: 'Flick a card', trig: 'Flick the front card (short, fast)', rows: () => [
+      { icon: 'move', prop: 'Follow', layer: 'Front Card', sel: '.nt__card', delay: 0, dur: 32, from: '0px', to: '−64px', ease: C('lin'), driver: 'frame', note: 'Only 64 px, but > .55 px/ms in the throw’s direction → thrown.' },
+      { icon: 'move', prop: 'Throw', layer: 'Front Card', sel: '.nt__card.is-gone', delay: 40, dur: 296, from: '−64px', to: '~−450px · −29°', ease: C('throw'), note: 'Fast flick → short flight, more spin.' },
+      H('strong', 'Front Card', '.nt__card', 80, 'Strong on the throw.', { approx: true }),
+      { icon: 'move', prop: 'Step up', layer: 'Stack', sel: '.nt__card', delay: 40, dur: 620, from: 'slot n', to: 'slot n − 1', ease: S('promote'), stagger: { n: 3, step: 40, order: 'front → back' } },
+    ] },
+
+    { id: 31, name: 'Swipe the last card — all caught up', trig: 'Swipe away the last update', rows: () => [
+      { icon: 'move', prop: 'Follow · Tilt', layer: 'Last Card', sel: '.nt__card', delay: 0, dur: DRAG, from: '0 · 0°', to: '200px · 12°', ease: C('lin'), driver: 'frame' },
+      { icon: 'move', prop: 'Throw', layer: 'Last Card', sel: '.nt__card.is-gone', delay: REL, dur: THROW, from: '200px', to: '~500px', ease: C('throw') },
+      { icon: 'scale', prop: 'Opacity · Scale', layer: 'Pager', sel: '.nt__pager', delay: REL + Math.round(THROW * 0.2), dur: 220, from: '1 · 100%', to: '0 · 90%', ease: C('glow'), note: 'As the card leaves the frame; the pager keeps its last state (no flick to “all read”).' },
+      H('success', 'Notifications', '.nt', REL + 260, 'All caught up.'),
+      { grp: 'Closes on its own', at: REL + 380 },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Header + Line', sel: '.nt__head, .nt__line', delay: REL + 380, dur: 220, from: '1', to: '0', ease: C('nexit') },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Scrim', sel: '.nt__scrim', delay: REL + 380 + 150, dur: 440, from: '1', to: '0', ease: C('lift'), note: 'The blur lifts; the bell does not come back (nothing unread).' },
+    ] },
+
+    { id: 32, name: 'Tap outside — close', trig: 'Tap outside the cards (or Esc)', rows: () => [
+      H('tap', 'Scrim', '.nt__scrim', 0, 'A light tap.'),
+      { grp: '1 · Everything on the scrim leaves together — gone by 260 ms, while the scrim is still dark', at: 0 },
+      { icon: 'move', prop: 'Move Y · Scale · Opacity', layer: 'Card Stack (one layer)', sel: '#ntStack', delay: 0, dur: 260, from: '0 · 100% · 1', to: '48px · 94% · 0', ease: C('nexit'), note: 'The whole stack as ONE layer — fading cards one by one let the back cards ghost through the front one.' },
+      { icon: 'move', prop: 'Move Y · Opacity', layer: 'Header', sel: '.nt__head', delay: 0, dur: 220, from: '0 · 1', to: '−14px · 0', ease: C('nexit') },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Pager + Hint', sel: '.nt__foot', delay: 0, dur: 160, from: '1', to: '0', ease: C('nexit') },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Line', sel: '.nt__line', delay: 0, dur: 200, from: '1', to: '0', ease: C('nexit') },
+      { grp: '2 · The blur lifts, the home page comes through', at: 150 },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Scrim', sel: '.nt__scrim', delay: 150, dur: 440, from: '1', to: '0', ease: C('lift') },
+      { grp: '3 · The bell rings again', at: 330, note: 'Under the still-clearing scrim, so the home page and the bell arrive together.' },
+      { icon: 'flag', prop: 'Lottie', layer: 'Bell', sel: '#homeBell', delay: 330, dur: 1500, from: 'f0', to: 'f89', ease: C('lin') },
+      H('snap', 'Bell', '#homeBell', 330, 'A firm pulse as it pops back.'),
+      { icon: 'scale', prop: 'Scale', layer: 'Badge', sel: '.hm__bdg', delay: 330 + 420, dur: 560, from: '0%', to: '100%', ease: S('badge'), note: 'The count = what’s still unread (3 here: one was read before closing).' },
     ] },
   ];
 
@@ -840,10 +960,12 @@ window.SPEC = (() => {
   }
 
   /* ═══ the journey (Overview) ════════════════════════════════════════════ */
-  const ORDER = [1, 2, 3, 2, 4, 5, 6, 7, 8, 7, 9, 10, 11, 12, 13, 14, 15, 14, 16, 17, 16, 18, 19, 20, 19, 21, 22];
+  const ORDER = [1, 2, 3, 2, 4, 5, 6, 7, 8, 7, 9, 10, 11, 12, 13, 14, 15, 14, 16, 17, 16, 18, 19, 20, 19, 21, 22,
+    23, 24, 26, 27, 28, 29, 32, 27, 30, 29, 31];
   function overview(v) {
     const end = (id) => sceneEnd(SCENES[id].rows(v));
-    const GAP = { 2: 700, 3: 800, 4: 700, 5: 900, 7: 900, 8: 900, 9: 700, 11: 700, 13: 900, 14: 900, 15: 900, 16: 900, 17: 900, 18: 900, 19: 800, 20: 900, 21: 900, 22: 900 };
+    const GAP = { 2: 700, 3: 800, 4: 700, 5: 900, 7: 900, 8: 900, 9: 700, 11: 700, 13: 900, 14: 900, 15: 900, 16: 900, 17: 900, 18: 900, 19: 800, 20: 900, 21: 900, 22: 900,
+      23: 1200, 24: 900, 26: 900, 27: 900, 28: 1000, 29: 900, 30: 900, 31: 900, 32: 1600 };
     const at = [], rows = [];
     let t = 0;
     ORDER.forEach((id, k) => {
@@ -888,6 +1010,25 @@ window.SPEC = (() => {
   const quiet = (els) => [...els].every((el) => !el.getAnimations().length);
   const typeEmail = (d, w) => { const i = d.getElementById('email'); i.value = 'sdutta@noon.com'; i.dispatchEvent(new w.Event('input', { bubbles: true })); };
   const focusEmail = (d, w) => { const i = d.getElementById('email'); i.focus(); i.dispatchEvent(new w.FocusEvent('focus')); i.dispatchEvent(new w.FocusEvent('focusin', { bubbles: true })); };
+  // home + notifications drivers. A scroll is stepped on the virtual clock with the scroll event dispatched
+  // by hand (the native one only fires on real frames); drags are real PointerEvents on the front card
+  // (pointer capture stubbed — a synthetic pointer has no capture target); the Lottie JSONs load over the
+  // network, so a real-time wait covers that.
+  const scrollTo = (d, w, to, ms) => {
+    const sc = d.querySelector('.hm__scroll'), from = sc.scrollTop, n = Math.max(1, Math.round(ms / 16));
+    for (let i = 1; i <= n; i++) w.setTimeout(() => { const t = i / n; sc.scrollTop = from + (to - from) * (1 - (1 - t) ** 3); sc.dispatchEvent(new w.Event('scroll')); }, i * 16);
+  };
+  const drag = (d, w, path) => {                         // path: [[ms, dx], …]; the last point is the release
+    w.Element.prototype.setPointerCapture = function () {};
+    let card = null;
+    const ev = (type, dx) => card && card.dispatchEvent(new w.PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 7, pointerType: 'touch',
+      isPrimary: true, button: 0, clientX: 190 + dx, clientY: 450 }));
+    card = d.querySelector('#ntStack .nt__card:not(.is-gone)'); ev('pointerdown', 0);
+    path.forEach(([ms, dx], i) => w.setTimeout(() => ev(i === path.length - 1 ? 'pointerup' : 'pointermove', dx), ms));
+  };
+  const steps = (dx, ms, n = 12) => [...Array.from({ length: n }, (_, i) => [Math.round((i + 1) * ms / n), Math.round(dx * (i + 1) / n)]), [ms + 20, dx]];
+  const settled = (els) => [...els].every((el) => el.getAnimations().every((a) => a.playState === 'finished'));   // fill: both anims stay listed
+  const loaded = async (w, name, make) => { if (!w[name] && w[make]) w[make](); for (let i = 0; i < 80 && !(w[name] && w[name].isLoaded); i++) await new Promise((r) => setTimeout(r, 100)); };
   const ST = {
     async splash(d, w, e) { stills(d, w); await e.advanceTo(e.vt + 50, 48); },
     async login(d, w, e) { await ST.splash(d, w, e); d.getElementById('ui').classList.remove('is-pre-intro'); w.eval('introDone = false'); w.enterIntroUI();
@@ -913,8 +1054,23 @@ window.SPEC = (() => {
     async home(d, w, e) { await ST.picked(d, w, e); d.querySelector('.int__cta').click();
       await e.stepUntil(() => { const h = d.getElementById('homeScreen'); return h.classList.contains('is-shown') && !h.classList.contains('is-loading') && !h.classList.contains('is-locked'); }, 9000);
       await e.advanceTo(e.vt + 400, 48); },
+    async homeL(d, w, e) { await ST.home(d, w, e); await loaded(w, 'bellAnim', 'ensureBell'); await loaded(w, 'ntAnim', 'ensureNt'); await e.advanceTo(e.vt + 100, 48); },
+    async scrolled(d, w, e) { await ST.home(d, w, e); scrollTo(d, w, 460, 300); await e.advanceTo(e.vt + 400, 48);
+      await e.stepUntil(() => w.eval('hdr.p === 1 && !hdr.sraf')); await e.advanceTo(e.vt + 200, 48); },
+    async bell(d, w, e) { await ST.home(d, w, e); await loaded(w, 'bellAnim', 'ensureBell'); await loaded(w, 'ntAnim', 'ensureNt');
+      w.eval('ntRead = 0'); w.ringBell();
+      await e.stepUntil(() => w.bellAnim.isPaused && settled(d.querySelectorAll('.hm__bdg'))); await e.advanceTo(e.vt + 300, 48); },
+    async notif(d, w, e) { await ST.bell(d, w, e); w.openNotif();
+      await e.stepUntil(() => w.ntAnim.isPaused && settled(d.querySelectorAll('.nt__card, .nt__head, .nt__foot, .nt__line, .nt__scrim')), 9000);
+      await e.advanceTo(e.vt + 400, 48); },
+    async notifRead1(d, w, e) { await ST.notif(d, w, e); d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      await e.stepUntil(() => settled(d.querySelectorAll('.nt__card, .nt__veil'))); await e.advanceTo(e.vt + 600, 48); },
+    async notifLast(d, w, e) { await ST.notif(d, w, e);
+      for (let k = 0; k < 3; k++) { d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })); await e.stepUntil(() => settled(d.querySelectorAll('.nt__card, .nt__veil'))); await e.advanceTo(e.vt + 300, 48); }
+      await e.advanceTo(e.vt + 400, 48); },
   };
-  const PREP = { 0: 'splash', 1: 'splash', 2: 'login', 3: 'editing', 4: 'editing', 5: 'editing', 6: 'wrongEmail', 7: 'typed', 8: 'otp', 9: 'otp5wrong', 10: 'wrongCode', 11: 'otp5', 12: 'intro', 13: 'picker', 14: 'picker', 15: 'keep', 16: 'keep', 17: 'avatar', 18: 'avatar', 19: 'avatar', 20: 'interests', 21: 'interests', 22: 'picked' };
+  const PREP = { 0: 'splash', 1: 'splash', 2: 'login', 3: 'editing', 4: 'editing', 5: 'editing', 6: 'wrongEmail', 7: 'typed', 8: 'otp', 9: 'otp5wrong', 10: 'wrongCode', 11: 'otp5', 12: 'intro', 13: 'picker', 14: 'picker', 15: 'keep', 16: 'keep', 17: 'avatar', 18: 'avatar', 19: 'avatar', 20: 'interests', 21: 'interests', 22: 'picked',
+    23: 'home', 24: 'scrolled', 25: 'home', 26: 'homeL', 27: 'bell', 28: 'notif', 29: 'notif', 30: 'notif', 31: 'notifLast', 32: 'notifRead1' };
   const FIRE = {
     // the splash plays from Start; the login comes in at 3.97 s of it (the real trigger is the video clock)
     1: (d, w) => w.setTimeout(() => { d.getElementById('ui').classList.remove('is-pre-intro'); w.eval('introDone = false'); w.enterIntroUI(); }, INTRO_AT),
@@ -939,6 +1095,17 @@ window.SPEC = (() => {
     20: (d) => d.querySelector('.int__back').click(),
     21: (d, w) => ['art', 'gaming', 'fashion'].forEach((k, i) => w.setTimeout(() => d.querySelector(`.ich[data-k="${k}"]`).click(), i * 250)),
     22: (d) => d.querySelector('.int__cta').click(),
+    23: (d, w) => scrollTo(d, w, 460, 700),
+    24: (d, w) => scrollTo(d, w, 0, 700),
+    25: (d, w) => scrollTo(d, w, 1712, 1400),
+    26: (d, w) => { const t = d.querySelector('.hm__tile--nano'), c = () => t.dispatchEvent(new w.MouseEvent('click', { bubbles: true, cancelable: true, clientX: 48, clientY: 91 }));
+      w.eval('ntRead = 0'); c(); w.setTimeout(c, NT_TAP); },
+    27: (d) => d.getElementById('homeBell').click(),
+    28: (d, w) => drag(d, w, steps(-80, DRAG)),
+    29: (d, w) => drag(d, w, steps(200, DRAG)),
+    30: (d, w) => drag(d, w, [[8, -16], [16, -32], [24, -48], [32, -64], [40, -64]]),
+    31: (d, w) => drag(d, w, steps(200, DRAG)),
+    32: (d) => d.querySelector('.nt__scrim').click(),
   };
 
   return {
