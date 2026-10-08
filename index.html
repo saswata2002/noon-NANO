@@ -3899,7 +3899,8 @@
       nb.style.transformOrigin = '327.69px 600.68px';     // the bell's centre
       nb.animate([{ scale: '1', opacity: 1 }, { scale: '.86', opacity: 1, offset: .35 }, { scale: '.4', opacity: 0 }],
         { duration: 300, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards', pp: false });
-      go(nq('.nt__scrim'), [{ opacity: 0 }, { opacity: 1 }], 420, 0, OUT);
+      // the dim builds up gently (a fast-start curve put ~11 % of the tint on in the first frame — a visible wash)
+      go(nq('.nt__scrim'), [{ opacity: 0 }, { opacity: 1 }], 480, 0, 'cubic-bezier(0.3, 0, 0.2, 1)');
       if (a) { a.goToAndStop(0, true); setTimeout(() => ntOpen && a.play(), rm ? 0 : 90); }
       // 0 · the header Lottie plays in the middle of the screen (its title centre at y ≈ 406, 1.12×); once the
       //     words have landed and the bell is settling (≈ f76), it glides up to its place and everything else follows
@@ -3907,19 +3908,24 @@
       if (!rm) go(nq('.nt__head'), [{ translate: `0 ${HEAD_DY}px`, scale: '1.12' }, { translate: '0 0', scale: '1' }], 820, MOVE_AT, GLIDE);
       const [c0, c1, c2] = ntCards();
       ntCards().forEach((c) => (c.style.opacity = '1'));
-      // 1 · the front card rises in behind the header as it goes up, on its own near-critically damped spring (ζ .97 — it
-      //     eases all the way in, no overshoot): from 90 px lower and .94, fading in over 420 ms
+      // 1 · the front card is revealed by motion alone — fully opaque, it slides up from just below the screen's
+      //     bottom edge (268 + 560 > 812) and eases into place under the gliding header on a near-critically damped
+      //     spring (ζ .97, no overshoot). Any fade of a white card over the dark scrim either ghosts (slow) or pops (fast).
       const CARD_AT = rm ? 0 : MOVE_AT + 160, DEAL = spring(0.97, 0.6, 900);   // (the helper is underdamped-only: ζ < 1)
-      go(c0, [{ translate: '0 90px', scale: '.94' }, { translate: '0 0', scale: '1' }], 900, CARD_AT, DEAL);
-      go(c0, [{ opacity: 0 }, { opacity: 1 }], 420, CARD_AT, OUT);
+      if (rm) go(c0, [{ opacity: 0 }, { opacity: 1 }], 200, 0, OUT);
+      else go(c0, [{ translate: '0 560px' }, { translate: '0 0' }], 900, CARD_AT, DEAL);
       // 2 · once it has landed, the two cards behind slide out from under its bottom edge, one after the other.
       //     They start fully tucked behind it (opaque — no ghosting), so only the edges that peek out move.
       // 2 · the cards behind follow through before the front one has quite landed (overlapped, 80 ms apart): each
       //     starts tucked fully under it (opaque — no ghosting) and eases out from its bottom edge, settling from .985
+      //     The deck rises as ONE: the cards behind ride up with the front card, tucked under it (same motion, so
+      //     no edge can peek out early), then slide out on an additive animation layered on top of the rise.
       const PEEK = spring(0.95, 0.55, 850), tuck = (el, dy, at) => {
         if (!el) return;
-        el.animate([{ opacity: 0 }, { opacity: 0 }], { duration: rm ? 1 : at, pp: false });   // hidden until its own start
-        go(el, [{ translate: `0 ${dy}px`, scale: '.985' }, { translate: '0 0', scale: '1' }], 850, at, PEEK);
+        if (rm) { el.animate([{ opacity: 0 }, { opacity: 0 }], { duration: 1, pp: false }); return; }
+        go(el, [{ translate: '0 560px' }, { translate: '0 0' }], 900, CARD_AT, DEAL);
+        el.animate([{ translate: `0 ${dy}px`, scale: '.985' }, { translate: '0 0', scale: '1' }],
+          { duration: 850, delay: at, easing: PEEK, fill: 'both', composite: 'add', pp: false });
       };
       tuck(c1, -26, CARD_AT + 300);
       tuck(c2, -40, CARD_AT + 380);

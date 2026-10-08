@@ -485,6 +485,7 @@ window.SPEC = (() => {
     nexit: { name: 'Exit · cubic-bezier(0.4, 0, 0.75, 0.3)', fn: bez(0.4, 0, 0.75, 0.3) },
     lift:  { name: 'Scrim lift · cubic-bezier(0.45, 0, 0.2, 1)', fn: bez(0.45, 0, 0.2, 1) },
     scroll:{ name: 'Scroll (demo flick) · 1 − (1 − t)³', fn: pow((t) => 1 - (1 - t) ** 3) },
+    scrimIn: { name: 'Scrim in · cubic-bezier(0.3, 0, 0.2, 1)', fn: bez(0.3, 0, 0.2, 1) },
   };
   const PP = 540, FD = 200;                              // the global Move / fade
   const mv = (o) => ({ icon: 'move', prop: 'Move Y', dur: PP, ease: S('pp'), ...o });
@@ -864,13 +865,12 @@ window.SPEC = (() => {
     { id: 27, name: 'Tap the bell — Updates Today', trig: 'Tap the bell', rows: () => [
       H('snap', 'Bell', '#homeBell', 0, 'A firm tap.'),
       { icon: 'scale', prop: 'Scale · Opacity', layer: 'Bell (absorbed)', sel: '.hm__notif', delay: 0, dur: 300, from: '100% → 86%', to: '40% · 0', ease: C('glow'), note: 'A quick press, then it’s gone.' },
-      { icon: 'opacity', prop: 'Opacity', layer: 'Scrim', sel: '.nt__scrim', delay: 0, dur: 420, from: '0', to: '1', ease: C('quint'), note: 'Live blur (2.5 px — Figma’s “10” fitted on edge energy) + black .6 → rgba(47,41,57,.93) by 41 %.' },
+      { icon: 'opacity', prop: 'Opacity', layer: 'Scrim', sel: '.nt__scrim', delay: 0, dur: 480, from: '0', to: '1', ease: C('scrimIn'), note: 'Builds up gently (a fast-start curve washed ~11 % of the tint on in one frame). Live blur (2.5 px — Figma’s “10” fitted on edge energy) + black .6 → rgba(47,41,57,.93) by 41 %.' },
       { icon: 'flag', prop: 'Lottie', layer: 'Header (Homepage notification cards)', sel: '#notifHead', delay: 90, dur: 1917, from: 'f0', to: 'f114', ease: C('lin'), note: 'Plays in the middle of the screen (1.12×): the bell pops big, rings, then folds into “Updates Today!” as the words sweep in (f50–67). Registered to Figma 112:15283 on its last frame (512² × .5 at 59, 48).' },
       { grp: 'Header glides up — the rest follows', at: MOVE_AT },
       { icon: 'move', prop: 'Move Y · Scale', layer: 'Header', sel: '.nt__head', delay: MOVE_AT, dur: 820, from: '226px · 112%', to: '0px · 100%', ease: S('glide'), note: 'From the screen centre to its place, no overshoot.' },
-      { icon: 'move', prop: 'Move Y · Scale', layer: 'Front Card', sel: '.nt__card', delay: CARD_AT, dur: 900, from: '90px · 94%', to: '0px · 100%', ease: S('deal'), note: 'Rises in under the header as it goes up, on a near-critically damped spring — eases all the way in, no overshoot.' },
-      { icon: 'opacity', prop: 'Opacity', layer: 'Front Card', sel: '.nt__card', delay: CARD_AT, dur: 420, from: '0', to: '1', ease: C('quint') },
-      { icon: 'move', prop: 'Slide out · Scale', layer: 'Behind · 1', sel: '.nt__card[data-slot="1"]', delay: CARD_AT + 300, dur: 850, from: '−26px · 98.5%', to: '0px · 100%', ease: S('peek'), note: 'Follows through before the front card has quite landed. The next cards themselves, scaled into Figma’s Behind boxes under a tint; they start tucked fully under the front card (opaque — no ghosting) and ease out from its bottom edge.' },
+      { icon: 'move', prop: 'Move Y', layer: 'Card Deck', sel: '.nt__card', delay: CARD_AT, dur: 900, from: '560px', to: '0px', ease: S('deal'), note: 'Revealed by motion alone: fully opaque, the deck slides up from just below the screen’s bottom edge and eases into place under the gliding header (no overshoot). No fade — a white card fading over the dark scrim either ghosts or pops. The cards behind ride up with it, tucked under the front card.' },
+      { icon: 'move', prop: 'Slide out · Scale', layer: 'Behind · 1', sel: '.nt__card[data-slot="1"]', delay: CARD_AT + 300, dur: 850, from: '−26px · 98.5%', to: '0px · 100%', ease: S('peek'), note: 'Additive on top of the deck’s rise (composite: add), so it can’t peek out early. The next cards themselves, scaled into Figma’s Behind boxes under a tint; tucked fully under the front card, they ease out from its bottom edge.' },
       { icon: 'move', prop: 'Slide out · Scale', layer: 'Behind · 2', sel: '.nt__card[data-slot="2"]', delay: CARD_AT + 380, dur: 850, from: '−40px · 98.5%', to: '0px · 100%', ease: S('peek'), note: '80 ms after the first.' },
       H('strong', 'Front Card', '.nt__card', CARD_AT + 380, 'A strong impact as each card lands.'),
       H('strong', 'Behind · 1', '.nt__card', CARD_AT + 580, 'Strong, for the second card.'),
